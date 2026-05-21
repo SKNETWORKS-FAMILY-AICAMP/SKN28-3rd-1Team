@@ -12,11 +12,11 @@ Streamlit 기반 Python 프레임워크, 백엔드, RAG, 프론트엔드, 인프
 
 | 이름 | 역할 |
 |:---:|---|
-| 이름1 |  |
-| 이름2 |  |
-| 이름3 |  |
-| 이름4 |  |
-| 이름5 |  |
+| 이원빈 | 팀장 — 전체 컨펌 및 총괄 관리 |
+| 김지효 | RAG 담당 — 임베딩, 문서 전처리 |
+| 송윤경 | 프론트엔드 — 엔드포인트 연결, UI 구현 |
+| 전하영 | 백엔드 — MCP 툴 연동, API/엔드포인트 구현 |
+| 양도영 | 전체 플로우 정리 — PPT 제작, 전체 내용 정리 |
 
 ---
 
@@ -142,13 +142,44 @@ Streamlit 기반 Python 프레임워크, 백엔드, RAG, 프론트엔드, 인프
 
 ```txt
 SKN28-3rd-1Team/
-├── frontend/   # 실제 프론트엔드
-├── backend/    # 메인 백엔드 서비스
-├── rag/        # RAG / 문서 파싱 / MCP 관련 작업
-├── streamlit/  # Streamlit 기반 Python 프레임워크 프로젝트
-├── infra/      # Podman 등 인프라 실행/관리
-├── docs/       # 프로젝트 문서
-└── README.md   # 전체 프로젝트 설명
+├── README.md
+├── requirements.txt
+│
+├── data/
+│   ├── raw/
+│   ├── processed/
+│   └── embeddings/
+│
+├── docs/
+│   ├── project_description.md
+│   ├── rag_pipeline.md
+│   └── execution_guide.md
+│
+├── notebooks/
+│   ├── 01_data_loading.ipynb
+│   ├── 02_chunking.ipynb
+│   ├── 03_embedding.ipynb
+│   └── 04_rag_test.ipynb
+│
+├── src/
+│   ├── data/
+│   │   ├── load_documents.py
+│   │   └── preprocess.py
+│   │
+│   ├── rag/
+│   │   ├── embedding.py
+│   │   ├── vector_store.py
+│   │   ├── retriever.py
+│   │   └── chain.py
+│   │
+│   ├── app/
+│   │   └── streamlit_app.py
+│   │
+│   └── utils/
+│       └── helpers.py
+│
+└── assets/
+    └── images/
 ```
 
 ## Environment Files
