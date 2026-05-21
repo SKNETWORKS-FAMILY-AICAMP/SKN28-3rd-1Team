@@ -34,10 +34,17 @@ Project-scoped skills are committed under `.agents/skills/` and are the canonica
 
 Use these skills when relevant:
 
+- `fastapi`: FastAPI API and Pydantic model best practices.
+- `gh-cli`: GitHub CLI operations for repositories, issues, pull requests, Actions, and related workflows.
+- `git-commit`: diff analysis, staging guidance, and commit message generation.
 - `git-workflow`: branch, commit, and pull request decisions.
-- `uv-python`: Python project setup and dependency management with uv.
+- `github-issues`: GitHub issue creation, updates, labels, metadata, dependencies, and workflows.
 - `monorepo-structure`: directory ownership and environment-file placement.
+- `prd`: product requirements document creation and refinement.
 - `readme-docs`: README and documentation maintenance.
+- `shadcn`: shadcn/ui component usage, styling, customization, and project guidance.
+- `uv-python`: Python project setup and dependency management with uv.
+- `web-design-guidelines`: UI, UX, and accessibility review guidance.
 
 Skill adapter directories for specific tools or agents are local-only unless the team explicitly approves committing them. Generated or personal directories such as `.claude/`, `.codex/`, `.gemini/`, `.factory/`, and `.opencode/` must not be committed.
 
