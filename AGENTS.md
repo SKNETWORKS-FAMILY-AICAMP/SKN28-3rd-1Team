@@ -10,6 +10,7 @@ bootcamp-project/
 ├── backend/    # 메인 백엔드 서비스
 ├── rag/        # RAG / 문서 파싱 / MCP 관련 작업
 ├── streamlit/  # Streamlit 기반 Python 프레임워크 프로젝트
+├── docs_web/   # GitHub Pages 문서 웹
 ├── infra/      # Podman 등 인프라 실행/관리
 ├── docs/       # 프로젝트 문서
 └── README.md   # 전체 프로젝트 설명
@@ -100,8 +101,22 @@ Python projects in this repo must use `uv`.
 
 - Use `uv init`, `uv add`, `uv sync`, `uv lock`, and `uv run`.
 - Do not use `pip`, `pip3`, Poetry, or root-level `requirements.txt` for project dependency management.
-- `backend/` and `streamlit/` each manage their own `pyproject.toml`, `uv.lock`, and `.python-version`.
+- `backend/`, `rag/`, and `streamlit/` each manage their own `pyproject.toml`, `uv.lock`, `.python-version`, and `.venv/`.
 - Keep virtual environments local. Do not commit `.venv/`.
+- Do not run Python commands with the repository-root Python interpreter.
+- For Python work, first move into the target project directory and use that directory's uv environment:
+  - `cd backend && uv sync && uv run <command>`
+  - `cd rag && uv sync && uv run <command>`
+  - `cd streamlit && uv sync && uv run <command>`
+- AI agents must choose the Python environment based on the file they are editing. A file under `backend/` uses `backend/.venv/bin/python`, a file under `rag/` uses `rag/.venv/bin/python`, and a file under `streamlit/` uses `streamlit/.venv/bin/python`.
+- If a service `.venv/` does not exist, run `uv sync` inside that service directory before running Python, tests, or language-server-dependent commands.
+
+## VS Code Workspace
+
+- Open `SKN28-3rd-1Team.code-workspace` from the repository root when using VS Code.
+- The workspace includes `backend/`, `rag/`, and `streamlit/` as separate folders so each folder can resolve `${workspaceFolder}/.venv/bin/python` relative to itself.
+- When opening Python files, prefer the service folder entry in the workspace explorer, such as `backend/src/...`, `rag/src/...`, or `streamlit/src/...`, instead of the duplicated `repo-root/...` path.
+- Service-local VS Code settings live in `backend/.vscode/settings.json`, `rag/.vscode/settings.json`, and `streamlit/.vscode/settings.json`.
 
 ## Tool And MCP Configuration
 
