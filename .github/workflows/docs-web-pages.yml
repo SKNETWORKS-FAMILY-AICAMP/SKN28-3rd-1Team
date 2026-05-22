@@ -1,6 +1,12 @@
 name: Deploy Docs Web
 
 on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - docs_web/**
+      - .github/workflows/docs-web-pages.yml
   push:
     branches:
       - main
@@ -32,6 +38,9 @@ jobs:
           cache: npm
           cache-dependency-path: docs_web/package-lock.json
 
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
       - name: Install dependencies
         working-directory: docs_web
         run: npm ci
@@ -41,11 +50,13 @@ jobs:
         run: npm run build
 
       - name: Upload Pages artifact
+        if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v3
         with:
           path: docs_web/dist
 
   deploy:
+    if: github.event_name != 'pull_request'
     needs: build
     runs-on: ubuntu-latest
     environment:
@@ -55,3 +66,8 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Report deployed URL
+        run: |
+          echo "### Docs Web URL" >> "$GITHUB_STEP_SUMMARY"
+          echo "${{ steps.deployment.outputs.page_url }}" >> "$GITHUB_STEP_SUMMARY"
