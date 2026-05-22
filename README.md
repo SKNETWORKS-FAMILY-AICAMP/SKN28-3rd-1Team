@@ -281,7 +281,7 @@ SKN28-3rd-1Team/
 
 ## Python / uv Policy
 
-`backend/`와 `streamlit/`은 Python 프로젝트이며 `uv`를 사용합니다.
+`backend/`, `rag/`, `streamlit/`은 Python 프로젝트이며 `uv`를 사용합니다.
 
 - 의존성 추가: `uv add <package>`
 - 의존성 동기화: `uv sync`
@@ -289,6 +289,14 @@ SKN28-3rd-1Team/
 - 잠금 파일 갱신: `uv lock`
 
 `pip`, `pip3`, Poetry, 루트 `requirements.txt`는 사용하지 않습니다.
+
+## VS Code Workspace
+
+VS Code에서는 루트의 `SKN28-3rd-1Team.code-workspace`로 여는 것을 기준으로 합니다.
+
+- `backend/`, `rag/`, `streamlit/`은 각각 별도 워크스페이스 폴더로 등록됩니다.
+- 각 Python 프로젝트는 자기 디렉토리의 `.venv/bin/python`을 인터프리터로 사용합니다.
+- `.venv`가 없으면 해당 디렉토리에서 `uv sync`를 먼저 실행합니다.
 
 ## Quick Start
 
