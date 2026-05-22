@@ -1,6 +1,6 @@
 # SKN28-3rd-1Team
 
-Streamlit 기반 Python 프레임워크, 백엔드, RAG, 프론트엔드, 인프라 작업을 함께 관리하는 모노레포입니다.
+Python 기반 RAG, 백엔드, 프론트엔드, Streamlit 프로토타입, 문서 웹 작업을 함께 관리하는 모노레포입니다.
 
 ## 팀 소개
 
@@ -244,13 +244,13 @@ https://linear.app/skn28-3rd/team/SKN/all
 
 ### 사용 기술
 
-| 분류 | 기술 |
-|---|---|
-| Language | Python |
-| Framework | Streamlit, LangChain |
-| Vector DB | ChromaDB 또는 FAISS |
-| Document Loader | PyPDFLoader |
-| Collaboration | GitHub, Notion, Discord |
+| 영역 | 주요 기술 | 사용 방향 |
+|---|---|---|
+| RAG | Microsoft GraphRAG, LangChain, LangGraph, Vector DB 후보(ChromaDB/FAISS) | 법령·복지 문서를 조항 단위로 검색하고 답변 근거를 함께 제공합니다. |
+| Backend | Python, FastAPI, Pydantic, uv | API 엔드포인트, 환경 설정, RAG 파이프라인 호출을 관리합니다. |
+| Frontend | React, TypeScript, Tailwind CSS, shadcn/ui, Streamlit | 최종 사용자 화면과 프로토타입 화면을 구현합니다. |
+| Docs Web | Vite, React, GitHub Pages | 프로젝트 소개와 파트별 구현 방향을 문서 웹으로 제공합니다. |
+| Collaboration | GitHub, Linear, Notion, Discord | 코드 리뷰, 이슈 추적, 문서 공유, 실시간 커뮤니케이션에 사용합니다. |
 
 ---
 
@@ -265,6 +265,7 @@ SKN28-3rd-1Team/
 ├── infra/            # 인프라 및 배포 설정
 ├── rag/              # RAG, 문서 파싱, 분석 관련 작업
 ├── streamlit/        # Streamlit 기반 앱
+├── docs_web/         # GitHub Pages 문서 웹
 └── docs/             # 프로젝트 문서
 ```
 
