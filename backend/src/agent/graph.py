@@ -11,6 +11,7 @@ from schemas.chat import(
     ClarificationOption,
     QuestionType,
     ResponseKind,
+    SourceReference
 )
 from settings import settings
 
