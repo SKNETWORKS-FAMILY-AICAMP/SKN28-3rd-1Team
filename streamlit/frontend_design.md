@@ -63,7 +63,7 @@
 
 ## 3. mock response 기반 프론트 코드
 
-현재 `streamlit/src/pages/mock_ui.py`는 다음 구조로 동작합니다.
+현재 `streamlit/src/views/mock_ui.py`는 다음 구조로 동작합니다.
 
 - `MOCK_RESPONSE`에 구조화된 JSON 데이터 저장
 - `st.info`로 요약 표시

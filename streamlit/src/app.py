@@ -2,13 +2,15 @@ from __future__ import annotations
 
 import streamlit as st
 
-from pages.design_notes import render_design_notes
-from pages.home import render_home
-from pages.json_schema import render_json_schema
-from pages.llm_parsing import render_llm_parsing
-from pages.mock_ui import render_mock_ui
-from pages.usecases import render_usecases
 from settings import settings
+from views import (
+    render_design_notes,
+    render_home,
+    render_json_schema,
+    render_llm_parsing,
+    render_mock_ui,
+    render_usecases,
+)
 
 PAGES = {
     "Search": render_home,
