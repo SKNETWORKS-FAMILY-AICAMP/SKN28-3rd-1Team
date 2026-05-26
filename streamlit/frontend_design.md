@@ -33,9 +33,11 @@
 
 ### 페이지 구조
 
-- `Home`: 프로젝트 개요, 페이지 목적, 우선순위
+- `Search`: 사용자 질문 입력과 mock 응답 렌더링
+- `Use Cases`: 프론트엔드 유스케이스와 화면 요소 매핑
 - `JSON Schema`: 응답 계약 및 스키마 설명
 - `Mock Response UI`: mock 데이터를 이용한 렌더링 검증
+- `LLM Parsing Test`: LLM 출력 형식별 파싱 검증
 - `Design Notes`: 질문 유형별 렌더링 가이드
 
 ### 추천 컴포넌트
@@ -61,7 +63,7 @@
 
 ## 3. mock response 기반 프론트 코드
 
-현재 `streamlit/pages/mock_ui.py`는 다음 구조로 동작합니다.
+현재 `streamlit/src/pages/mock_ui.py`는 다음 구조로 동작합니다.
 
 - `MOCK_RESPONSE`에 구조화된 JSON 데이터 저장
 - `st.info`로 요약 표시
@@ -82,5 +84,5 @@
 ```bash
 cd streamlit
 uv sync
-uv run streamlit run main.py
+uv run streamlit run src/app.py
 ```

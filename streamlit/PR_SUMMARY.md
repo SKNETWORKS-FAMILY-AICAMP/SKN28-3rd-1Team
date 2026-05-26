@@ -19,23 +19,26 @@
   - 사용자 행동, 프론트엔드 책임, 렌더링 화면 요소 매핑
   - 질문 입력, 처리 상태, 답변, 근거/출처, 오류 메시지 표시 기준 정리
 
-- `streamlit/pages/home.py`
+- `streamlit/src/pages/home.py`
   - 페이지 개요 및 설계 목적 설명
 
-- `streamlit/pages/usecases.py`
+- `streamlit/src/pages/usecases.py`
   - 유스케이스와 화면 요소 표시 기준을 Streamlit 표로 렌더링
 
-- `streamlit/pages/json_schema.py`
+- `streamlit/src/pages/json_schema.py`
   - 프론트 응답 계약(JSON Schema) 문서 페이지
 
-- `streamlit/pages/mock_ui.py`
+- `streamlit/src/pages/mock_ui.py`
   - mock response 기반 렌더링 테스트 페이지 구현
   - `st.dataframe`, `st.expander`, `st.info`, `st.warning` 등으로 UI 검증
 
-- `streamlit/pages/design_notes.py`
+- `streamlit/src/pages/llm_parsing.py`
+  - mock LLM 출력의 JSON, markdown 표, 리스트 파싱 테스트 페이지
+
+- `streamlit/src/pages/design_notes.py`
   - 질문 유형별 렌더링 매핑 및 citation UX 설계 노트
 
-- `streamlit/main.py`
+- `streamlit/src/app.py`
   - 사이드바 기반 페이지 네비게이션 메인으로 구성
 
 ## 목표
@@ -49,7 +52,7 @@
 
 ```bash
 cd streamlit
-uv run streamlit run main.py
+uv run streamlit run src/app.py
 ```
 
 ## 향후 연결 지점

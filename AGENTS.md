@@ -10,6 +10,7 @@ bootcamp-project/
 ├── backend/    # 메인 백엔드 서비스
 ├── rag/        # RAG / 문서 파싱 / MCP 관련 작업
 ├── streamlit/  # Streamlit 기반 Python 프레임워크 프로젝트
+├── docs_web/   # GitHub Pages 문서 웹
 ├── infra/      # Podman 등 인프라 실행/관리
 ├── docs/       # 프로젝트 문서
 └── README.md   # 전체 프로젝트 설명
@@ -31,13 +32,19 @@ bootcamp-project/
 ## Project Skills
 
 Project-scoped skills are committed under `.agents/skills/` and are the canonical shared skill source for this repo.
+Keep skills for reusable agent workflows. Static repo structure rules live in this file, and README/documentation rules live in shared rules and the relevant docs.
 
 Use these skills when relevant:
 
+- `fastapi`: FastAPI API and Pydantic model best practices.
+- `gh-cli`: GitHub CLI operations for repositories, issues, pull requests, Actions, and related workflows.
+- `git-commit`: diff analysis, staging guidance, and commit message generation.
 - `git-workflow`: branch, commit, and pull request decisions.
-- `uv-python`: Python project setup and dependency management with uv.
-- `monorepo-structure`: directory ownership and environment-file placement.
-- `readme-docs`: README and documentation maintenance.
+- `github-issues`: GitHub issue creation, updates, labels, metadata, dependencies, and workflows.
+- `prd`: product requirements document creation and refinement.
+- `shadcn`: shadcn/ui component usage, styling, customization, and project guidance.
+- `uv-python`: repo-specific Python setup and dependency management with uv.
+- `web-design-guidelines`: Vercel-sourced UI, UX, and accessibility review guidance.
 
 Skill adapter directories for specific tools or agents are local-only unless the team explicitly approves committing them. Generated or personal directories such as `.claude/`, `.codex/`, `.gemini/`, `.factory/`, and `.opencode/` must not be committed.
 
@@ -67,6 +74,15 @@ This repo uses GitHub Flow.
 - Avoid WIP commits unless the user asks for a checkpoint or handoff commit.
 - Commit messages must be written in Korean.
 
+### Atomic Commit Rules
+
+- One commit should have one clear reason to exist.
+- Split unrelated changes by service, domain, or workflow even when they are edited in the same session.
+- Keep code, config, docs, and binary assets in separate commits unless the docs/assets directly explain the same change.
+- Stage files intentionally. Review `git diff --staged` before committing.
+- Do not sweep ignored files, local notes, generated output, or personal adapter config into a commit.
+- If a task grows beyond the current branch scope, create or update a GitHub issue and move the extra work to a separate branch.
+
 ### Pull Request Rules
 
 - Open PRs from a feature/fix/docs/chore/refactor branch into `main`.
@@ -85,8 +101,22 @@ Python projects in this repo must use `uv`.
 
 - Use `uv init`, `uv add`, `uv sync`, `uv lock`, and `uv run`.
 - Do not use `pip`, `pip3`, Poetry, or root-level `requirements.txt` for project dependency management.
-- `backend/` and `streamlit/` each manage their own `pyproject.toml`, `uv.lock`, and `.python-version`.
+- `backend/`, `rag/`, and `streamlit/` each manage their own `pyproject.toml`, `uv.lock`, `.python-version`, and `.venv/`.
 - Keep virtual environments local. Do not commit `.venv/`.
+- Do not run Python commands with the repository-root Python interpreter.
+- For Python work, first move into the target project directory and use that directory's uv environment:
+  - `cd backend && uv sync && uv run <command>`
+  - `cd rag && uv sync && uv run <command>`
+  - `cd streamlit && uv sync && uv run <command>`
+- AI agents must choose the Python environment based on the file they are editing. A file under `backend/` uses `backend/.venv/bin/python`, a file under `rag/` uses `rag/.venv/bin/python`, and a file under `streamlit/` uses `streamlit/.venv/bin/python`.
+- If a service `.venv/` does not exist, run `uv sync` inside that service directory before running Python, tests, or language-server-dependent commands.
+
+## VS Code Workspace
+
+- Open `SKN28-3rd-1Team.code-workspace` from the repository root when using VS Code.
+- The workspace includes `backend/`, `rag/`, and `streamlit/` as separate folders so each folder can resolve `${workspaceFolder}/.venv/bin/python` relative to itself.
+- When opening Python files, prefer the service folder entry in the workspace explorer, such as `backend/src/...`, `rag/src/...`, or `streamlit/src/...`, instead of the duplicated `repo-root/...` path.
+- Service-local VS Code settings live in `backend/.vscode/settings.json`, `rag/.vscode/settings.json`, and `streamlit/.vscode/settings.json`.
 
 ## Tool And MCP Configuration
 
