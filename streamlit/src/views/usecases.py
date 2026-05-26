@@ -2,115 +2,132 @@ import pandas as pd
 import streamlit as st
 
 
-USE_CASES = [
+SCENARIOS = [
     {
-        "ID": "UC-FE-01",
-        "유스케이스": "사용자 입력 화면 제공",
-        "사용자 행동": "질문, 조건, 파일 또는 필요한 입력값 제공",
-        "프론트엔드 책임": "필수 입력값 누락 여부 검증 및 피드백 제공",
-        "화면 요소": "질문 입력창, 조건 입력 영역, 파일 업로드, 입력 검증 메시지",
+        "id": "UC-FE-01",
+        "title": "질문과 조건을 입력한다",
+        "user_goal": "사용자는 법률 RAG에 물어볼 질문과 필요한 조건을 한곳에서 입력한다.",
+        "user_action": "질문을 작성하고, 대상/상황/첨부 파일처럼 검색에 필요한 조건을 선택한다.",
+        "frontend_role": "필수 입력값이 비어 있거나 조건이 부족하면 실행 전에 명확히 알려준다.",
+        "screen_elements": ["질문 입력창", "조건 선택", "파일 업로드", "입력 검증 메시지"],
+        "state": "입력 전",
     },
     {
-        "ID": "UC-FE-02",
-        "유스케이스": "백엔드 API 호출",
-        "사용자 행동": "실행 버튼으로 백엔드 처리 요청",
-        "프론트엔드 책임": "요청 상태, 로딩 상태, 오류 상태 표시",
-        "화면 요소": "실행 버튼, 처리 상태 표시, 로딩 표시, 오류 알림",
+        "id": "UC-FE-02",
+        "title": "백엔드에 처리를 요청한다",
+        "user_goal": "사용자는 실행 버튼을 눌러 질문 처리를 시작한다.",
+        "user_action": "입력 내용을 확인한 뒤 실행 버튼을 누른다.",
+        "frontend_role": "요청 시작, 처리 중, 실패 상태를 구분해서 보여준다.",
+        "screen_elements": ["실행 버튼", "처리 상태", "로딩 표시", "오류 알림"],
+        "state": "처리 중",
     },
     {
-        "ID": "UC-FE-03",
-        "유스케이스": "RAG 결과 표시",
-        "사용자 행동": "RAG 검색/생성 결과 확인",
-        "프론트엔드 책임": "답변, 근거 문서, 참고 정보 분리 표시",
-        "화면 요소": "답변 요약, 상세 답변, 근거/출처 패널, 참고 정보 탭",
+        "id": "UC-FE-03",
+        "title": "RAG 답변과 근거를 확인한다",
+        "user_goal": "사용자는 생성된 답변과 참고한 근거 문서를 분리해서 확인한다.",
+        "user_action": "요약 답변을 먼저 보고, 필요한 경우 상세 답변과 출처를 펼쳐 본다.",
+        "frontend_role": "답변, 법령/문서 근거, 참고 정보를 서로 다른 영역으로 렌더링한다.",
+        "screen_elements": ["답변 요약", "상세 답변", "근거/출처 패널", "참고 정보 탭"],
+        "state": "응답 완료",
     },
     {
-        "ID": "UC-FE-04",
-        "유스케이스": "결과 재실행 및 입력 수정",
-        "사용자 행동": "입력값 수정 후 다시 실행",
-        "프론트엔드 책임": "이전 결과와 새 결과가 혼동되지 않도록 상태 갱신",
-        "화면 요소": "재실행 버튼, 최근 실행 기준, 이전 결과 초기화 또는 접기",
+        "id": "UC-FE-04",
+        "title": "입력을 고쳐 다시 실행한다",
+        "user_goal": "사용자는 질문이나 조건을 수정해 더 정확한 답변을 다시 요청한다.",
+        "user_action": "기존 입력값을 수정하고 재실행한다.",
+        "frontend_role": "이전 결과와 새 결과가 섞이지 않도록 최근 실행 기준을 갱신한다.",
+        "screen_elements": ["재실행 버튼", "최근 실행 기준", "이전 결과 접기"],
+        "state": "재실행",
     },
     {
-        "ID": "UC-FE-05",
-        "유스케이스": "통합 시나리오 검증",
-        "사용자 행동": "백엔드와 RAG가 연결된 전체 흐름 실행",
-        "프론트엔드 책임": "2026-06-04까지 연결 흐름을 실행 가능한 상태로 구성",
-        "화면 요소": "통합 테스트 화면, API 응답 상태, 원본 JSON 확인 영역",
-    },
-]
-
-
-DISPLAY_RULES = [
-    {
-        "화면 요소": "질문 입력",
-        "표시 기준": "사용자가 질문을 작성하거나 조건을 바꾸는 기본 진입점",
-        "컴포넌트": "st.text_input / st.text_area",
-    },
-    {
-        "화면 요소": "처리 상태",
-        "표시 기준": "API 요청 시작부터 응답 완료 또는 실패까지의 상태 안내",
-        "컴포넌트": "st.status / st.spinner",
-    },
-    {
-        "화면 요소": "답변",
-        "표시 기준": "사용자가 가장 먼저 확인해야 하는 생성 결과",
-        "컴포넌트": "st.chat_message / st.info",
-    },
-    {
-        "화면 요소": "상세 설명",
-        "표시 기준": "긴 답변이나 단계형 설명을 접어서 제공",
-        "컴포넌트": "st.expander / st.tabs",
-    },
-    {
-        "화면 요소": "표 데이터",
-        "표시 기준": "수치, 비교, 조건 목록처럼 행/열 구조가 있는 결과",
-        "컴포넌트": "st.dataframe / st.table",
-    },
-    {
-        "화면 요소": "근거/출처",
-        "표시 기준": "RAG가 참조한 문서, 법령, URL, 조문을 분리 표시",
-        "컴포넌트": "st.expander / st.tabs",
-    },
-    {
-        "화면 요소": "오류 메시지",
-        "표시 기준": "필수 입력 누락, API 실패, 응답 스키마 오류 발생 시 표시",
-        "컴포넌트": "st.error / st.warning",
-    },
-    {
-        "화면 요소": "원본 응답",
-        "표시 기준": "개발/검증 단계에서 백엔드 응답을 그대로 확인",
-        "컴포넌트": "st.json / st.code",
+        "id": "UC-FE-05",
+        "title": "통합 흐름을 검증한다",
+        "user_goal": "사용자는 백엔드 API와 RAG 응답이 연결된 전체 흐름을 확인한다.",
+        "user_action": "통합 테스트 화면에서 요청, 응답, 원본 JSON을 함께 점검한다.",
+        "frontend_role": "API 응답 상태와 원본 응답을 개발자가 검증할 수 있게 제공한다.",
+        "screen_elements": ["통합 테스트 화면", "API 응답 상태", "원본 JSON 확인 영역"],
+        "state": "검증",
     },
 ]
 
 
-OPEN_QUESTIONS = [
-    "화면별 필수 입력값",
-    "백엔드 API 엔드포인트와 응답 스키마",
-    "RAG 결과에서 노출할 근거/출처 범위",
-    "에러 메시지 및 예외 처리 방식",
-]
+def _scenario_table() -> pd.DataFrame:
+    return pd.DataFrame(
+        [
+            {
+                "ID": scenario["id"],
+                "사용자 시나리오": scenario["title"],
+                "사용자 행동": scenario["user_action"],
+                "화면 요소": ", ".join(scenario["screen_elements"]),
+            }
+            for scenario in SCENARIOS
+        ]
+    )
+
+
+def _render_scenario_summary() -> None:
+    cols = st.columns(len(SCENARIOS))
+    for col, scenario in zip(cols, SCENARIOS, strict=True):
+        with col:
+            with st.container(border=True):
+                st.caption(scenario["id"])
+                st.markdown(f"**{scenario['title']}**")
+                st.caption(scenario["state"])
+
+
+def _render_selected_scenario(scenario: dict[str, str | list[str]]) -> None:
+    st.subheader(f"{scenario['id']} · {scenario['title']}")
+
+    goal_col, role_col = st.columns([1, 1])
+    with goal_col:
+        st.markdown("**사용자 목표**")
+        st.write(scenario["user_goal"])
+    with role_col:
+        st.markdown("**프론트엔드 책임**")
+        st.write(scenario["frontend_role"])
+
+    st.markdown("**사용자 행동**")
+    st.info(str(scenario["user_action"]))
+
+    st.markdown("**렌더링할 화면 요소**")
+    element_cols = st.columns(2)
+    for index, element in enumerate(scenario["screen_elements"]):
+        with element_cols[index % 2]:
+            st.checkbox(str(element), value=True, disabled=True)
+
+
+def _render_flow_preview() -> None:
+    st.subheader("사용자 흐름")
+
+    with st.status("질문 입력부터 결과 검증까지의 기본 흐름", expanded=True):
+        st.write("1. 사용자가 질문과 조건을 입력한다.")
+        st.write("2. 실행 버튼으로 백엔드 API 처리를 요청한다.")
+        st.write("3. 요약 답변, 상세 답변, 근거/출처를 구분해서 확인한다.")
+        st.write("4. 필요하면 입력을 수정하고 재실행한다.")
+        st.write("5. 개발 단계에서는 API 상태와 원본 JSON을 확인한다.")
 
 
 def render_usecases() -> None:
-    st.title("Frontend Use Cases")
+    st.title("사용자 시나리오")
     st.write(
-        "2026-05-21 프론트엔드 논의를 기준으로 Streamlit 화면 유스케이스와 "
-        "렌더링 요소를 정리한 페이지입니다."
+        "이번 Streamlit 화면은 먼저 사용자 질문 흐름에 집중합니다. "
+        "백엔드 응답 스키마와 mock 렌더링 화면은 이후 연결 단계에서 확장합니다."
     )
 
-    st.info(
-        "이번 스코프는 Streamlit 기준으로 사용자 질문 입력, 처리 상태, 답변, "
-        "근거/출처, 오류 표시 기준을 먼저 정의합니다."
+    _render_scenario_summary()
+    st.divider()
+
+    selected_title = st.selectbox(
+        "확인할 사용자 시나리오",
+        [scenario["title"] for scenario in SCENARIOS],
     )
+    selected_scenario = next(
+        scenario for scenario in SCENARIOS if scenario["title"] == selected_title
+    )
+    _render_selected_scenario(selected_scenario)
 
-    st.subheader("핵심 유스케이스")
-    st.dataframe(pd.DataFrame(USE_CASES), use_container_width=True, hide_index=True)
+    st.divider()
+    _render_flow_preview()
 
-    st.subheader("화면 요소 표시 기준")
-    st.dataframe(pd.DataFrame(DISPLAY_RULES), use_container_width=True, hide_index=True)
-
-    st.subheader("확인 필요 사항")
-    for question in OPEN_QUESTIONS:
-        st.markdown(f"- {question}")
+    st.subheader("시나리오 매핑")
+    st.dataframe(_scenario_table(), width="stretch", hide_index=True)

@@ -46,9 +46,12 @@ uv add <package>
 
 ## 페이지 구성
 
-- `src/app.py`: 사이드바 기반 페이지 네비게이션 메인
-- `src/views/home.py`: 사용자 검색 UI
-- `src/views/usecases.py`: 프론트엔드 유스케이스와 화면 요소 매핑
+- `src/app.py`: 내 상황 상담과 주요 법령 페이지 네비게이션 및 공통 스타일
+- `src/views/legal_search.py`: 나이/지역을 입력받고 대화형으로 의도를 좁혀 관련 법령과 정리 정보를 보여주는 상담 화면
+- `src/views/major_laws.py`: 주요 법령을 분야별로 정리해서 보여주는 화면
+- `src/views/legal_data.py`: 검색 화면과 법령 정리 화면에서 사용하는 임시 법령 데이터
+- `src/views/usecases.py`: 사용자 질문 흐름 중심의 프론트엔드 시나리오와 화면 요소 매핑 초안
+- `src/views/home.py`: 사용자 검색 UI 초안
 - `src/views/json_schema.py`: 백엔드 응답 JSON 스키마 문서
 - `src/views/mock_ui.py`: mock response 기반 렌더링 테스트
 - `src/views/llm_parsing.py`: LLM 출력 파싱 테스트
