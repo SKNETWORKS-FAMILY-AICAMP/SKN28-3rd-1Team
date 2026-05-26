@@ -3,6 +3,7 @@ from __future__ import annotations
 import streamlit as st
 
 from settings import settings
+from structured_logging import configure_logging, get_logger
 from views import (
     render_design_notes,
     render_home,
@@ -11,6 +12,8 @@ from views import (
     render_mock_ui,
     render_usecases,
 )
+
+logger = get_logger(__name__)
 
 PAGES = {
     "Search": render_home,
@@ -38,8 +41,11 @@ def render_sidebar() -> str:
 
 
 def main() -> None:
+    configure_logging()
+    logger.info("streamlit_app_started", page_count=len(PAGES))
     st.set_page_config(page_title=settings.page_title, layout=settings.layout)
     selected_page = render_sidebar()
+    logger.info("streamlit_page_selected", page=selected_page)
     PAGES[selected_page]()
 
 
