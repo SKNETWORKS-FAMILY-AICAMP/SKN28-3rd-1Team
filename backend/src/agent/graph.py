@@ -39,6 +39,15 @@ def _profile_context(request: ChatRequest) -> str:
         ]
     )
 
+class RetrievedDocument(BaseModel):
+    content : str
+    source : SourceReference
+    score : float | None = Field(default=None, ge=0)
+
+def _retrieve_documents(query: str) -> list[RetrievedDocument]:
+    # TODO :이후 Vector DB 또는 RAG 서버 검색으로 교체
+    return []
+
 def _build_rag_query(request: ChatRequest) -> str:
     lines = [
           f"사용자 질문: {request.question}",
@@ -163,6 +172,21 @@ def answer_with_selected_option(request: ChatRequest) -> ChatResponse:
         )
 
     query = _build_rag_query(request)
+    documents = _retrieve_documents(query)
+
+    if not documents:
+        return ChatResponse(
+            kind=ResponseKind.ANSWER,
+            question_type=QuestionType.SEARCH,
+            summary="확인 필요",
+            details=[
+                "아직 연결된 RAG 검색 결과가 없습니다.",
+                f"검색에 사용할 질문 : {query}",
+            ],
+            sources=[],
+            references=[],
+            warning="근거 문서가 없어 정책 내용이나 자격 여부를 단정하지 않았습니다.",
+        )
 
     return ChatResponse(
         kind=ResponseKind.ANSWER,
@@ -177,6 +201,21 @@ def answer_with_selected_option(request: ChatRequest) -> ChatResponse:
 
 def answer_with_custom_intent(request: ChatRequest) -> ChatResponse:
     query = _build_rag_query(request)
+    documents = _retrieve_documents(query)
+
+    if not documents:
+        return ChatResponse(
+            kind=ResponseKind.ANSWER,
+            question_type=QuestionType.CUSTOM_INTENT,
+            summary="확인 필요",
+            details=[
+                "아직 연결된 RAG 검색 결과가 없습니다.",
+                f"검색에 사용할 질문 : {query}",
+            ],
+            sources=[],
+            references=[],
+            warning="근거 문서가 없어 정책 내용이나 자격 여부를 단정하지 않았습니다."
+        )
 
     return ChatResponse(
         kind=ResponseKind.ANSWER,

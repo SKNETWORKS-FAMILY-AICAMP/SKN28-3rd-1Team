@@ -9,6 +9,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 SERVICE_DIR = Path(__file__).resolve().parents[1]
 SRC_DIR = SERVICE_DIR / "src"
 REPO_ROOT = SERVICE_DIR.parent
+RAG_DIR = REPO_ROOT / "rag"
 
 
 class Settings(BaseSettings):
@@ -28,6 +29,10 @@ class Settings(BaseSettings):
     langchain_project: str | None = None
     repo_root: Path = REPO_ROOT
     src_dir: Path = SRC_DIR
+    workspace_dir: Path = RAG_DIR / "workspace"
+    input_dir: Path = RAG_DIR / "input"
+    output_dir: Path = RAG_DIR / "output"
+    cache_dir: Path = RAG_DIR / "cache"
 
     openrouter_api_key: SecretStr | None = None
     openrouter_model: str = "openai/gpt-oss-120b"
