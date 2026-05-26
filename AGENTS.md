@@ -128,3 +128,7 @@ Python projects in this repo must use `uv`.
 ## Detailed Guide
 
 For the fuller workspace guide, see `docs/agent_workspace_guidelines.md`.
+
+
+# additional notes:
+for user specific rules, read instructions.md in project root
