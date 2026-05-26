@@ -305,7 +305,7 @@ VS Code에서는 루트의 `SKN28-3rd-1Team.code-workspace`로 여는 것을 기
 ```bash
 cd backend
 uv sync
-uv run python main.py
+uv run fastapi dev src/app.py
 ```
 
 ### Streamlit
@@ -313,7 +313,7 @@ uv run python main.py
 ```bash
 cd streamlit
 uv sync
-uv run streamlit run main.py
+uv run streamlit run src/app.py
 ```
 
 ## Collaboration Rules

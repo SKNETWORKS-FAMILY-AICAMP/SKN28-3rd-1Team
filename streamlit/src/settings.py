@@ -18,8 +18,8 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    app_title: str = "SKN28 Streamlit Workspace"
-    page_title: str = "SKN28 Streamlit"
+    app_title: str = "SKN28 법률 RAG 프론트"
+    page_title: str = "SKN28 법률 RAG 프론트"
     layout: Literal["centered", "wide"] = "wide"
     backend_base_url: AnyUrl = "http://127.0.0.1:8000"
 
