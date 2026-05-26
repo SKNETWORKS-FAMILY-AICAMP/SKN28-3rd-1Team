@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     openrouter_model: str = "openai/gpt-oss-120b"
     openrouter_app_title: str = "SKN28 Backend Agent"
     openrouter_app_url: str | None = None
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
 
     llm_temperature: float = 0.2
     llm_timeout_ms: int = 60_000
