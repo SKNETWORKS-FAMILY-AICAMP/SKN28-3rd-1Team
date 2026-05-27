@@ -33,6 +33,7 @@ class EligibilityStatus(StrEnum):
 
 # RAG 근거 충분한지, 검색/LLM fallback 상태인지 표현하는 값 정의
 class EvidenceStatus(StrEnum):
+    NOT_APPLICABLE = "not_applicable"
     SUFFICIENT = "sufficient"
     INSUFFICIENT = "insufficient"
     RAG_ERROR = "rag_error"
@@ -163,8 +164,8 @@ class ChatResponse(BaseModel):
     )
     # 근거 충분 여부 또는 fallback 상태를 프론트에서 구분할 수 있게 내려주는 필드
     evidence_status: EvidenceStatus = Field(
-        default=EvidenceStatus.SUFFICIENT,
-        description="근거 충분 여부 또는 fallback 상태",
+        default=EvidenceStatus.NOT_APPLICABLE,
+        description="근거 충분 여부 또는 fallback 상태. 답변이 아닌 응답은 not_applicable",
     )
     options: list[ClarificationOption] = Field(
         default_factory=list,

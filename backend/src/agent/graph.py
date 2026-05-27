@@ -310,6 +310,8 @@ def create_clarification_response(request: ChatRequest) -> ChatResponse:
         ],
         options=generate_clarification_options(request),
         allow_custom_input=settings.agent_custom_input_enabled,
+        confidence=None,
+        evidence_status=EvidenceStatus.NOT_APPLICABLE,
     )
 
 # 사용자가 보기 1~3 중 하나를 선택 시, RAG 기반 답변 생성

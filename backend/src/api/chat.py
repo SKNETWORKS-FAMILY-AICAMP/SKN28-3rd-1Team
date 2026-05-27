@@ -10,10 +10,15 @@ from logger import get_logger
 from schemas.chat import ChatRequest, ChatResponse
 from session_store import session_store
 
+from mock.chat import create_mock_chat_response
+
 logger = get_logger(__name__)
 
 router = APIRouter(prefix="/api", tags=["chat"])
 
+@router.get("/chat/mock", response_model=ChatResponse)
+def mock_chat() -> ChatResponse:
+    return create_mock_chat_response()
 
 # 세션 기록에 남길 사용자 발화 내용 구성
 def _user_turn_content(request: ChatRequest) -> str:
