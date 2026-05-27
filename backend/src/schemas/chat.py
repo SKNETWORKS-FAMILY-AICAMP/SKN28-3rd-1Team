@@ -5,10 +5,12 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+# 사용자 입력 방식 값 정의
 class InputMode(StrEnum):
     TEXT = "text"
     VOICE = "voice"
 
+# 질문 처리 유형 값 정의
 class QuestionType(StrEnum):
     SEARCH = "search"
     GENERAL = "general"
@@ -16,10 +18,12 @@ class QuestionType(StrEnum):
     CUSTOM_INTENT = "custom_intent"
     FOLLOW_UP = "follow_up"
 
+# 응답이 보기 생성인지 최종 답변인지 정의
 class ResponseKind(StrEnum):
     CLARIFICATION = "clarification"
     ANSWER = "answer"
 
+# 자격 판단 상태 값 정의
 class EligibilityStatus(StrEnum):
     ELIGIBLE = "eligible"
     NOT_ELIGIBLE = "not_eligible"
@@ -27,6 +31,7 @@ class EligibilityStatus(StrEnum):
     CONFIRMATION_REQUIRED = "confirmation_required"
     UNKNOWN = "unknown"
 
+# 사용자의 지역 정보 담는 요청 모델
 class UserLocation(BaseModel):
     city: str | None = Field(default=None, description="시/도 또는 광역 지자체")
     district: str | None = Field(default=None, description="구/군/시")
@@ -36,6 +41,7 @@ class UserLocation(BaseModel):
     detected: bool = Field(default=False, description="기기 위치 기반 자동 감지 여부")
 
 
+# 사용자의 기본 상담 정보 담는 요청 모델
 class UserProfile(BaseModel):
     age: int | None = Field(default=None, ge=0, le=130)
     location: UserLocation | None = None
@@ -47,6 +53,7 @@ class UserProfile(BaseModel):
     )
 
 
+# 사용자가 보기 1~3 중 선택한 항목 담는 모델
 class SelectedOption(BaseModel):
     id: Literal["1", "2", "3"]
     title: str
@@ -56,6 +63,7 @@ class SelectedOption(BaseModel):
     )
 
 
+# /api/chat 요청 전체 payload 정의하는 모델
 class ChatRequest(BaseModel):
     question: str = Field(..., min_length=1)
     session_id: str | None = None
@@ -77,17 +85,20 @@ class ChatRequest(BaseModel):
     is_follow_up: bool = False
 
 
+# 답변에 포함할 법령 출처 정보 담는 모델
 class LawReference(BaseModel):
     name: str
     article: str
     url: str | None = None
 
 
+# 답변에 포함할 표 데이터 담는 모델
 class TableData(BaseModel):
     headers: list[str]
     rows: list[list[str]]
 
 
+# 모호한 질문에 대해 사용자에게 보여줄 보기 항목 모델
 class ClarificationOption(BaseModel):
     id: Literal["1", "2", "3"]
     title: str
@@ -98,6 +109,7 @@ class ClarificationOption(BaseModel):
     )
 
 
+# RAG 답변의 상세 출처 정보 담는 모델
 class SourceReference(BaseModel):
     title: str = Field(..., description="문서명 또는 출처명")
     file_name: str | None = None
@@ -108,12 +120,14 @@ class SourceReference(BaseModel):
     excerpt: str | None = Field(default=None, description="답변 근거가 된 짧은 원문")
 
 
+# 사용자의 자격 가능성 판단 결과 담는 모델
 class EligibilityAssessment(BaseModel):
     status: EligibilityStatus
     reason: str
     required_info: list[str] = Field(default_factory=list)
 
 
+# /api/chat 응답 전체 payload 정의하는 모델
 class ChatResponse(BaseModel):
     session_id: str | None = None
     kind: ResponseKind = ResponseKind.ANSWER

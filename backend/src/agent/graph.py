@@ -26,9 +26,11 @@ from logger import get_logger
 
 logger = get_logger(__name__)
 
+# LLM이 생성한 보기 3개 파싱 출력 모델
 class ClarificationOptionOutput(BaseModel):
     options : list[ClarificationOption] = Field(..., min_length=3, max_length=3)
 
+# 사용자 기본정보를 prompt에 넣을 문자열로 변환
 def _profile_context(request: ChatRequest) -> str:
     profile = request.user_profile
     if profile is None:
@@ -51,10 +53,12 @@ def _profile_context(request: ChatRequest) -> str:
     )
 
 
+# 텍스트에 지정한 키워드 중 하나라도 들어있는지 확인
 def _contains_any(text: str, keywords: tuple[str, ...]) -> bool:
     return any(keyword in text for keyword in keywords)
 
 
+# 질문 의도에 따라 RAG 검색에 보조로 붙일 사용자 정보 조건 선정
 def _profile_search_terms(request: ChatRequest, primary_text: str) -> list[str]:
     profile = request.user_profile
     if profile is None:
@@ -102,12 +106,14 @@ def _profile_search_terms(request: ChatRequest, primary_text: str) -> list[str]:
     return terms
 
 
+# backend 내부에서 쓰는 RAG 검색 문서 모델
 class RetrievedDocument(BaseModel):
     content : str
     source : SourceReference
     score : float | None = Field(default=None, ge=0)
 
 
+# RAG 서버의 검색 결과 item 응답 모델
 class RagSearchResult(BaseModel):
     content: str
     source_title: str
@@ -118,15 +124,18 @@ class RagSearchResult(BaseModel):
     score: float | None = Field(default=None, ge=0)
 
 
+# RAG 서버의 검색 응답 전체 모델
 class RagSearchResponse(BaseModel):
     query: str
     results: list[RagSearchResult] = Field(default_factory=list)
 
 
+# RAG 검색 호출 실패를 표현하는 예외
 class RagSearchError(RuntimeError):
     pass
 
 
+# 출처 표시용 긴 원문 -> 짧은 발췌문으로 축소
 def _excerpt(text: str, limit: int = 500) -> str:
     normalized = " ".join(text.split())
     if len(normalized) <= limit:
@@ -134,6 +143,7 @@ def _excerpt(text: str, limit: int = 500) -> str:
     return f"{normalized[: limit - 3]}..."
 
 
+# 사용자에게 보여줄 출처 라벨 문자열 생성
 def _source_label(document: RetrievedDocument) -> str:
     source = document.source
     parts = [source.title]
@@ -148,6 +158,7 @@ def _source_label(document: RetrievedDocument) -> str:
     return " / ".join(parts)
 
 
+# LLM 실패 시, 반환할 검색 결과 상세 문장 생성
 def _documents_to_details(query: str, documents: list[RetrievedDocument]) -> list[str]:
     details = [f"검색에 사용한 질문 : {query}", "RAG 검색 결과:"]
 
@@ -164,6 +175,7 @@ def _documents_to_details(query: str, documents: list[RetrievedDocument]) -> lis
     return details
 
 
+# RAG 검색 서버 호출해 검색 문서를 가져옴
 def _retrieve_documents(query: str) -> list[RetrievedDocument]:
     payload = {
         "query": query,
@@ -221,6 +233,7 @@ def _retrieve_documents(query: str) -> list[RetrievedDocument]:
         for result in search_response.results
     ]
 
+# 원 질문 + 선택/기타 의도 = RAG 검색 쿼리 생성
 def _build_rag_query(request: ChatRequest) -> str:
     primary_terms = [request.question]
 
@@ -240,6 +253,7 @@ def _build_rag_query(request: ChatRequest) -> str:
 
     return "\n".join(lines)
 
+# LLM 보기 생성 실패 시, 사용할 기본 보기 3개 반환
 def _fallback_options() -> list[ClarificationOption]:
     return [
           ClarificationOption(
@@ -262,6 +276,7 @@ def _fallback_options() -> list[ClarificationOption]:
           ),
       ]
 
+# 사용자 질문에 맞는 선택 보기 3개 LLM으로 생성
 def generate_clarification_options(request: ChatRequest) -> list[ClarificationOption]:
     parser = PydanticOutputParser(pydantic_object=ClarificationOptionOutput)
     prompt = create_clarification_prompt()
@@ -280,6 +295,7 @@ def generate_clarification_options(request: ChatRequest) -> list[ClarificationOp
         logger.exception("clarification option generation failed")
         return _fallback_options()
 
+# 최초 질문에 대해 보기 선택 응답 생성
 def create_clarification_response(request: ChatRequest) -> ChatResponse:
     return ChatResponse(
         kind=ResponseKind.CLARIFICATION,
@@ -293,6 +309,7 @@ def create_clarification_response(request: ChatRequest) -> ChatResponse:
         allow_custom_input=settings.agent_custom_input_enabled,
     )
 
+# 사용자가 보기 1~3 중 하나를 선택 시, RAG 기반 답변 생성
 def answer_with_selected_option(
     request: ChatRequest,
     history: list[ConversationTurn] | None = None,
@@ -343,6 +360,7 @@ def answer_with_selected_option(
         question_type=QuestionType.SEARCH,
     )
 
+# 사용자가 기타 의견을 직접 입력 시, RAG 기반 답변 생성
 def answer_with_custom_intent(
     request: ChatRequest,
     history: list[ConversationTurn] | None = None,
@@ -383,6 +401,7 @@ def answer_with_custom_intent(
         question_type=QuestionType.CUSTOM_INTENT,
     )
 
+# 후속 질문 + 이전 대화 맥락 = RAG 기반 답변 생성
 def answer_with_follow_up(
     request: ChatRequest,
     history: list[ConversationTurn] | None = None,
@@ -403,6 +422,7 @@ def answer_with_follow_up(
     response = answer_with_custom_intent(request, history)
     return response.model_copy(update={"question_type": QuestionType.FOLLOW_UP})
 
+# LLM이 생성한 근거 기반 답변을 파싱하기 위한 출력 모델
 class GroundedAnswerOutput(BaseModel):
     summary: str
     details: list[str] = Field(default_factory=list)
@@ -410,6 +430,7 @@ class GroundedAnswerOutput(BaseModel):
     table: TableData | None = None
     warning: str | None = None
 
+# 이전 대화 기록을 prompt에 넣을 문자열로 변환
 def _history_text(history: list[ConversationTurn] | None) -> str:
     if not history:
         return "이전 대화 없음"
@@ -420,6 +441,7 @@ def _history_text(history: list[ConversationTurn] | None) -> str:
     )
 
 
+# 최근 사용자 발화만 모아 후속 질문 검색 맥락으로 생성
 def _recent_user_context(history: list[ConversationTurn] | None) -> str:
     if not history:
         return ""
@@ -428,6 +450,7 @@ def _recent_user_context(history: list[ConversationTurn] | None) -> str:
     return "\n".join(user_turns[-3:])
 
 
+# 검색 문서 목록을 LLM prompt에 넣을 근거 문자열로 변환
 def _documents_context(documents: list[RetrievedDocument]) -> str:
     blocks: list[str] = []
 
@@ -446,6 +469,7 @@ def _documents_context(documents: list[RetrievedDocument]) -> str:
         )
     return "\n\n".join(blocks)
 
+# 검색된 RAG 근거를 바탕으로 최종 상담 답변 생성
 def generate_grounded_answer(
     request: ChatRequest,
     query: str,

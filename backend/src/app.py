@@ -9,6 +9,7 @@ from logger import configure_logging, get_logger
 
 logger = get_logger(__name__)
 
+# FastAPI 앱 생성, 공통 라우터와 미들웨어 연결
 def create_app() -> FastAPI:
     configure_logging()
     logger.info("Starting %s v%s", settings.service_name, settings.service_version)
@@ -24,6 +25,7 @@ def create_app() -> FastAPI:
             allow_headers=["*"],
         )
 
+    # 서비스 상태 확인 응답 반환
     @app.get("/health")
     def health() -> dict[str, str]:
         return {
@@ -32,6 +34,7 @@ def create_app() -> FastAPI:
             "version": settings.service_version,
         }
 
+    # backend가 사용하는 주요 런타임 의존성 반환
     @app.get("/api/system/dependencies")
     def dependencies() -> dict[str, object]:
         return {
@@ -48,6 +51,7 @@ def create_app() -> FastAPI:
 app = create_app()
 
 
+# uvicorn으로 backend 서버 실행
 def main() -> None:
     import uvicorn
 

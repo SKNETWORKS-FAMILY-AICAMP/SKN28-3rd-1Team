@@ -15,6 +15,7 @@ logger = get_logger(__name__)
 router = APIRouter(prefix="/api", tags=["chat"])
 
 
+# 세션 기록에 남길 사용자 발화 내용 구성
 def _user_turn_content(request: ChatRequest) -> str:
     parts = [request.question]
 
@@ -30,6 +31,7 @@ def _user_turn_content(request: ChatRequest) -> str:
     return "\n".join(parts)
 
 
+# 사용자의 질문 흐름을 받아, 보기 생성/최종 답변으로 분기
 @router.post("/chat", response_model=ChatResponse)
 def chat(request: ChatRequest) -> ChatResponse:
     session_id = session_store.ensure_session_id(request.session_id)

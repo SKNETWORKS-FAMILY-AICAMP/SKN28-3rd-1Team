@@ -9,14 +9,17 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 
+# 사용자가 터미널 테스트 종료를 요청했을 때 쓰는 예외
 class QuitRequested(Exception):
     pass
 
 
+# 입력값이 종료 명령인지 확인
 def _is_quit_command(value: str) -> bool:
     return value.lower() in {"q", "/q", "quit", "exit"}
 
 
+# 일반 입력을 받고 종료 명령이면, 예외 발생
 def _input(prompt: str) -> str:
     value = input(prompt).strip()
     if _is_quit_command(value):
@@ -24,15 +27,18 @@ def _input(prompt: str) -> str:
     return value
 
 
+# 메뉴 선택 입력을 종료 예외 없이 그대로 받음
 def _input_choice(prompt: str) -> str:
     return input(prompt).strip()
 
 
+# 선택 입력값을 str 또는 None으로 받음
 def _optional_text(prompt: str) -> str | None:
     value = _input(prompt)
     return value or None
 
 
+# 선택 입력값을 양의 정수 또는 None으로 받음
 def _optional_int(prompt: str) -> int | None:
     while True:
         value = _input(prompt)
@@ -48,6 +54,7 @@ def _optional_int(prompt: str) -> int | None:
         return number
 
 
+# 쉼표와 원 단위가 섞인 숫자 문자열 -> int로 변환
 def _parse_int_text(value: str) -> int | None:
     cleaned = (
         value.strip()
@@ -62,6 +69,7 @@ def _parse_int_text(value: str) -> int | None:
     return int(cleaned)
 
 
+# 월소득 입력 -> 원 단위 정수로 변환
 def _optional_krw(prompt: str) -> int | None:
     while True:
         value = _input(prompt)
@@ -80,6 +88,7 @@ def _optional_krw(prompt: str) -> int | None:
         return number
 
 
+# 원 단위 금액 -> 한글 금액 표현
 def _format_korean_krw(number: int) -> str:
     if number == 0:
         return "영원"
@@ -102,6 +111,7 @@ def _format_korean_krw(number: int) -> str:
     return "".join(reversed(parts)) + "원"
 
 
+# 10000 미만 숫자 -> 한글 숫자 표현
 def _format_under_10000(number: int) -> str:
     digits = ["", "일", "이", "삼", "사", "오", "육", "칠", "팔", "구"]
     units = ["천", "백", "십", ""]
@@ -121,6 +131,7 @@ def _format_under_10000(number: int) -> str:
     return "".join(parts)
 
 
+# 터미널에서 사용자 기본정보 입력
 def ask_profile() -> dict[str, Any] | None:
     print("\n사용자 정보를 입력합니다. 모르면 Enter로 건너뛰세요.")
 
@@ -152,6 +163,7 @@ def ask_profile() -> dict[str, Any] | None:
     return profile or None
 
 
+# backend /api/chat에 요청을 보내고 JSON 응답을 받음
 def post_chat(base_url: str, payload: dict[str, Any], timeout: int) -> dict[str, Any] | None:
     url = f"{base_url.rstrip('/')}/api/chat"
     request = Request(
@@ -190,6 +202,7 @@ def post_chat(base_url: str, payload: dict[str, Any], timeout: int) -> dict[str,
         return None
 
 
+# backend HTTP 오류 응답을 사용자에게 읽기 쉬운 형태로 출력
 def print_http_error(status_code: int, body: str) -> None:
     print(f"\n백엔드 오류가 발생했습니다. HTTP {status_code}")
     try:
@@ -210,6 +223,7 @@ def print_http_error(status_code: int, body: str) -> None:
     print(detail)
 
 
+# 답변 텍스트를 지정한 속도로 터미널에 출력
 def _stream_text(text: str, delay: float) -> None:
     if delay <= 0:
         print(text)
@@ -221,6 +235,7 @@ def _stream_text(text: str, delay: float) -> None:
     print()
 
 
+# backend 응답 JSON을 사용자에게 보이는 상담 답변 형태로 출력
 def render_response(response: dict[str, Any], stream_delay: float) -> None:
     print("\n" + "=" * 72)
 
@@ -283,6 +298,7 @@ def render_response(response: dict[str, Any], stream_delay: float) -> None:
     print("=" * 72)
 
 
+# 보기 응답에서 사용자가 선택/기타 입력
 def choose_clarification(response: dict[str, Any]) -> tuple[str, dict[str, Any] | str | None]:
     options = response.get("options") or []
     if not options:
@@ -316,6 +332,7 @@ def choose_clarification(response: dict[str, Any]) -> tuple[str, dict[str, Any] 
         print("1, 2, 3, 4, r, q 중 하나를 입력하세요.")
 
 
+# 답변 후, 다음 행동을 사용자가 선택
 def ask_next_mode(can_go_back: bool) -> str:
     print("\n다음에 무엇을 할까요?")
     print("1. 후속 질문")
@@ -348,6 +365,7 @@ def ask_next_mode(can_go_back: bool) -> str:
         print("번호를 다시 확인해 주세요.")
 
 
+# 수동 대화 테스트의 전체 입력/요청/출력 루프 실행
 def run(base_url: str, timeout: int, stream_delay: float) -> int:
     print("백엔드 수동 대화 테스트")
     print(f"API: {base_url.rstrip('/')}/api/chat")
@@ -441,6 +459,7 @@ def run(base_url: str, timeout: int, stream_delay: float) -> int:
         mode = next_mode
 
 
+# 보기 선택/기타 입력 후, backend에 후속 요청
 def handle_clarification_choice(
     base_url: str,
     timeout: int,
@@ -473,6 +492,7 @@ def handle_clarification_choice(
     return next_session_id
 
 
+# 터미널 실행 옵션 파싱
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Backend /api/chat manual terminal tester")
     parser.add_argument(

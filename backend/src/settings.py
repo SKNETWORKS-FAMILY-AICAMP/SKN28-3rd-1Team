@@ -12,6 +12,7 @@ REPO_ROOT = SERVICE_DIR.parent
 RAG_DIR = REPO_ROOT / "rag"
 
 
+# backend 환경 변수와 기본 설정을 담는 설정 클래스
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=SERVICE_DIR / ".env",
@@ -56,6 +57,7 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     log_llm_context: bool = True
 
+# Settings 인스턴스를 캐시해서 앱 전체에서 재사용
 @lru_cache
 def get_settings() -> Settings:
     return Settings()

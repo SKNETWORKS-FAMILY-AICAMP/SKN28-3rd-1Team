@@ -6,6 +6,7 @@ from logger import get_logger
 
 logger = get_logger(__name__)
 
+# OpenRouter 호출에 붙일 기본 HTTP header 생성
 def _openrouter_headers() -> dict[str, str]:
     headers = {
         "X-Title" : settings.openrouter_app_title,
@@ -16,6 +17,7 @@ def _openrouter_headers() -> dict[str, str]:
 
     return headers
 
+# OpenRouter 기반 ChatOpenAI 클라이언트를 캐시해서 반환
 @lru_cache
 def get_chat_llm() -> ChatOpenAI:
     if settings.openrouter_api_key is None:
