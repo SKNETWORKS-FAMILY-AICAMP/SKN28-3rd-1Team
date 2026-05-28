@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     langchain_project: str | None = None
     repo_root: Path = REPO_ROOT
     src_dir: Path = SRC_DIR
-    
+
     openrouter_api_key: SecretStr | None = None
     openrouter_model: str = "openai/gpt-oss-120b"
     openrouter_app_title: str = "SKN28 Backend Agent"
@@ -42,24 +42,11 @@ class Settings(BaseSettings):
     llm_max_retries: int = 2
     llm_reasoning_effort: str = "medium"
 
-    agent_clarification_option_count: int = Field(default=3, ge=3, le=3)
-    agent_custom_input_enabled: bool = True
-
-    session_ttl_seconds: int = Field(default=3600, gt=0)
-
     rag_mcp_url: str = "http://127.0.0.1:8010/mcp"
-    rag_search_top_k: int = Field(default=5, ge=1, le=20)
-    rag_search_query_max_chars: int = Field(default=500, ge=100, le=2000)
-    rag_search_timeout_ms: int = Field(default=10_000, gt=0)
-
-    rate_limit_enabled: bool = True
-    rate_limit_requests: int = Field(default=60, gt=0)
-    rate_limit_window_seconds: int = Field(default=60, gt=0)
+    tool_timeout_ms: int = Field(default=30_000, gt=0)
 
     log_level: str = "INFO"
     log_llm_context: bool = True
-
-    tool_timeout_ms: int = Field(default=30_000, gt=0)
 
 # Settings 인스턴스를 캐시해서 앱 전체에서 재사용
 @lru_cache

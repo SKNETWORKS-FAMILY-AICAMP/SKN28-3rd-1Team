@@ -39,7 +39,7 @@ def create_app() -> FastAPI:
     def dependencies() -> dict[str, object]:
         return {
             "runtime": "FastAPI",
-            "agent_stack": ["LangChain", "LangGraph"],
+            "agent_stack": ["LangChain", "OpenRouter", "MCP Tool Server"],
             "settings": "pydantic-settings",
         }
 
