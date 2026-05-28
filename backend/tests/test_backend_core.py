@@ -11,17 +11,12 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from fastapi import Request, HTTPException
+from fastapi import Request
 from fastapi.testclient import TestClient
 
 from agent import graph
 from app import app
-from file_store import (
-    FileValidationError,
-    validate_content_type,
-    validate_file_content,
-    validate_file_extension,
-)
+
 from rate_limiter import InMemoryRateLimiter, RateLimitExceeded
 from schemas.chat import ChatRequest, ChatResponse, ResponseKind, UserProfile
 from session_store import ConversationTurn, InMemorySessionStore, session_store
@@ -39,24 +34,6 @@ def make_request(host: str = "test-client") -> Request:
             "client": (host, 12345),
         }
     )
-
-
-class FileValidationTest(unittest.TestCase):
-    # 업로드 확장자, MIME, 실행 파일 내용을 차단하는지 확인
-    def test_rejects_unsafe_upload_types(self) -> None:
-        self.assertEqual(validate_file_extension("safe.md"), ".md")
-
-        for file_name in ("bad.py", "bad.exe", "bad.sh", "no_extension"):
-            with self.subTest(file_name=file_name):
-                with self.assertRaises(FileValidationError):
-                    validate_file_extension(file_name)
-
-        with self.assertRaises(FileValidationError):
-            validate_content_type(".md", "application/x-sh")
-        with self.assertRaises(FileValidationError):
-            validate_file_content(".md", b"#!/bin/sh\necho bad")
-        with self.assertRaises(FileValidationError):
-            validate_file_content(".txt", b"hello\x00world")
 
 
 class SessionStoreTest(unittest.TestCase):
@@ -123,12 +100,6 @@ class ChatApiTest(unittest.TestCase):
 class FollowUpQueryTest(unittest.TestCase):
     # 후속 질문 RAG 쿼리가 중복/과다 길이로 커지지 않는지 확인
     def test_follow_up_query_is_deduped_and_trimmed(self) -> None:
-        captured: dict[str, str] = {}
-
-        def fake_retrieve(query: str):
-            captured["query"] = query
-            return []
-
         long_history = "기초연금 신청 방법 " * 100
         history = [
             ConversationTurn(role="user", content=long_history),
@@ -136,13 +107,12 @@ class FollowUpQueryTest(unittest.TestCase):
         ]
         question = "신청서는 어디서 받아?"
 
-        with patch.object(graph, "_retrieve_documents", fake_retrieve):
-            graph.answer_with_follow_up(
-                ChatRequest(question=question, is_follow_up=True),
-                history,
-            )
+        response = graph.answer_with_follow_up(
+            ChatRequest(question=question, is_follow_up=True),
+            history,
+        )
 
-        query = captured["query"]
+        query = response.details[0].removeprefix("검색에 사용할 질문: ")
         self.assertLessEqual(len(query), settings.rag_search_query_max_chars)
         self.assertEqual(query.count(question), 1)
         self.assertIn("이전 맥락:", query)
@@ -168,18 +138,6 @@ class RateLimiterTest(unittest.TestCase):
             settings.rate_limit_requests = old_requests
             settings.rate_limit_window_seconds = old_window
             settings.rate_limit_enabled = old_enabled
-
-
-class FileStatusValidationTest(unittest.TestCase):
-    # job_id가 backend 발급 uuid hex 형식인지 확인
-    def test_invalid_job_id_is_rejected(self) -> None:
-        from api.files import _validate_job_id
-
-        _validate_job_id("0" * 32)
-        with self.assertRaises(HTTPException):
-            _validate_job_id("../bad")
-        with self.assertRaises(HTTPException):
-            _validate_job_id("550e8400-e29b-41d4-a716-446655440000")
 
 
 class CorsConfigTest(unittest.TestCase):

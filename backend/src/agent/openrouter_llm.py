@@ -28,11 +28,13 @@ def get_chat_llm() -> ChatOpenAI:
 
     return ChatOpenAI(
         model=settings.openrouter_model,
-          api_key=settings.openrouter_api_key,
-          base_url=settings.openrouter_base_url,
-          temperature=settings.llm_temperature,
-          timeout=settings.llm_timeout_ms / 1000,
-          max_retries=settings.llm_max_retries,
-          reasoning_effort=settings.llm_reasoning_effort,
-          default_headers=_openrouter_headers(),
+        api_key=settings.openrouter_api_key,
+        base_url=settings.openrouter_base_url,
+        temperature=settings.llm_temperature,
+        timeout=settings.llm_timeout_ms / 1000,
+        max_retries=settings.llm_max_retries,
+        reasoning_effort=settings.llm_reasoning_effort,
+        default_headers=_openrouter_headers(),
+        
+                 
     )

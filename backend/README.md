@@ -3,14 +3,12 @@
 FastAPI 기반 메인 백엔드이다.
 
 - frontend는 `rag/`를 직접 호출하지 않는다. 프론트는 `backend`만 호출한다. 
-- backend는 질문 흐름, 세션, 파일 업로드, RAG 검색 연결, LLM 답변 생성을 담당한다.
+- backend는 질문 흐름, LLM 호출, LangChain tool 연결을 담당한다.
 
 ## 🎯 핵심 역할
 
 - `POST /api/chat`: 질문, 보기 선택, 기타 입력, 후속 질문 처리
 - `GET /api/chat/mock`: front 결과 화면용 mock 응답 반환
-- `POST /api/files/upload`: 파일 업로드 후 RAG ingest 요청
-- `GET /api/files/{job_id}/status`: 파일 처리 상태 조회
 - `src/prompt/*.md`: LLM 답변 흐름과 출력 원칙 정의
 - `src/schemas/*.py`: API 요청/응답 schema 정의
 - `src/mock/chat_response.json`: front 연결용 샘플 응답
@@ -29,28 +27,25 @@ backend/                              # backend 루트
 ├── src/                              # 앱 코드
 │   ├── app.py                        # 앱 시작점
 │   ├── settings.py                   # 설정 로딩
-│   ├── session_store.py              # 세션 저장 (TTL 포함)
-│   ├── rate_limiter.py               # 요청 제한
-│   ├── file_store.py                 # 파일 저장 및 검증
-│   ├── rag_ingest_client.py          # RAG ingest 호출
+│   ├── session_store.py              # 세션 저장 (TTL 포함, 정리 예정)
+│   ├── rate_limiter.py               # 요청 제한 (정리 예정)
 │   │ 
 │   ├── api/                          # API 라우터
-│   │   ├── chat.py                   # 채팅 API
-│   │   └── files.py                  # 파일 API
+│   │   └── chat.py                   # 채팅 API
 │   │ 
 │   ├── agent/                        # 답변 로직
 │   │   ├── graph.py                  # 질문 처리 흐름
+│   │   ├── tool.py                   # LangChain tool 연결
 │   │   └── openrouter_llm.py         # LLM 연결
 │   │ 
 │   ├── prompt/                       # 프롬프트
-│   │   ├── clarification_system.md   # 보기 생성 규칙
+│   │   ├── clarification_system.j2   # 보기 생성 규칙
 │   │   ├── clarification_human.md    # 보기 생성 입력
 │   │   ├── grounded_answer_system.md # 답변 생성 규칙
 │   │   └── grounded_answer_human.md  # 답변 생성 입력
 │   │ 
-│   ├── schemas/                      # 데이터 계약
-│   │   ├── chat.py                   # 채팅 schema
-│   │   └── files.py                  # 파일 schema
+│   ├── schemas/                      # 데이터 계약 (정리 예정)
+│   │   └── chat.py                   # 채팅 schema
 │   │ 
 │   └── mock/                         # mock 응답
 │       ├── chat.py                   # mock 검증
@@ -204,57 +199,6 @@ curl -X DELETE http://127.0.0.1:8000/api/chat/session/{session_id}
 | `rag_error` | RAG 검색 실패 |
 | `llm_fallback` | 문서는 찾았지만 LLM 답변 생성 실패 |
 
-## 📁 File Upload Flow
-
-```text
-1. 프론트가 파일 업로드
-2. backend가 파일 형식/크기 검증
-3. backend가 로컬 저장
-4. backend가 RAG /ingest 호출 (비동기 스레드)
-5. 프론트가 job_id로 상태 조회
-6. indexed면 다음 검색부터 포함
-```
-
-### POST `/api/files/upload`
-
-```bash
-curl -s http://127.0.0.1:8000/api/files/upload \
-  -F "file=@./sample.md"
-```
-
-허용되지 않는 형식이나 크기 초과 시 HTTP 400을 반환한다.
-
-### GET `/api/files/{job_id}/status`
-
-```bash
-curl -s http://127.0.0.1:8000/api/files/{job_id}/status
-```
-
-처리 단계:
-
-- `uploaded`
-- `parsed`
-- `converted`
-- `stored`
-- `indexed`
-- `failed`
-
-업로드 허용 파일 형식 (기본값):
-
-| 확장자 | 형식 |
-| --- | --- |
-| `.csv` | CSV |
-| `.json` | JSON |
-| `.txt` | 일반 텍스트 |
-| `.md` | 마크다운 |
-| `.pdf` | PDF 문서 |
-| `.docx` | Word 문서 |
-| `.hwp` | 한글 문서 |
-
-`.env`의 `BACKEND_UPLOAD_ALLOWED_EXTENSIONS`로 변경 가능하다.  
-MIME 타입은 `BACKEND_UPLOAD_ALLOWED_MIME_TYPES`로 확장자별 허용 목록을 관리한다.  
-업로드 최대 크기는 기본 50MB이며 `BACKEND_UPLOAD_MAX_FILE_MB`로 변경 가능하다.
-
 ## 🔐 환경 변수
 
 `.env`는 `backend/.env`에 둔다. 커밋하지 않는다.
@@ -273,15 +217,10 @@ cp .env.example .env
 | `BACKEND_CORS_ORIGINS` | `["http://localhost:5173","http://localhost:3000"]` | 허용할 프론트 주소 목록 |
 | `BACKEND_OPENROUTER_API_KEY` | (없음) | OpenRouter API 키. 반드시 설정 |
 | `BACKEND_OPENROUTER_MODEL` | `openai/gpt-oss-120b` | 사용할 LLM 모델 |
-| `BACKEND_UPLOAD_MAX_FILE_MB` | `50` | 업로드 허용 최대 크기 (MB) |
-| `BACKEND_UPLOAD_ALLOWED_EXTENSIONS` | `.csv .json .txt .md .pdf .docx .hwp` | 허용 확장자 목록 |
-| `BACKEND_UPLOAD_ALLOWED_MIME_TYPES` | JSON map | 확장자별 허용 MIME 목록 |
 | `BACKEND_SESSION_TTL_SECONDS` | `3600` | 세션 만료 시간 (초) |
 | `BACKEND_RATE_LIMIT_ENABLED` | `true` | 요청 제한 사용 |
 | `BACKEND_RATE_LIMIT_REQUESTS` | `60` | 제한 시간 안의 최대 요청 수 |
 | `BACKEND_RATE_LIMIT_WINDOW_SECONDS` | `60` | 요청 제한 시간 |
-| `BACKEND_RAG_INGEST_URL` | `http://127.0.0.1:8010/ingest` | RAG ingest 주소 |
-| `BACKEND_RAG_INGEST_STATUS_URL` | `http://127.0.0.1:8010/ingest/status` | RAG 상태 조회 주소 |
 | `BACKEND_RAG_SEARCH_URL` | `http://127.0.0.1:8010/search` | RAG 검색 주소 |
 | `BACKEND_RAG_SEARCH_TOP_K` | `5` | 검색 결과 최대 개수 |
 | `BACKEND_RAG_SEARCH_QUERY_MAX_CHARS` | `500` | RAG 검색 쿼리 최대 길이 |
@@ -396,6 +335,4 @@ PY
 - 세션 저장소는 메모리 기반이다. 서버 재시작 시 사라진다.
 - 세션은 마지막 활동 기준 `BACKEND_SESSION_TTL_SECONDS`(기본 1시간) 후 자동 삭제된다.
 - 터미널 테스트 종료 시 `/api/chat/session/{session_id}`로 현재 세션을 삭제한다.
-- RAG ingest 상태도 현재 메모리 기반이다.
-- 파일 업로드는 크기, 확장자, MIME, 실행 파일 시그니처를 검증한다.
 - mock은 front 연결 확인용이다. 실제 답변은 `/api/chat` 흐름을 사용한다.

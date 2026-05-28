@@ -1,11 +1,12 @@
 from fastapi import APIRouter, HTTPException, Request
 
 from agent.graph import (
-    answer_with_follow_up,
     answer_with_custom_intent,
+    answer_with_follow_up,
     answer_with_selected_option,
     create_clarification_response,
 )
+
 from logger import get_logger
 from rate_limiter import enforce_rate_limit
 from schemas.chat import ChatRequest, ChatResponse
@@ -15,7 +16,7 @@ from mock.chat import create_mock_chat_response
 
 logger = get_logger(__name__)
 
-router = APIRouter(prefix="/api", tags=["chat"])
+router = APIRouter(tags=["chat"])
 
 @router.get("/chat/mock", response_model=ChatResponse)
 def mock_chat() -> ChatResponse:

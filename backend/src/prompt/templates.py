@@ -7,8 +7,8 @@ from .prompt_loader import load_prompt
 def create_clarification_prompt() -> ChatPromptTemplate:
     return ChatPromptTemplate.from_messages(
         [
-            ("system", load_prompt("clarification_system.md")),
-            ("human", load_prompt("clarification_human.md")),
+            ("system", load_prompt("clarification_system.j2")),
+            ("human", load_prompt("clarification_human.j2")),
         ]
     )
 
@@ -17,7 +17,7 @@ def create_clarification_prompt() -> ChatPromptTemplate:
 def create_grounded_answer_prompt() -> ChatPromptTemplate:
     return ChatPromptTemplate.from_messages(
         [
-            ("system", load_prompt("grounded_answer_system.md")),
-            ("human", load_prompt("grounded_answer_human.md")),
+            ("system", load_prompt("grounded_answer_system.j2")),
+            ("human", load_prompt("grounded_answer_human.j2")),
         ]
     )
