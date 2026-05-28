@@ -25,8 +25,15 @@ def _laws_table() -> pd.DataFrame:
 
 
 def render_major_laws() -> None:
-    st.markdown('<p class="eyebrow">주요 법령</p>', unsafe_allow_html=True)
-    st.title("자주 확인하는 법령 정리")
+    st.markdown(
+        """
+        <section class="search-hero">
+            <p class="eyebrow">주요 법령</p>
+            <h1>자주 확인하는 법령 정리</h1>
+        </section>
+        """,
+        unsafe_allow_html=True,
+    )
 
     categories = ["전체", *sorted({law["category"] for law in LAW_SUMMARIES})]
     selected_category = st.segmented_control(
@@ -49,12 +56,22 @@ def render_major_laws() -> None:
 
     for law in laws:
         with st.container(border=True):
-            st.caption(law["category"])
-            st.subheader(law["name"])
+            st.markdown(
+                f"""
+                <div class="law-card-heading">
+                    <p>{law["category"]}</p>
+                    <h3>{law["name"]}</h3>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
             st.write(law["summary"])
-            st.markdown(f"**주요 조항:** {law['articles']}")
+            st.markdown(
+                f'<div class="law-article-box"><strong>주요 조항</strong> {law["articles"]}</div>',
+                unsafe_allow_html=True,
+            )
 
-            with st.expander("확인할 내용"):
+            with st.expander("상세 내용"):
                 for detail in law["details"]:
                     st.markdown(f"- {detail}")
 

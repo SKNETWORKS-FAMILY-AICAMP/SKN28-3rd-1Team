@@ -38,6 +38,20 @@ def apply_styles() -> None:
         [data-testid="stSidebar"] {
             background: #ffffff;
             border-right: 1px solid var(--line);
+            width: 16.5rem !important;
+            min-width: 16.5rem !important;
+        }
+
+        [data-testid="stSidebarContent"] {
+            width: 16.5rem !important;
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+
+        [data-testid="stSidebar"] h1 {
+            white-space: nowrap;
+            font-size: 1.72rem;
+            line-height: 1.15;
         }
 
         [data-testid="stSidebar"] [role="radiogroup"] label {
@@ -53,7 +67,7 @@ def apply_styles() -> None:
         .search-hero {
             max-width: 780px;
             margin: 0 auto 1.5rem;
-            text-align: center;
+            text-align: left;
         }
 
         .search-hero h1 {
@@ -65,8 +79,8 @@ def apply_styles() -> None:
         }
 
         .hero-copy {
-            margin: 0 auto;
-            max-width: 620px;
+            margin: 0;
+            max-width: 780px;
             color: var(--muted);
             font-size: 1.05rem;
             line-height: 1.7;
@@ -87,10 +101,23 @@ def apply_styles() -> None:
             background: transparent;
         }
 
+        div[class*="st-key-profile_card"],
+        div[class*="st-key-example_section"] {
+            max-width: 780px;
+            margin: 0 auto 1.4rem;
+        }
+
+        div[class*="st-key-profile_card"] div[data-testid="stVerticalBlockBorderWrapper"] {
+            width: 100%;
+            max-width: 100%;
+            margin: 0;
+        }
+
         div[data-testid="stTextInput"] input,
+        div[data-testid="stNumberInput"] input,
         div[data-testid="stTextArea"] textarea {
             box-sizing: border-box;
-            min-height: 50px;
+            min-height: 44px;
             border: 1px solid var(--line);
             border-radius: 8px;
             background: var(--surface);
@@ -109,11 +136,39 @@ def apply_styles() -> None:
 
         div[data-testid="stNumberInput"] > div,
         div[data-testid="stTextInput"] > div {
+            min-height: 44px;
             overflow: visible;
+        }
+
+        div[data-testid="stNumberInput"] button {
+            min-height: 44px;
+            border-radius: 8px;
         }
 
         div[data-testid="stTextArea"] textarea {
             padding-top: 1rem;
+        }
+
+        .location-button-spacer {
+            height: 1.75rem;
+        }
+
+        iframe[title="streamlit_geolocation.streamlit_geolocation"] {
+            width: 54px !important;
+            min-width: 54px !important;
+            height: 54px !important;
+            display: block;
+            background: transparent !important;
+            transform: scale(1.32);
+            transform-origin: top left;
+        }
+
+        div[data-testid="stIFrame"] {
+            width: 72px !important;
+            min-width: 72px !important;
+            height: 72px !important;
+            overflow: hidden;
+            background: transparent !important;
         }
 
         div[data-testid="stButton"] button,
@@ -135,6 +190,45 @@ def apply_styles() -> None:
             background: var(--surface);
         }
 
+        div[data-testid="stVerticalBlockBorderWrapper"] [data-testid="stCaptionContainer"] {
+            margin-bottom: -0.35rem;
+        }
+
+        .law-card-heading {
+            margin-bottom: 0.35rem;
+        }
+
+        .law-card-heading p {
+            margin: 0 0 0.15rem;
+            color: var(--muted);
+            font-size: 0.92rem;
+            line-height: 1.2;
+        }
+
+        .law-card-heading h3 {
+            margin: 0;
+            color: var(--text);
+            font-size: 1.45rem;
+            line-height: 1.25;
+            letter-spacing: 0;
+        }
+
+        .law-article-box {
+            display: inline-block;
+            margin: 0.25rem 0 0.75rem;
+            padding: 0.55rem 0.75rem;
+            border: 1px solid rgba(15, 118, 110, 0.18);
+            border-radius: 8px;
+            background: rgba(230, 244, 241, 0.62);
+            color: var(--text);
+            line-height: 1.35;
+        }
+
+        .law-article-box strong {
+            color: var(--accent);
+            margin-right: 0.35rem;
+        }
+
         </style>
         """,
         unsafe_allow_html=True,
@@ -143,14 +237,9 @@ def apply_styles() -> None:
 
 def render_sidebar() -> str:
     st.sidebar.title(settings.app_title)
-    st.sidebar.caption("메뉴")
-    page = st.sidebar.radio("선택하세요", list(PAGES.keys()))
+    page = st.sidebar.radio("선택하세요", list(PAGES.keys()), label_visibility="collapsed")
 
     st.sidebar.markdown("---")
-    st.sidebar.write(
-        "내 상황을 설명하면 대화형으로 필요한 조건을 확인하고, "
-        "관련 법령과 정보를 안내하는 Streamlit 화면입니다."
-    )
     st.sidebar.caption(f"Backend API: {settings.backend_base_url}")
 
     return page
