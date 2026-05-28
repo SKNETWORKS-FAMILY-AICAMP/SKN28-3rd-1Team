@@ -8,7 +8,11 @@ from urllib.request import Request, urlopen
 import streamlit as st
 from streamlit_geolocation import streamlit_geolocation
 
+from structured_logging import get_logger
+
 from .legal_data import FALLBACK_RESULT, LAW_SUMMARIES
+
+logger = get_logger(__name__)
 
 
 EXAMPLE_SITUATIONS = [
@@ -256,11 +260,32 @@ def _find_result(
     if not scored_laws:
         result = dict(FALLBACK_RESULT)
         result["profile"] = _build_profile_summary(age, region, intent, conditions)
+        logger.info(
+            "legal_search_result_resolved",
+            fallback=True,
+            matched_law_count=0,
+            question_length=len(question.strip()),
+            has_age=age is not None,
+            has_region=bool(region.strip()),
+            has_intent=bool(intent),
+            condition_count=len(conditions),
+        )
         return result
 
     scored_laws.sort(key=lambda item: item[0], reverse=True)
     matched_laws = [law for _, law in scored_laws[:3]]
     primary_law = matched_laws[0]
+    logger.info(
+        "legal_search_result_resolved",
+        fallback=False,
+        matched_law_count=len(matched_laws),
+        question_length=len(question.strip()),
+        has_age=age is not None,
+        has_region=bool(region.strip()),
+        has_intent=bool(intent),
+        condition_count=len(conditions),
+        primary_law=primary_law["name"],
+    )
 
     return {
         "title": primary_law["name"],
@@ -348,7 +373,11 @@ def _get_profile_inputs() -> tuple[int | None, str]:
                 longitude = float(location["longitude"])
                 try:
                     detected_region = _reverse_geocode_region(latitude, longitude)
-                except Exception:
+                except Exception as error:
+                    logger.warning(
+                        "location_reverse_geocode_failed",
+                        error=str(error),
+                    )
                     detected_region = ""
 
                 if detected_region:
@@ -364,11 +393,18 @@ def _render_popular_questions(age: int | None, region: str) -> None:
     for index, question in enumerate(EXAMPLE_SITUATIONS):
         with cols[index % 2]:
             if st.button(question, width="stretch"):
+                logger.info("legal_search_example_selected", example_index=index)
                 _start_consultation(question, age=age, region=region, conditions=[])
                 st.rerun()
 
 
 def _render_result(result: dict[str, object]) -> None:
+    logger.info(
+        "legal_search_result_rendered",
+        law_count=len(result.get("laws", [])),
+        source_count=len(result.get("sources", [])),
+    )
+
     with st.container(border=True):
         st.subheader(str(result["title"]))
         st.info(str(result["summary"]))
@@ -406,6 +442,17 @@ def _render_intent_choices() -> None:
                 intent = str(intent_option["label"])
                 with cols[index % 3]:
                     if st.button(intent, width="stretch", key=f"intent_choice_{intent}"):
+                        logger.info(
+                            "legal_search_intent_selected",
+                            intent=intent,
+                            has_age=st.session_state.get("pending_age") is not None,
+                            has_region=bool(
+                                st.session_state.get("pending_region", "")
+                            ),
+                            condition_count=len(
+                                st.session_state.get("pending_conditions", [])
+                            ),
+                        )
                         st.session_state["pending_intent"] = intent
                         st.session_state["pending_conditions"] = []
                         st.session_state.pop("legal_result", None)
@@ -431,6 +478,14 @@ def _render_intent_choices() -> None:
             refined_question = str(pending_question)
             if extra_detail.strip():
                 refined_question = f"{refined_question} {extra_detail.strip()}"
+            logger.info(
+                "legal_search_clarification_completed",
+                intent=str(pending_intent),
+                extra_detail_length=len(extra_detail.strip()),
+                condition_count=len(selected_conditions),
+                has_age=st.session_state.get("pending_age") is not None,
+                has_region=bool(st.session_state.get("pending_region", "")),
+            )
             st.session_state["legal_result"] = _find_result(
                 refined_question,
                 age=st.session_state.get("pending_age"),
@@ -472,14 +527,24 @@ def render_legal_search() -> None:
         submitted = st.form_submit_button("상담 시작", width="stretch")
 
     if submitted:
-        if question.strip():
+        question_text = question.strip()
+        if question_text:
+            is_ambiguous = _is_ambiguous_question(question_text)
+            logger.info(
+                "legal_search_submitted",
+                question_length=len(question_text),
+                ambiguous=is_ambiguous,
+                has_age=age is not None,
+                has_region=bool(region.strip()),
+            )
             _start_consultation(
-                question,
+                question_text,
                 age=age,
                 region=region,
                 conditions=[],
             )
         else:
+            logger.warning("legal_search_submitted_empty")
             st.warning("상황을 한두 문장으로 입력해 주세요.")
 
     _render_intent_choices()
