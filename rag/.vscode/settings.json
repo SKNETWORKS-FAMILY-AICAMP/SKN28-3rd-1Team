@@ -1,9 +1,9 @@
 {
-  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+  "python.defaultInterpreterPath": "${workspaceFolder}/be/.venv/bin/python",
   "python.analysis.extraPaths": [
     "${workspaceFolder}",
-    "${workspaceFolder}/src"
+    "${workspaceFolder}/be/src"
   ],
-  "python.envFile": "${workspaceFolder}/.env",
+  "python.envFile": "${workspaceFolder}/be/.env",
   "python.terminal.activateEnvironment": true
 }
