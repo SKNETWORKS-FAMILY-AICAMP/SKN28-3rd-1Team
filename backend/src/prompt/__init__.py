@@ -1,6 +1,5 @@
-from .templates import create_clarification_prompt, create_grounded_answer_prompt
+from .prompt_loader import render_prompt
 
 __all__ = [
-    "create_clarification_prompt",
-    "create_grounded_answer_prompt",
+    "render_prompt",
 ]

@@ -1,14 +1,26 @@
-from functools import lru_cache
+from __future__ import annotations
+
 from pathlib import Path
 
+from jinja2 import Environment, FileSystemLoader
 
 PROMPT_DIR = Path(__file__).resolve().parent
 
 
-# prompt markdown 파일을 읽어 문자열로 반환
-@lru_cache
-def load_prompt(file_name: str) -> str:
-    prompt_path = PROMPT_DIR / file_name
-    if not prompt_path.is_file():
-        raise FileNotFoundError(f"Prompt file not found: {prompt_path}")
-    return prompt_path.read_text(encoding="utf-8")
+# prompt 디렉터리의 Jinja2 환경 생성
+def _create_prompt_env() -> Environment:
+    return Environment(
+        loader=FileSystemLoader(PROMPT_DIR),
+        autoescape=False,
+        trim_blocks=True,
+        lstrip_blocks=True,
+    )
+
+
+_PROMPT_ENV = _create_prompt_env()
+
+
+# prompt 디렉터리의 Jinja2 템플릿을 문자열로 렌더링
+def render_prompt(template_name: str, **context: object) -> str:
+    template = _PROMPT_ENV.get_template(template_name)
+    return template.render(**context)
