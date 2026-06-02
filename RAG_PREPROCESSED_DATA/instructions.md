@@ -4,6 +4,13 @@
 
 여기서 chunk 산출물은 별도 annotation 파일이 아니라 원본 `.toon` 파일을 의미 단위로 쪼갠 `.toon` 파일이다.
 
+## 시작 위치
+
+- 브랜치: `docs/rag-compare-prd`
+- 작업 위치: `RAG_PREPROCESSED_DATA/`
+- 먼저 읽을 파일: `README.md`, `instructions.md`, `workflow.md`
+- 처리 대상: `RAG_PREPROCESSED_DATA/rag_datas/` 아래 모든 `.toon` 파일
+
 ## 작업 목표
 
 - 모든 `.toon` 문서를 원본 파일 단위로 처리한다.

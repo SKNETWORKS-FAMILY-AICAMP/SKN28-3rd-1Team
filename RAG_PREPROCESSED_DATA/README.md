@@ -6,6 +6,31 @@
 
 상세 작업 규칙은 `workflow.md`를 따른다.
 
+## 작업 할당 시 전달 문구
+
+다른 작업자나 agent에게 task를 assign할 때는 아래 문구를 그대로 전달한다.
+
+```text
+브랜치: docs/rag-compare-prd
+작업 위치: RAG_PREPROCESSED_DATA/
+
+먼저 확인할 파일:
+1. RAG_PREPROCESSED_DATA/README.md
+2. RAG_PREPROCESSED_DATA/instructions.md
+3. RAG_PREPROCESSED_DATA/workflow.md
+
+처리 대상:
+RAG_PREPROCESSED_DATA/rag_datas/ 아래 모든 .toon 파일
+
+작업 요약:
+.toon 원본 파일 1개마다 같은 이름의 디렉터리를 만들고, 그 안에 원본 .toon 복사본과 chunks/ 디렉터리를 둔다.
+chunks/ 안에는 원본을 의미 단위로 쪼갠 chunk .toon 파일을 저장한다.
+chunk 이름 또는 파일명 규칙은 작업 전에 사용자에게 확인한다.
+chunk는 가능한 한 500 토큰 이하로 만든다.
+모든 chunk 생성 후 relationships.md에 원본 파일명, chunk 이름, relationship을 Mermaid diagram과 관계 표로 정리한다.
+MCP server, graph DB 저장, embedding, retrieval 구현은 이번 scope가 아니다.
+```
+
 ## 핵심 규칙
 
 - `.toon` 원본 문서 1개마다 동일한 이름의 산출 디렉터리를 만든다.
