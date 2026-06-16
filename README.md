@@ -26,14 +26,11 @@
 ## 1. 👥 팀 소개 및 일정 계획
 
 ### 1) 팀 소개
-
-| 이름 | 역할 | 한 일 |
-| --- | --- | --- |
-| 이원빈 | 팀장 | 전체 일정 관리, 작업 방향 컨펌, 파트별 진행 상황 확인 |
-| 김지효 | RAG | 노인·고령층 관련 법령 데이터 확인, 문서 전처리와 임베딩 흐름 정리 |
-| 송윤경 | 프론트엔드 | 사용자 질문 화면 구성, API 연결 흐름 설계, 결과 화면 UX 정리, rag 기반 테스트 케이스 설계 |
-| 전하영 | 백엔드 | FastAPI `/chat` 구성, LangGraph Agent 실행 구조 정리, MCP tool 연동 준비 |
-| 양도영 | 기획·문서 | 전체 서비스 흐름 정리, README와 발표 자료 구성, 팀 산출물 내용 정리 |
+| 구분 | 이원빈 | 김지효 | 송윤경 | 전하영 | 양도영 |
+|---|---|---|---|---|---|
+|사진|<img width="467" height="622" alt="image" src="https://github.com/user-attachments/assets/1d55d805-ca88-4045-870c-efcf3cd093cd" />|<img width="457" height="546" alt="image" src="https://github.com/user-attachments/assets/e80bef47-6176-41c2-8471-28b5c4d14d00" />|<img width="283" height="571" alt="image" src="https://github.com/user-attachments/assets/eff9d9d9-f08c-4648-8435-0079015314b9" />|<img width="353" height="488" alt="image" src="https://github.com/user-attachments/assets/6f58acc9-b043-4a64-8387-3f2d78465fda" />|<img width="244" height="488" alt="image" src="https://github.com/user-attachments/assets/369cd18c-71bd-40b8-b035-70873142869c" />|
+| 역할 | 팀장 | RAG | 프론트엔드 | 백엔드 | 기획·문서 |
+| 한 일 | 전체 일정 관리, 작업 방향 컨펌, 파트별 진행 상황 확인 | 노인·고령층 관련 법령 데이터 확인, 문서 전처리와 임베딩 흐름 정리 | 사용자 질문 화면 구성, API 연결 흐름 설계, 결과 화면 UX 정리, RAG 기반 테스트 케이스 설계 | FastAPI `/chat` 구성, LangGraph Agent 실행 구조 정리, MCP tool 연동 준비 | 전체 서비스 흐름 정리, README와 발표 자료 구성, 팀 산출물 내용 정리 |
 
 ### 2) 일정 계획
 
@@ -41,8 +38,8 @@
 | --- | --- | --- |
 | 2026-05-22 ~ 2026-05-26 | 주제 범위 확정, 고령층 법령 데이터 후보 정리 | 완료 |
 | 2026-05-27 ~ 2026-05-29 | Backend API 계약, RAG POC, 화면 UX 설계 | 완료 |
-| 2026-06-01 ~ 2026-06-03 | Backend, Streamlit, RAG MCP 연결 흐름 통합 검증 | 진행 예정 |
-| 2026-06-04 | 전체 기능 연동, 통합 테스트, 발표와 시연 준비 | 목표 마감 |
+| 2026-06-01 ~ 2026-06-03 | Backend, Streamlit, RAG MCP 연결 흐름 통합 검증 | 완료 |
+| 2026-06-04 | 전체 기능 연동, 통합 테스트, 발표와 시연 준비 | 완료 |
 
 ## 2. 📌 프로젝트 소개
 
@@ -169,15 +166,17 @@
 | RAG Frontend | 문서 목록, ingest job, review queue를 확인하는 운영 UI가 있습니다. |
 | Streamlit | 상담 form, 채팅형 화면, backend `/chat` 연결 흐름을 검증합니다. |
 | Docs Web | GitHub Pages 배포용 문서 웹 구조가 있습니다. |
+| RAG Red Team | Neo4j 기반 graph schema와 read-only Cypher MCP 실험 공간이 있습니다. |
+| Presentation | 발표 스크립트, PPTX, 최종 PDF, Memgraph Lab 시연 캡처를 정리했습니다. |
 
 ### 2) 남은 작업
 
 | 작업 | 설명 |
 | --- | --- |
-| 실제 RAG MCP 연결 | Backend Agent가 RAG MCP tool을 실제로 호출하도록 연결합니다. |
-| 출처 응답 강화 | `sources`, `tool_calls`를 실제 검색 결과 기준으로 채웁니다. |
-| 통합 테스트 | Streamlit, Backend, RAG Backend를 함께 실행해 전체 흐름을 검증합니다. |
-| 시연 준비 | 질문 예시, 화면 흐름, LangSmith trace를 발표용으로 정리합니다. |
+| 근거 품질 고도화 | 답변에서 내부 id를 숨기고 사용자가 이해할 수 있는 문서명, 조문명, 원문 일부 중심으로 출처를 정리합니다. |
+| 평가 데이터 확장 | `presentation/test-data`의 벤치마크와 LLM-as-a-judge 결과를 기준으로 실패 케이스를 계속 보강합니다. |
+| 운영 안정화 | Docker Compose 통합 실행, health check, UI 반응형 검증을 반복해 시연 환경을 안정화합니다. |
+| 배포 정리 | Docs Web, Streamlit, RAG 운영 UI의 공개 범위와 배포 절차를 확정합니다. |
 
 ## 8. 기술 스택
 
@@ -207,12 +206,21 @@ SKN28-3rd-1Team/
 │   ├── be/                  # RAG backend, ingest, search, MCP endpoint
 │   ├── fe/                  # RAG 운영 UI
 │   ├── infra/               # Memgraph, Memgraph Lab 실행 설정
+│   ├── RAG_ORIGINAL_DATA/   # RAG 대상 원본 JSON 데이터
+│   ├── RAG_PREPROCESSED_DATA/ # RAG 입력용 TOON 전처리 데이터
 │   └── docs/                # RAG 설계 문서
 ├── streamlit/               # 상담형 UI 프로토타입
 ├── docs_web/                # 프로젝트 소개용 문서 웹
 ├── docs/                    # 회의록, 온보딩, 개발 문서
+├── presentation/            # 발표 스크립트, PPT/PDF, 평가 데이터 산출물
+│   ├── ppt/                 # 발표 자료, 스크립트, Memgraph Lab 시연 캡처
+│   ├── test-data/           # benchmark, LLM-as-a-judge 결과
+│   └── marking_criteria/    # 프로젝트 평가 기준 정리
+├── rag-red-team/            # RAG red-team 실험 공간
 ├── frontend/                # 최종 프론트엔드 작업 공간
-├── infra/                   # 루트 인프라 문서
+├── infra/                   # 통합 Docker Compose 실행 설정
+├── .github/                 # GitHub Actions workflow
+├── .agents/                 # repo-scoped agent skill과 작업 규칙
 ├── AGENTS.md                # 협업 및 agent 작업 규칙
 └── README.md
 ```
@@ -227,10 +235,65 @@ SKN28-3rd-1Team/
 | `rag/fe/README.md` | RAG 운영 UI 실행 방법 |
 | `streamlit/README.md` | Streamlit 상담 UI 구조와 backend 연결 방법 |
 | `docs_web/README.md` | 문서 웹 실행 및 GitHub Pages 배포 방식 |
+| `infra/README.md` | 통합 Docker Compose 서비스와 포트 정보 |
+| `docs/README.md` | 회의록, agent workspace guideline 등 팀 문서 |
+| `rag-red-team/README.md` | Neo4j red-team graph 실험과 MCP 실행 방법 |
+| `presentation/test-data/README.md` | 발표용 평가 데이터, benchmark, judge 결과 구조 |
+
+### 3) 발표 및 시연 산출물
+
+| 산출물 | 설명 |
+| --- | --- |
+| [`presentation/ppt/옆집 손주_찐최종 (1).pdf`](<presentation/ppt/옆집 손주_찐최종 (1).pdf>) | 최종 발표 PDF |
+| [`presentation/ppt/reviewable-graphrag-service-presentation-v4.pptx`](presentation/ppt/reviewable-graphrag-service-presentation-v4.pptx) | 검토 가능한 최신 PPTX 발표 자료 |
+| [`presentation/ppt/20min-presentation-script-v4.md`](presentation/ppt/20min-presentation-script-v4.md) | 20분 발표 스크립트 |
+| [`presentation/ppt/artifact-build-manifest.json`](presentation/ppt/artifact-build-manifest.json) | 발표 자료 생성과 검증 산출물 manifest |
+| `presentation/ppt/assets/` | Memgraph Lab graph, schema, query 결과 시연 캡처 |
 
 ## 10. 🚀 실행 방법
 
-### 1) Backend Agent 실행
+### 1) 통합 Docker Compose 실행
+
+`docs_web`과 `rag-red-team`을 제외하고, Backend, Streamlit, RAG Backend,
+RAG Frontend, Memgraph, Memgraph Lab, Redis를 같은 `infra_default` Docker
+network에서 함께 실행한다.
+
+```bash
+cp infra/.env.example infra/.env
+cp backend/.env infra/.env_backend
+cp streamlit/.env infra/.env_streamlit
+cp rag/be/.env infra/.env_rag_be
+cp rag/fe/.env infra/.env_rag_fe
+cp rag/infra/.env infra/.env_rag_infra
+
+docker compose --env-file infra/.env -f infra/docker-compose.yml up -d --build
+```
+
+기본 접속 정보:
+
+```text
+Backend API:   http://127.0.0.1:8100
+Streamlit UI:  http://127.0.0.1:8501
+RAG Backend:   http://127.0.0.1:8110
+RAG Frontend:  http://127.0.0.1:5174
+Memgraph Lab:  http://127.0.0.1:3000
+Memgraph Bolt: bolt://127.0.0.1:7687
+Redis:         redis://127.0.0.1:6379/0
+```
+
+Docker network 내부 연결:
+
+```text
+backend -> http://rag-be:8010/mcp/
+streamlit -> http://backend:8000
+rag-be -> bolt://memgraph:7687
+rag-be -> redis://redis:6379/0
+```
+
+`/chat`은 실제 OpenRouter 호출이므로 `infra/.env_backend`의
+`OPENROUTER_API_KEY` 또는 `BACKEND_OPENROUTER_API_KEY`가 유효해야 한다.
+
+### 2) Backend Agent 실행
 
 ```bash
 cd backend
@@ -259,7 +322,7 @@ curl -s -X POST http://127.0.0.1:8000/chat \
   | python -m json.tool
 ```
 
-### 2) Streamlit 상담 UI 실행
+### 3) Streamlit 상담 UI 실행
 
 ```bash
 cd streamlit
@@ -275,7 +338,7 @@ STREAMLIT_BACKEND_BASE_URL="http://127.0.0.1:8000"
 STREAMLIT_CHAT_BACKEND_MOCK=false
 ```
 
-### 3) RAG Infra 실행
+### 4) RAG Infra 실행
 
 ```bash
 cd rag
@@ -290,7 +353,7 @@ Memgraph Bolt: bolt://127.0.0.1:7687
 Memgraph Lab:  http://127.0.0.1:3000
 ```
 
-### 4) RAG Backend 실행
+### 5) RAG Backend 실행
 
 ```bash
 cd rag/be
@@ -311,7 +374,7 @@ GET  /api/review/edge-candidates
 MCP  /mcp
 ```
 
-### 5) RAG Frontend 실행
+### 6) RAG Frontend 실행
 
 ```bash
 cd rag/fe
@@ -325,7 +388,19 @@ bun run dev
 http://127.0.0.1:5173
 ```
 
-### 6) Docs Web 실행
+### 7) RAG Red Team Neo4j 실험
+
+```bash
+cd rag-red-team
+cp .env.example .env
+uv sync
+docker compose -p rag-red-team -f infra/docker-compose.yml up -d
+uv run python -m rag_red_team_neo4j.load_graph
+```
+
+Remote MCP 컨테이너는 `docker compose -p rag-red-team -f infra/docker-compose.yml up -d --build mcp`로 실행한다. 기본 컨테이너 이름은 `rag-redteam`, MCP URL은 `http://127.0.0.1:9001/mcp`다. 자세한 스키마와 read-only Cypher 예시는 `rag-red-team/README.md`를 참고한다.
+
+### 8) Docs Web 실행
 
 ```bash
 cd docs_web
