@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import Image from "next/image"
-import { Button } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button"
 import { Scale } from "lucide-react"
 
 export function SiteHeader() {
@@ -34,12 +34,15 @@ export function SiteHeader() {
           </Link>
         </nav>
 
-        <Button asChild className="rounded-full font-heading whitespace-nowrap px-4 py-2">
-          <Link href="/chat" className="flex items-center gap-2">
-            <Scale className="size-4" />
-            상담 시작
-          </Link>
-        </Button>
+        <Link
+          href="/chat"
+          className={buttonVariants({
+            className: "rounded-full px-4 py-2 font-heading whitespace-nowrap",
+          })}
+        >
+          <Scale className="size-4" />
+          상담 시작
+        </Link>
       </div>
     </header>
   )

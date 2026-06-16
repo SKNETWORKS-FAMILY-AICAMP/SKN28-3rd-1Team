@@ -1,6 +1,6 @@
 import Link from "next/link"
 import Image from "next/image"
-import { Button } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button"
 import { MessageCircleQuestion } from "lucide-react"
 
 export function CtaSection() {
@@ -24,12 +24,17 @@ export function CtaSection() {
           <p className="max-w-md text-pretty text-lg leading-relaxed text-primary-foreground/90">
             가입 없이 무료로. 기초연금·노인복지·고용 등 궁금한 점을 첫 질문으로 던져보세요.
           </p>
-          <Button asChild size="lg" variant="secondary" className="rounded-full font-heading text-base px-6 py-3 whitespace-nowrap">
-            <Link href="/chat" className="flex items-center gap-2">
-              <MessageCircleQuestion className="size-5" />
-              상담 시작하기
-            </Link>
-          </Button>
+          <Link
+            href="/chat"
+            className={buttonVariants({
+              size: "lg",
+              variant: "secondary",
+              className: "rounded-full px-6 py-3 font-heading text-base whitespace-nowrap",
+            })}
+          >
+            <MessageCircleQuestion className="size-5" />
+            상담 시작하기
+          </Link>
         </div>
       </div>
     </section>

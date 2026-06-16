@@ -1,6 +1,6 @@
 import Link from "next/link"
 import Image from "next/image"
-import { Button } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button"
 import { Sparkles, MessageCircleQuestion, ArrowRight } from "lucide-react"
 
 export function HeroSection() {
@@ -28,18 +28,29 @@ export function HeroSection() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center gap-3">
-            <Button asChild size="lg" className="rounded-full font-heading text-base px-6 py-3 whitespace-nowrap w-full sm:w-auto">
-              <Link href="/chat" className="flex items-center justify-center">
-                <MessageCircleQuestion className="size-5" />
-                무료로 상담 시작하기
-              </Link>
-            </Button>
-            <Button asChild size="lg" variant="outline" className="rounded-full border-primary/30 bg-card font-heading text-base px-6 py-3 whitespace-nowrap w-full sm:w-auto">
-              <Link href="/#how" className="flex items-center justify-center">
-                이용 방법 보기
-                <ArrowRight className="size-5" />
-              </Link>
-            </Button>
+            <Link
+              href="/chat"
+              className={buttonVariants({
+                size: "lg",
+                className:
+                  "w-full rounded-full px-6 py-3 font-heading text-base whitespace-nowrap sm:w-auto",
+              })}
+            >
+              <MessageCircleQuestion className="size-5" />
+              무료로 상담 시작하기
+            </Link>
+            <Link
+              href="/#how"
+              className={buttonVariants({
+                size: "lg",
+                variant: "outline",
+                className:
+                  "w-full rounded-full border-primary/30 bg-card px-6 py-3 font-heading text-base whitespace-nowrap sm:w-auto",
+              })}
+            >
+              이용 방법 보기
+              <ArrowRight className="size-5" />
+            </Link>
           </div>
 
           <div className="flex items-center gap-6 pt-2 text-sm text-muted-foreground">

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -32,7 +32,7 @@ export function ChatInterface() {
   const scrollRef = useRef<HTMLDivElement>(null)
   const startedRef = useRef(false)
 
-  const send = (raw: string) => {
+  const send = useCallback((raw: string) => {
     const text = raw.trim()
     if (!text) return
     const userMsg: Message = { id: crypto.randomUUID(), role: "user", text }
@@ -50,18 +50,22 @@ export function ChatInterface() {
         ),
       )
     }, 900)
-  }
+  }, [])
 
   // Prefill from ?q= and auto-send once
   useEffect(() => {
     if (startedRef.current) return
     const q = searchParams.get("q")
-    if (q) {
+    if (!q) return
+
+    const timeoutId = window.setTimeout(() => {
+      if (startedRef.current) return
       startedRef.current = true
       send(q)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    }, 0)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [searchParams, send])
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" })
