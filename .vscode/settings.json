@@ -1,8 +1,7 @@
 {
   "python.analysis.extraPaths": [
     "${workspaceFolder}/backend/src",
-    "${workspaceFolder}/rag/src",
-    "${workspaceFolder}/streamlit/src"
+    "${workspaceFolder}/rag/be/src"
   ],
   "python.analysis.autoImportCompletions": true,
   "python.terminal.activateEnvironment": true,

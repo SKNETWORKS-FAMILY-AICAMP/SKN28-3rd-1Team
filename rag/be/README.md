@@ -37,9 +37,11 @@ be/
 ## Run
 
 ```bash
-uv sync
-PYTHONPATH=src uv run uvicorn app:app --host 127.0.0.1 --port 8010
+make start
 ```
+
+`make start`는 `.env`가 없으면 `.env.example`에서 먼저 만들고, `uv sync`로
+`rag/be/.venv`를 준비한 뒤 `uv run`으로 uvicorn을 실행합니다.
 
 ## API
 
@@ -97,8 +99,7 @@ MCP는 FastAPI app 안에 FastMCP Streamable HTTP ASGI app으로 mount된다.
 
 ```bash
 cd rag/be
-uv sync
-PYTHONPATH=src uv run uvicorn app:app --host 127.0.0.1 --port 8010
+make start
 ```
 
 `.env`에서 조정하는 주요 값:
@@ -268,6 +269,6 @@ flowchart LR
 ## Checks
 
 ```bash
-PYTHONPATH=src uv run python -m unittest discover -s tests
-PYTHONPATH=src uv run python -m compileall src tests
+make test
+make check
 ```

@@ -1,7 +1,16 @@
 {
     "folders": [
         {
+            "name": "repo-root",
             "path": "."
+        },
+        {
+            "name": "backend",
+            "path": "backend"
+        },
+        {
+            "name": "rag",
+            "path": "rag"
         }
     ]
 }

@@ -12,7 +12,8 @@
 ![LangSmith](https://img.shields.io/badge/LangSmith-Tracing-1C3C3C?logo=langchain&logoColor=white)
 ![React](https://img.shields.io/badge/React-UI-61DAFB?logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-Frontend-3178C6?logo=typescript&logoColor=white)
-![Vite](https://img.shields.io/badge/Vite-Build-646CFF?logo=vite&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-Frontend-000000?logo=nextdotjs&logoColor=white)
+![Bun](https://img.shields.io/badge/Bun-Package-000000?logo=bun&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-Style-06B6D4?logo=tailwindcss&logoColor=white)
 ![Streamlit](https://img.shields.io/badge/Streamlit-Prototype-FF4B4B?logo=streamlit&logoColor=white)
 ![Pandas](https://img.shields.io/badge/Pandas-Data-150458?logo=pandas&logoColor=white)
@@ -102,7 +103,7 @@
 
 ```text
 사용자 질문
-  -> Frontend 또는 Streamlit 화면
+  -> Frontend 또는 legacy Streamlit 화면
   -> Backend FastAPI /chat
   -> LangChain + LangGraph Agent
   -> RAG MCP Tool Server
@@ -115,11 +116,10 @@
 
 | 영역 | 역할 |
 | --- | --- |
-| Frontend / Streamlit | 사용자가 질문하고 답변을 확인하는 인터페이스 |
+| Frontend / legacy Streamlit | 사용자가 질문하고 답변을 확인하는 인터페이스 |
 | Backend | API 서버와 Main Agent Orchestrator 역할 |
 | RAG Backend | Backend 내부 모듈이 아닌 별도 서비스로 동작하며 문서 ingest, 검색 API, MCP endpoint 제공 |
 | Memgraph | GraphRAG 검색을 위한 그래프 데이터 저장 |
-| Docs Web | 프로젝트 소개와 파트별 진행 방향 문서화 |
 
 ### 3) 아키텍처 원칙
 
@@ -164,8 +164,7 @@
 | LangSmith 검증 | LLM 호출 trace와 mock tool call trace를 확인했습니다. |
 | RAG Backend | 문서 ingest, 검색 API, read-only MCP endpoint 구조가 있습니다. |
 | RAG Frontend | 문서 목록, ingest job, review queue를 확인하는 운영 UI가 있습니다. |
-| Streamlit | 상담 form, 채팅형 화면, backend `/chat` 연결 흐름을 검증합니다. |
-| Docs Web | GitHub Pages 배포용 문서 웹 구조가 있습니다. |
+| Streamlit | legacy 상담 form, 채팅형 화면, backend `/chat` 연결 흐름을 검증합니다. |
 | RAG Red Team | Neo4j 기반 graph schema와 read-only Cypher MCP 실험 공간이 있습니다. |
 | Presentation | 발표 스크립트, PPTX, 최종 PDF, Memgraph Lab 시연 캡처를 정리했습니다. |
 
@@ -176,7 +175,7 @@
 | 근거 품질 고도화 | 답변에서 내부 id를 숨기고 사용자가 이해할 수 있는 문서명, 조문명, 원문 일부 중심으로 출처를 정리합니다. |
 | 평가 데이터 확장 | `presentation/test-data`의 벤치마크와 LLM-as-a-judge 결과를 기준으로 실패 케이스를 계속 보강합니다. |
 | 운영 안정화 | Docker Compose 통합 실행, health check, UI 반응형 검증을 반복해 시연 환경을 안정화합니다. |
-| 배포 정리 | Docs Web, Streamlit, RAG 운영 UI의 공개 범위와 배포 절차를 확정합니다. |
+| 배포 정리 | legacy Streamlit, RAG 운영 UI의 공개 범위와 배포 절차를 확정합니다. |
 
 ## 8. 기술 스택
 
@@ -187,9 +186,9 @@
 | Backend | ![Python](https://img.shields.io/badge/Python-3.13-3776AB?logo=python&logoColor=white) ![FastAPI](https://img.shields.io/badge/FastAPI-API-009688?logo=fastapi&logoColor=white) ![Pydantic](https://img.shields.io/badge/Pydantic-Settings-E92063?logo=pydantic&logoColor=white) ![uv](https://img.shields.io/badge/uv-Package-6E56CF) |
 | Agent | ![LangChain](https://img.shields.io/badge/LangChain-Agent-1C3C3C?logo=langchain&logoColor=white) ![LangGraph](https://img.shields.io/badge/LangGraph-Flow-1C3C3C?logo=langchain&logoColor=white) ![OpenRouter](https://img.shields.io/badge/OpenRouter-LLM-111827) ![LangSmith](https://img.shields.io/badge/LangSmith-Trace-1C3C3C?logo=langchain&logoColor=white) |
 | RAG | ![MCP](https://img.shields.io/badge/MCP-Tool%20Server-111827) ![Memgraph](https://img.shields.io/badge/Memgraph-Graph%20DB-FF6B35?logo=memgraph&logoColor=white) ![Neo4j](https://img.shields.io/badge/Neo4j-Compatible-4581C3?logo=neo4j&logoColor=white) ![GraphRAG](https://img.shields.io/badge/GraphRAG-Search-10B981) |
-|Frontend | ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black) ![TypeScript](https://img.shields.io/badge/TypeScript-TS-3178C6?logo=typescript&logoColor=white) ![Vite](https://img.shields.io/badge/Vite-Build-646CFF?logo=vite&logoColor=white) ![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-Style-06B6D4?logo=tailwindcss&logoColor=white) ![shadcn/ui](https://img.shields.io/badge/shadcn%2Fui-Components-000000?logo=shadcnui&logoColor=white) |
+|Frontend | ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black) ![Next.js](https://img.shields.io/badge/Next.js-App-000000?logo=nextdotjs&logoColor=white) ![TypeScript](https://img.shields.io/badge/TypeScript-TS-3178C6?logo=typescript&logoColor=white) ![Bun](https://img.shields.io/badge/Bun-Package-000000?logo=bun&logoColor=white) ![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-Style-06B6D4?logo=tailwindcss&logoColor=white) ![shadcn/ui](https://img.shields.io/badge/shadcn%2Fui-Components-000000?logo=shadcnui&logoColor=white) |
 | Prototype | ![Streamlit](https://img.shields.io/badge/Streamlit-UI-FF4B4B?logo=streamlit&logoColor=white) ![Pandas](https://img.shields.io/badge/Pandas-Data-150458?logo=pandas&logoColor=white) |
-| Infra | ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white) ![Memgraph Lab](https://img.shields.io/badge/Memgraph%20Lab-Graph%20View-FF6B35?logo=memgraph&logoColor=white) ![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-Docs%20Web-222222?logo=githubpages&logoColor=white) |
+| Deploy | ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white) ![Memgraph Lab](https://img.shields.io/badge/Memgraph%20Lab-Graph%20View-FF6B35?logo=memgraph&logoColor=white) ![Make](https://img.shields.io/badge/Make-Workflow-111827) |
 | Collaboration | ![GitHub](https://img.shields.io/badge/GitHub-Code-181717?logo=github&logoColor=white) ![Linear](https://img.shields.io/badge/Linear-Issues-5E6AD2?logo=linear&logoColor=white) ![Notion](https://img.shields.io/badge/Notion-Docs-000000?logo=notion&logoColor=white) ![Discord](https://img.shields.io/badge/Discord-Chat-5865F2?logo=discord&logoColor=white) |
 
 ## 9. 📁 프로젝트 구조
@@ -208,18 +207,19 @@ SKN28-3rd-1Team/
 │   ├── infra/               # Memgraph, Memgraph Lab 실행 설정
 │   ├── RAG_ORIGINAL_DATA/   # RAG 대상 원본 JSON 데이터
 │   ├── RAG_PREPROCESSED_DATA/ # RAG 입력용 TOON 전처리 데이터
+│   ├── related/             # 루트에서 이동한 RAG 관련 실험/작업 공간
 │   └── docs/                # RAG 설계 문서
-├── streamlit/               # 상담형 UI 프로토타입
-├── docs_web/                # 프로젝트 소개용 문서 웹
+├── frontend/                # Next.js 기반 최종 프론트엔드
+├── streamlit_3rd/           # legacy Streamlit 상담형 UI, 현재 scope 아님
 ├── docs/                    # 회의록, 온보딩, 개발 문서
 ├── presentation/            # 발표 스크립트, PPT/PDF, 평가 데이터 산출물
 │   ├── ppt/                 # 발표 자료, 스크립트, Memgraph Lab 시연 캡처
+│   ├── outputs/             # 발표 자료 생성/검증 산출물
 │   ├── test-data/           # benchmark, LLM-as-a-judge 결과
 │   └── marking_criteria/    # 프로젝트 평가 기준 정리
-├── rag-red-team/            # RAG red-team 실험 공간
-├── frontend/                # 최종 프론트엔드 작업 공간
-├── infra/                   # 통합 Docker Compose 실행 설정
-├── .github/                 # GitHub Actions workflow
+├── deploy/                  # 통합 배포 실행 설정
+│   ├── docker/              # Docker Compose와 deploy env 파일
+│   └── makefile/            # 통합 실행 Makefile
 ├── .agents/                 # repo-scoped agent skill과 작업 규칙
 ├── AGENTS.md                # 협업 및 agent 작업 규칙
 └── README.md
@@ -233,11 +233,10 @@ SKN28-3rd-1Team/
 | `rag/README.md` | RAG 서브시스템 전체 구조 |
 | `rag/be/README.md` | RAG Backend API, MCP endpoint, 환경 변수 |
 | `rag/fe/README.md` | RAG 운영 UI 실행 방법 |
-| `streamlit/README.md` | Streamlit 상담 UI 구조와 backend 연결 방법 |
-| `docs_web/README.md` | 문서 웹 실행 및 GitHub Pages 배포 방식 |
-| `infra/README.md` | 통합 Docker Compose 서비스와 포트 정보 |
-| `docs/README.md` | 회의록, agent workspace guideline 등 팀 문서 |
-| `rag-red-team/README.md` | Neo4j red-team graph 실험과 MCP 실행 방법 |
+| `streamlit_3rd/README.md` | legacy Streamlit 상담 UI 구조와 backend 연결 방법 |
+| `deploy/README.md` | 통합 Docker Compose, Makefile 실행, 포트 정보 |
+| `docs/README.md` | agent guideline, 온보딩, 도구 설정 등 팀 문서 |
+| `rag/related/rag-red-team/README.md` | Neo4j red-team graph 실험과 MCP 실행 방법 |
 | `presentation/test-data/README.md` | 발표용 평가 데이터, benchmark, judge 결과 구조 |
 
 ### 3) 발표 및 시연 산출물
@@ -254,29 +253,23 @@ SKN28-3rd-1Team/
 
 ### 1) 통합 Docker Compose 실행
 
-`docs_web`과 `rag-red-team`을 제외하고, Backend, Streamlit, RAG Backend,
-RAG Frontend, Memgraph, Memgraph Lab, Redis를 같은 `infra_default` Docker
-network에서 함께 실행한다.
+`rag/related/rag-red-team`과 `streamlit_3rd`를 제외하고, Frontend, Backend,
+RAG Backend, RAG Frontend, Memgraph, Memgraph Lab, Redis를 같은 `deploy_default`
+Docker network에서 함께 실행한다.
 
 ```bash
-cp infra/.env.example infra/.env
-cp backend/.env infra/.env_backend
-cp streamlit/.env infra/.env_streamlit
-cp rag/be/.env infra/.env_rag_be
-cp rag/fe/.env infra/.env_rag_fe
-cp rag/infra/.env infra/.env_rag_infra
-
-docker compose --env-file infra/.env -f infra/docker-compose.yml up -d --build
+cd deploy/makefile
+make up
 ```
 
 기본 접속 정보:
 
 ```text
+Frontend:      http://127.0.0.1:3000
 Backend API:   http://127.0.0.1:8100
-Streamlit UI:  http://127.0.0.1:8501
 RAG Backend:   http://127.0.0.1:8110
 RAG Frontend:  http://127.0.0.1:5174
-Memgraph Lab:  http://127.0.0.1:3000
+Memgraph Lab:  http://127.0.0.1:3001
 Memgraph Bolt: bolt://127.0.0.1:7687
 Redis:         redis://127.0.0.1:6379/0
 ```
@@ -285,26 +278,26 @@ Docker network 내부 연결:
 
 ```text
 backend -> http://rag-be:8010/mcp/
-streamlit -> http://backend:8000
 rag-be -> bolt://memgraph:7687
 rag-be -> redis://redis:6379/0
 ```
 
-`/chat`은 실제 OpenRouter 호출이므로 `infra/.env_backend`의
+Legacy Streamlit UI까지 실행해야 할 때만 `cd deploy/makefile && make up-legacy`를 사용한다.
+
+`/chat`은 실제 OpenRouter 호출이므로 `deploy/docker/.env_backend`의
 `OPENROUTER_API_KEY` 또는 `BACKEND_OPENROUTER_API_KEY`가 유효해야 한다.
+
+Makefile target이 있는 서비스는 `make`를 우선 사용한다. Python 서비스의
+`make start`, `make test`, `make check` 계열 target은 먼저 `uv sync`를 실행해
+서비스 로컬 `.venv`를 준비한 뒤 `uv run`으로 실행한다. 현재 scope의 Python
+venv는 `backend/.venv`와 `rag/be/.venv`이며, repository root Python이나
+`streamlit_3rd/.venv`를 current scope 작업에 사용하지 않는다.
 
 ### 2) Backend Agent 실행
 
 ```bash
 cd backend
-cp .env.example .env
-uv sync
-
-set -a
-source .env
-set +a
-
-PYTHONPATH=src uv run uvicorn app:app --host 127.0.0.1 --port 8000 --reload
+make start
 ```
 
 상태 확인:
@@ -322,16 +315,16 @@ curl -s -X POST http://127.0.0.1:8000/chat \
   | python -m json.tool
 ```
 
-### 3) Streamlit 상담 UI 실행
+### 3) Legacy Streamlit 상담 UI 실행
 
 ```bash
-cd streamlit
+cd streamlit_3rd
 cp .env.example .env
 uv sync
 uv run streamlit run streamlit.py
 ```
 
-backend와 연결하려면 `streamlit/.env`에서 아래 값을 사용합니다.
+`streamlit_3rd/`는 현재 scope가 아니므로 명시적으로 필요할 때만 실행합니다. backend와 연결하려면 `streamlit_3rd/.env`에서 아래 값을 사용합니다.
 
 ```env
 STREAMLIT_BACKEND_BASE_URL="http://127.0.0.1:8000"
@@ -342,8 +335,7 @@ STREAMLIT_CHAT_BACKEND_MOCK=false
 
 ```bash
 cd rag
-cp infra/.env.example infra/.env
-docker compose --env-file infra/.env -f infra/docker-compose.yml up -d
+make infra-up
 ```
 
 기본 접속 정보:
@@ -356,10 +348,8 @@ Memgraph Lab:  http://127.0.0.1:3000
 ### 5) RAG Backend 실행
 
 ```bash
-cd rag/be
-cp .env.example .env
-uv sync
-PYTHONPATH=src uv run uvicorn app:app --host 127.0.0.1 --port 8010
+cd rag
+make be-start
 ```
 
 주요 endpoint:
@@ -377,9 +367,8 @@ MCP  /mcp
 ### 6) RAG Frontend 실행
 
 ```bash
-cd rag/fe
-bun install
-bun run dev
+cd rag
+make fe-start
 ```
 
 기본 접속:
@@ -391,22 +380,14 @@ http://127.0.0.1:5173
 ### 7) RAG Red Team Neo4j 실험
 
 ```bash
-cd rag-red-team
+cd rag/related/rag-red-team
 cp .env.example .env
 uv sync
 docker compose -p rag-red-team -f infra/docker-compose.yml up -d
 uv run python -m rag_red_team_neo4j.load_graph
 ```
 
-Remote MCP 컨테이너는 `docker compose -p rag-red-team -f infra/docker-compose.yml up -d --build mcp`로 실행한다. 기본 컨테이너 이름은 `rag-redteam`, MCP URL은 `http://127.0.0.1:9001/mcp`다. 자세한 스키마와 read-only Cypher 예시는 `rag-red-team/README.md`를 참고한다.
-
-### 8) Docs Web 실행
-
-```bash
-cd docs_web
-npm install
-npm run dev
-```
+Remote MCP 컨테이너는 `docker compose -p rag-red-team -f infra/docker-compose.yml up -d --build mcp`로 실행한다. 기본 컨테이너 이름은 `rag-redteam`, MCP URL은 `http://127.0.0.1:9001/mcp`다. 자세한 스키마와 read-only Cypher 예시는 `rag/related/rag-red-team/README.md`를 참고한다.
 
 ## 11. 🧪 검증 방법
 
@@ -414,32 +395,22 @@ npm run dev
 
 ```bash
 cd backend
-PYTHONPATH=src uv run python -m compileall src scripts tests
-PYTHONPATH=src uv run python -m unittest discover -s tests
+make check
+make test
 ```
 
 ### 2) RAG Backend
 
 ```bash
-cd rag/be
-PYTHONPATH=src uv run python -m compileall src tests
-PYTHONPATH=src uv run python -m unittest discover -s tests
+cd rag
+make be-check
 ```
 
 ### 3) RAG Frontend
 
 ```bash
-cd rag/fe
-bun run lint
-bun run build
-```
-
-### 4) Docs Web
-
-```bash
-cd docs_web
-npm run lint
-npm run build
+cd rag
+make fe-check
 ```
 
 ## 12. 🔐 환경 변수 관리
@@ -455,10 +426,18 @@ npm run build
 | 서비스 | 예시 파일 | 주요 값 |
 | --- | --- | --- |
 | Backend | `backend/.env.example` | OpenRouter API key, LangSmith 설정, CORS, RAG MCP URL |
-| Streamlit | `streamlit/.env.example` | Backend API 주소, mock mode 여부 |
+| Deploy | `deploy/docker/.env.example` | 통합 Docker Compose host 포트, public build args |
+| Streamlit legacy | `streamlit_3rd/.env.example` | Backend API 주소, mock mode 여부 |
 | RAG Backend | `rag/be/.env.example` | Memgraph 연결, MCP endpoint, 모델 설정 |
 | RAG Frontend | `rag/fe/.env.example` | RAG API base URL |
 | RAG Infra | `rag/infra/.env.example` | Memgraph 포트, Lab 포트 |
+
+통합 실행 시 `deploy/makefile/Makefile`은 `deploy/docker/.env`, `deploy/docker/.env_backend`, `deploy/docker/.env_rag_be`를 준비합니다. `deploy/docker/.env`는 포트 같은 non-secret 값이고, `deploy/docker/.env_backend`와 `deploy/docker/.env_rag_be`는 각 서비스의 실제 `.env`를 복사해 Compose에 주입하는 ignored 파일입니다.
+
+Python 가상환경은 서비스별 `.venv`만 사용합니다. `backend/`와 `rag/be/`에서
+`make start`, `make test`, `make check`를 실행하면 필요한 경우 `uv sync`가
+먼저 실행되어 `.venv`가 생성됩니다. `.venv/`와 실제 `.env` 파일은 Git에
+올리지 않습니다.
 
 ## 13. 🤝 협업 방식
 
@@ -476,7 +455,7 @@ npm run build
 - `main` 브랜치에 직접 push하지 않습니다.
 - 기능, 수정, 문서 작업은 별도 브랜치에서 진행합니다.
 - PR에는 변경 요약, 테스트 결과, 영향 디렉터리, 환경 변수 변경 여부를 기록합니다.
-- 상세 작업 규칙은 `AGENTS.md`와 `docs/agent_workspace_guidelines.md`를 따릅니다.
+- 상세 작업 규칙은 `AGENTS.md`와 `docs/agent_guidelines/agent_workspace_guidelines.md`를 따릅니다.
 
 ## 14. 📝 한 줄 정리
 

@@ -169,8 +169,11 @@ backend 실행 진입점은 `src/app.py`이다.
 `PYTHONPATH=src`를 붙이는 이유는 `src/app.py`를 `app` 모듈로 import하기 위해서다.
 
 ```bash
-PYTHONPATH=src uv run uvicorn app:app --host 127.0.0.1 --port 8000
+make start
 ```
+
+`make start`는 `.env`가 없으면 `.env.example`에서 먼저 만들고, `uv sync`로
+`backend/.venv`를 준비한 뒤 `uv run`으로 uvicorn을 실행한다.
 
 `src/app.py` 안의 `main()`을 직접 실행하는 방식도 가능하다.
 
@@ -325,9 +328,7 @@ cp .env.example .env
 
 ```bash
 cd backend
-cp .env.example .env
-# .env의 BACKEND_OPENROUTER_API_KEY를 실제 값으로 채운다.
-docker compose up -d --build
+make docker-up
 ```
 
 기본값은 host의 `127.0.0.1:8001`을 컨테이너 내부 `8000`에 연결한다. 현재 개발 서버가 `8000`을 쓰고 있지 않다면 `.env`에서 `BACKEND_HOST_PORT=8000`으로 바꿔도 된다. 같은 서버 계정이나 VS Code/SSH port forwarding으로 붙는 개발자는 `127.0.0.1:8001`을 쓰면 된다. 서버 네트워크 인터페이스에 직접 공개해야 한다면 `.env`에서 `BACKEND_HOST_BIND=0.0.0.0`으로 바꾼다.
@@ -336,11 +337,11 @@ docker compose up -d --build
 
 ```bash
 curl -s http://127.0.0.1:8001/health
-docker compose logs -f backend
+make docker-logs
 ```
 
 RAG 없이 Qwen3.7 Max를 한 번 확인하려면 backend compose만 사용해서 아래처럼
-띄운다. `infra/`의 compose 파일은 사용하지 않는다.
+띄운다. 루트 `deploy/`의 compose 파일은 사용하지 않는다.
 
 ```bash
 cd backend
@@ -364,7 +365,7 @@ curl -s http://127.0.0.1:8002/chat \
 종료:
 
 ```bash
-docker compose down
+make docker-down
 ```
 
 ## ✅ 검증 방법
@@ -374,13 +375,15 @@ docker compose down
 ### 1. 의존성 동기화
 
 ```bash
-uv sync
+make sync
 ```
+
+`make sync`는 `uv sync`를 실행해 `backend/.venv`를 준비한다.
 
 ### 2. 정적 import와 문법 확인
 
 ```bash
-PYTHONPATH=src uv run python -m compileall src scripts tests
+make check
 ```
 
 성공하면 `Compiling ...` 또는 `Listing ...`만 출력되고 에러 없이 종료된다.
@@ -388,7 +391,7 @@ PYTHONPATH=src uv run python -m compileall src scripts tests
 ### 3. unittest 실행
 
 ```bash
-PYTHONPATH=src uv run python -m unittest discover -s tests
+make test
 ```
 
 현재 테스트는 다음을 확인한다.
@@ -400,7 +403,7 @@ PYTHONPATH=src uv run python -m unittest discover -s tests
 ### 4. 서버 실행
 
 ```bash
-PYTHONPATH=src uv run uvicorn app:app --host 127.0.0.1 --port 8000
+make start
 ```
 
 정상 실행 시 아래와 비슷한 로그가 나온다.
