@@ -4,14 +4,14 @@
 
 ## 문서 목록
 
-- `agent_workspace_guidelines.md`: 에이전트 작업 흐름과 브랜치/커밋/PR 기준
-- `server_onboarding_llm_runbook.md`: 팀원 서버 접속 온보딩을 LLM이 안내할 때 사용하는 실행 절차
-- `server_onboarding_human_guide.docx`: 사람에게 공유하는 서버 접속 온보딩 문서
-- `ai_agent_dependency_prereq_guide.docx`: AI 에이전트 의존성/사전 준비 가이드
-- `linear_mcp_vscode_port_forwarding_guide.docx`: Linear MCP와 VS Code 포트 포워딩 가이드
-- `linear_mcp_token_setup_guide.docx`: Linear MCP 토큰 발급 및 Codex 연결 가이드
-- `meeting/`: 회의록 및 의사결정 기록
-- `assets/`: 문서에서 사용하는 이미지 자료
+- `agent_guidelines/`: 에이전트 작업 흐름과 브랜치/커밋/PR 기준
+  - `agent_workspace_guidelines.md`: AGENTS.md의 공통 규칙을 확장한 작업 가이드
+- `additional_docs/`: 온보딩, 도구 설정, 협업 참고 문서
+  - `ai_agent_dependency_prereq_guide.docx`: AI 에이전트 의존성/사전 준비 가이드
+  - `linear_mcp_token_setup_guide.docx`: Linear MCP 토큰 발급 및 Codex 연결 가이드
+  - `linear_mcp_vscode_port_forwarding_guide.docx`: Linear MCP와 VS Code 포트 포워딩 가이드
+  - `server_onboarding_human_guide.docx`: 사람에게 공유하는 서버 접속 온보딩 문서
+  - `vscode_workspace_usage_guide.docx`: VS Code 워크스페이스 사용 가이드
 
 문서 작성 원칙:
 

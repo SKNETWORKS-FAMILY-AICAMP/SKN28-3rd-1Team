@@ -98,8 +98,10 @@ services:
         condition: service_healthy
 
   streamlit:
+    profiles:
+      - legacy
     build:
-      context: ../streamlit
+      context: ../streamlit_3rd
       dockerfile: Dockerfile
     image: skn28-streamlit:dev
     container_name: skn28-streamlit

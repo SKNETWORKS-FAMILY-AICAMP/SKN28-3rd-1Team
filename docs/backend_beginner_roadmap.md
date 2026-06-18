@@ -36,7 +36,7 @@ SKN28-3rd-1Team/
 ├── rag/        # GraphRAG, 문서 파싱, 검색 작업
 ├── streamlit/  # Streamlit 기반 시연/프론트
 ├── frontend/   # 실제 프론트엔드 자리
-├── docs_web/   # 문서 웹
+├── presentation/ # 발표 자료와 산출물
 ├── infra/      # 인프라
 └── docs/       # 문서
 ```

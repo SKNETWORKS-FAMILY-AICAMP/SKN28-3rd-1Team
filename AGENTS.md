@@ -2,21 +2,24 @@
 
 ## Repo Scope
 
-This repository is a monorepo for the bootcamp project.
+This repository is a monorepo for the bootcamp project. The current active scope is:
 
 ```txt
 bootcamp-project/
-├── frontend/   # 실제 프론트엔드
-├── backend/    # 메인 백엔드 서비스
-├── rag/        # RAG / 문서 파싱 / MCP 관련 작업
-├── streamlit/  # Streamlit 기반 Python 프레임워크 프로젝트
-├── docs_web/   # GitHub Pages 문서 웹
-├── infra/      # Podman 등 인프라 실행/관리
-├── docs/       # 프로젝트 문서
-└── README.md   # 전체 프로젝트 설명
+├── frontend/      # 실제 프론트엔드
+├── backend/       # 메인 백엔드 서비스
+├── rag/           # RAG / 문서 파싱 / MCP 관련 작업
+│   └── related/   # 이전 RAG 관련 자료와 보조 프로젝트
+├── presentation/  # 발표 자료와 산출물
+├── infra/         # Docker / Podman 등 인프라 실행/관리
+├── docs/          # 프로젝트 문서
+└── README.md      # 전체 프로젝트 설명
 ```
 
+Directories with the `_3rd` postfix, such as `streamlit_3rd/`, are legacy/non-current scope. Do not treat them as active project scope, and do not modify, run, or use them unless the user explicitly asks.
+
 `.env.example` files are managed inside each service directory when needed. Do not add a root-level `.env.example` unless the team explicitly changes this policy.
+
 
 ## Shared Rules
 
@@ -101,22 +104,23 @@ Python projects in this repo must use `uv`.
 
 - Use `uv init`, `uv add`, `uv sync`, `uv lock`, and `uv run`.
 - Do not use `pip`, `pip3`, Poetry, or root-level `requirements.txt` for project dependency management.
-- `backend/`, `rag/`, and `streamlit/` each manage their own `pyproject.toml`, `uv.lock`, `.python-version`, and `.venv/`.
+- `backend/` and `rag/` each manage their own `pyproject.toml`, `uv.lock`, `.python-version`, and `.venv/`.
 - Keep virtual environments local. Do not commit `.venv/`.
 - Do not run Python commands with the repository-root Python interpreter.
-- For Python work, first move into the target project directory and use that directory's uv environment:
+- For Python work, first move into the target project directory and use that directory's uv environment. For example:
   - `cd backend && uv sync && uv run <command>`
   - `cd rag && uv sync && uv run <command>`
-  - `cd streamlit && uv sync && uv run <command>`
-- AI agents must choose the Python environment based on the file they are editing. A file under `backend/` uses `backend/.venv/bin/python`, a file under `rag/` uses `rag/.venv/bin/python`, and a file under `streamlit/` uses `streamlit/.venv/bin/python`.
+- AI agents must choose the Python environment based on the file they are editing. A file under `backend/` uses `backend/.venv/bin/python`, and a file under `rag/` uses `rag/.venv/bin/python`.
+- Directories ending in `_3rd` are not current Python scope. Do not run `uv sync`, tests, or language-server setup there unless explicitly requested.
 - If a service `.venv/` does not exist, run `uv sync` inside that service directory before running Python, tests, or language-server-dependent commands.
 
 ## VS Code Workspace
 
 - Open `SKN28-3rd-1Team.code-workspace` from the repository root when using VS Code.
-- The workspace includes `backend/`, `rag/`, and `streamlit/` as separate folders so each folder can resolve `${workspaceFolder}/.venv/bin/python` relative to itself.
-- When opening Python files, prefer the service folder entry in the workspace explorer, such as `backend/src/...`, `rag/src/...`, or `streamlit/src/...`, instead of the duplicated `repo-root/...` path.
-- Service-local VS Code settings live in `backend/.vscode/settings.json`, `rag/.vscode/settings.json`, and `streamlit/.vscode/settings.json`.
+- The active Python workspace scope is `backend/` and `rag/`, so each folder can resolve `${workspaceFolder}/.venv/bin/python` relative to itself.
+- When opening Python files, prefer the service folder entry in the workspace explorer, such as `backend/src/...` or `rag/src/...`, instead of the duplicated `repo-root/...` path.
+- Service-local VS Code settings for current Python services live in `backend/.vscode/settings.json` and `rag/.vscode/settings.json`.
+- `streamlit_3rd/` may contain legacy VS Code settings, but it is outside the current workspace scope.
 
 ## Tool And MCP Configuration
 
@@ -125,10 +129,9 @@ Python projects in this repo must use `uv`.
 - Only inspect or modify user-global configuration after the user explicitly asks for that setup.
 - If a required tool or MCP server is missing, explain what needs to be installed or configured before changing global state.
 
-## Detailed Guide
-
-For the fuller workspace guide, see `docs/agent_workspace_guidelines.md`.
-
-
 # additional notes:
 for user specific rules, read instructions.md in project root
+
+
+# Additionals
+for more additional guides, read agent_guidelines/ directory

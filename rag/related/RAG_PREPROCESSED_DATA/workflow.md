@@ -1,6 +1,6 @@
 # RAG_PREPROCESSED_DATA Chunk Workflow
 
-이 문서는 `RAG_PREPROCESSED_DATA/` 안의 `.toon` 문서를 사람이 검토하고, AI agent에게 chunk `.toon` 파일 생성과 관계 정리를 맡길 때 따라야 할 작업 흐름을 정의한다.
+이 문서는 `rag/related/RAG_PREPROCESSED_DATA/` 안의 `.toon` 문서를 사람이 검토하고, AI agent에게 chunk `.toon` 파일 생성과 관계 정리를 맡길 때 따라야 할 작업 흐름을 정의한다.
 
 현재 범위는 `.toon` 문서를 chunk 단위로 정리하고 chunk 사이의 관계를 Mermaid diagram으로 기록하는 것이다. 이 결과를 MCP 형태의 GraphRAG로 감싸는 작업은 이후 단계이며, 이 workflow의 범위가 아니다.
 
@@ -15,13 +15,13 @@
 
 ## 2. 처리 대상
 
-대상은 `RAG_PREPROCESSED_DATA/` 아래 모든 `.toon` 파일이다.
+대상은 `rag/related/RAG_PREPROCESSED_DATA/` 아래 모든 `.toon` 파일이다.
 
 예시:
 
 ```text
-RAG_PREPROCESSED_DATA/rag_datas/근로자퇴직급여 보장법.toon
-RAG_PREPROCESSED_DATA/rag_datas/조례/고령자_조례/부산광역시 수영구/부산광역시 수영구 공동주택 고령자경비원의 고용 유지 및 창출 촉진을 위한 지원 조례.toon
+rag/related/RAG_PREPROCESSED_DATA/rag_datas/근로자퇴직급여 보장법.toon
+rag/related/RAG_PREPROCESSED_DATA/rag_datas/조례/고령자_조례/부산광역시 수영구/부산광역시 수영구 공동주택 고령자경비원의 고용 유지 및 창출 촉진을 위한 지원 조례.toon
 ```
 
 ## 3. 문서별 chunk 생성 규칙
@@ -32,10 +32,10 @@ RAG_PREPROCESSED_DATA/rag_datas/조례/고령자_조례/부산광역시 수영�
 
 ```text
 원본:
-RAG_PREPROCESSED_DATA/rag_datas/근로자퇴직급여 보장법.toon
+rag/related/RAG_PREPROCESSED_DATA/rag_datas/근로자퇴직급여 보장법.toon
 
 산출 디렉터리:
-RAG_PREPROCESSED_DATA/rag_datas/근로자퇴직급여 보장법/
+rag/related/RAG_PREPROCESSED_DATA/rag_datas/근로자퇴직급여 보장법/
 ```
 
 산출 디렉터리 안에는 다음 파일을 둔다.
@@ -161,7 +161,7 @@ Mermaid 아래에는 관계 목록을 표로 다시 적는다.
 - chunk를 만들면서 원문 의미를 요약문으로 대체하지 않는다.
 - relationship을 확신할 수 없는데 확정 관계처럼 표시하지 않는다.
 - MCP server, graph DB 저장, embedding, retrieval 구현을 이 단계에서 진행하지 않는다.
-- `RAG_PREPROCESSED_DATA/` 전체 데이터 파일을 무작정 git add 하지 않는다.
+- `rag/related/RAG_PREPROCESSED_DATA/` 전체 데이터 파일을 무작정 git add 하지 않는다.
 
 ## 9. 완료 기준
 
@@ -175,6 +175,6 @@ Mermaid 아래에는 관계 목록을 표로 다시 적는다.
 
 전체 완료 상태:
 
-- `RAG_PREPROCESSED_DATA/` 아래 모든 `.toon` 문서가 위 기준을 만족한다.
+- `rag/related/RAG_PREPROCESSED_DATA/` 아래 모든 `.toon` 문서가 위 기준을 만족한다.
 - 문서 간 연결이 필요한 경우 상위 `relationships.md`에 cross-document 관계가 정리되어 있다.
 - 이후 MCP GraphRAG 작업자가 사용할 수 있도록 chunk 이름, 원본 파일 이름, relationship이 명확히 남아 있다.

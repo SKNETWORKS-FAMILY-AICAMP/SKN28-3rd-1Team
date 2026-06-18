@@ -5,7 +5,7 @@ RAG 파이프라인의 별도 red-team 실험을 위한 루트 디렉토리다. 
 ## 구성
 
 ```text
-rag-red-team/
+rag/related/rag-red-team/
 ├── original-data-toon/                 # RAG_PREPROCESSED_DATA에서 복사한 원본 TOON 법령 데이터
 ├── original-data-with-chunk-and-edge/  # DOCX 기반 청크/엣지 설계 문서
 ├── original-data-with-chunk-and-edge-md/ # DOCX 설계 문서를 Markdown으로 변환한 검토본
@@ -37,7 +37,7 @@ rag-red-team/
 ## 실행
 
 ```bash
-cd rag-red-team
+cd rag/related/rag-red-team
 cp .env.example .env
 uv sync
 docker compose -p rag-red-team -f infra/docker-compose.yml up -d
@@ -77,21 +77,21 @@ docker exec rag-red-team-neo4j cypher-shell -u neo4j -p 1234 \
 stdio transport:
 
 ```bash
-cd rag-red-team
+cd rag/related/rag-red-team
 uv run python -m rag_red_team_neo4j.mcp_server
 ```
 
 HTTP transport:
 
 ```bash
-cd rag-red-team
+cd rag/related/rag-red-team
 uv run python -m rag_red_team_neo4j.mcp_server --transport http --host 127.0.0.1 --port 9001
 ```
 
 Docker 기반 remote MCP:
 
 ```bash
-cd rag-red-team
+cd rag/related/rag-red-team
 docker compose -p rag-red-team -f infra/docker-compose.yml up -d --build mcp
 ```
 
@@ -168,7 +168,7 @@ LIMIT 10
 ## 종료
 
 ```bash
-cd rag-red-team
+cd rag/related/rag-red-team
 docker compose -p rag-red-team -f infra/docker-compose.yml down
 ```
 

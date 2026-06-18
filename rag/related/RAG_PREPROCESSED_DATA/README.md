@@ -12,15 +12,15 @@
 
 ```text
 브랜치: docs/rag-compare-prd
-작업 위치: RAG_PREPROCESSED_DATA/
+작업 위치: rag/related/RAG_PREPROCESSED_DATA/
 
 먼저 확인할 파일:
-1. RAG_PREPROCESSED_DATA/README.md
-2. RAG_PREPROCESSED_DATA/instructions.md
-3. RAG_PREPROCESSED_DATA/workflow.md
+1. rag/related/RAG_PREPROCESSED_DATA/README.md
+2. rag/related/RAG_PREPROCESSED_DATA/instructions.md
+3. rag/related/RAG_PREPROCESSED_DATA/workflow.md
 
 처리 대상:
-RAG_PREPROCESSED_DATA/rag_datas/ 아래 모든 .toon 파일
+rag/related/RAG_PREPROCESSED_DATA/rag_datas/ 아래 모든 .toon 파일
 
 작업 요약:
 .toon 원본 파일 1개마다 같은 이름의 디렉터리를 만들고, 그 안에 원본 .toon 복사본과 chunks/ 디렉터리를 둔다.

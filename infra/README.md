@@ -4,18 +4,18 @@
 
 ## Services
 
-`infra/docker-compose.yml`은 아래 서비스를 같은 Docker network인
+`infra/docker-compose.yml`은 기본 실행 시 아래 서비스를 같은 Docker network인
 `infra_default`에 올립니다.
 
 - `backend`: Main Agent FastAPI
-- `streamlit`: 상담형 Streamlit UI
 - `rag-be`: RAG Backend + FastMCP Streamable HTTP endpoint
 - `rag-fe`: RAG 운영 UI
 - `memgraph`: GraphRAG DB
 - `lab`: Memgraph Lab
 - `redis`: RAG job observability stream
 
-`docs_web`과 `rag-red-team`은 이 통합 stack에 포함하지 않습니다.
+`rag/related/rag-red-team`은 이 통합 stack에 포함하지 않습니다.
+`streamlit` 서비스는 `streamlit_3rd/` 기반 legacy profile입니다. 현재 scope가 아니므로 명시적으로 필요할 때만 `--profile legacy`로 실행합니다.
 
 ## Env Files
 
@@ -25,7 +25,6 @@
 ```bash
 cp infra/.env.example infra/.env
 cp backend/.env infra/.env_backend
-cp streamlit/.env infra/.env_streamlit
 cp rag/be/.env infra/.env_rag_be
 cp rag/fe/.env infra/.env_rag_fe
 cp rag/infra/.env infra/.env_rag_infra
@@ -41,12 +40,18 @@ cp rag/infra/.env infra/.env_rag_infra
 docker compose --env-file infra/.env -f infra/docker-compose.yml up -d --build
 ```
 
+Legacy Streamlit UI까지 실행해야 할 때만 아래 파일을 준비하고 profile을 켭니다.
+
+```bash
+cp streamlit_3rd/.env infra/.env_streamlit
+docker compose --profile legacy --env-file infra/.env -f infra/docker-compose.yml up -d --build
+```
+
 기본 host 포트:
 
 | service | URL |
 | --- | --- |
 | Backend | `http://127.0.0.1:8100` |
-| Streamlit | `http://127.0.0.1:8501` |
 | RAG Backend | `http://127.0.0.1:8110` |
 | RAG Frontend | `http://127.0.0.1:5174` |
 | Memgraph Lab | `http://127.0.0.1:3000` |
@@ -57,10 +62,11 @@ Docker network 내부 연결:
 
 ```text
 backend -> http://rag-be:8010/mcp
-streamlit -> http://backend:8000
 rag-be -> bolt://memgraph:7687
 rag-be -> redis://redis:6379/0
 ```
+
+Legacy profile을 켠 경우에만 `streamlit -> http://backend:8000` 연결이 추가됩니다.
 
 ## Check
 
@@ -68,9 +74,10 @@ rag-be -> redis://redis:6379/0
 docker compose --env-file infra/.env -f infra/docker-compose.yml ps
 curl -s http://127.0.0.1:8100/health
 curl -s http://127.0.0.1:8110/health
-curl -s http://127.0.0.1:8501/_stcore/health
 curl -s http://127.0.0.1:5174/ | head
 ```
+
+Legacy Streamlit profile을 켠 경우 `curl -s http://127.0.0.1:8501/_stcore/health`도 확인합니다.
 
 Docker network 내부에서 MCP tool 목록을 확인합니다.
 

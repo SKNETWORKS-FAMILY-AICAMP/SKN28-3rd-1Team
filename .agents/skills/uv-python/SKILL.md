@@ -1,6 +1,6 @@
 ---
 name: uv-python
-description: Use this skill for Python setup, dependency management, and run commands in backend/, rag/, and streamlit/.
+description: Use this skill for Python setup, dependency management, and run commands in backend/ and rag/.
 ---
 
 # uv Python Skill
@@ -44,20 +44,9 @@ Add RAG dependencies from inside `rag/`:
 uv add <package>
 ```
 
-## Streamlit
+## Legacy `_3rd` Directories
 
-Run commands from inside `streamlit/`:
-
-```bash
-uv sync
-uv run streamlit run src/app.py
-```
-
-Add Streamlit dependencies from inside `streamlit/`:
-
-```bash
-uv add <package>
-```
+Directories ending in `_3rd`, such as `streamlit_3rd/`, are not current Python scope. Do not run `uv sync`, tests, or dependency commands there unless explicitly requested.
 
 ## Lock Files
 
