@@ -5,9 +5,11 @@ import Image from "next/image"
 import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { getMockAnswer, suggestedQuestions, type Source } from "@/lib/mock-legal"
+import { suggestedQuestions, type Source } from "@/lib/mock-legal"
 import { SendHorizonal, BookText, Sparkles } from "lucide-react"
 import { cn } from "@/lib/utils"
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://127.0.0.1:8000"
 
 type Message = {
   id: string
@@ -15,6 +17,22 @@ type Message = {
   text: string
   sources?: Source[]
   pending?: boolean
+}
+
+// backend /chat/stream의 SSE 블록(event:/data:)을 {event, data}로 파싱
+function parseSseBlock(block: string): { event: string; data: unknown } | null {
+  let event = "message"
+  const dataLines: string[] = []
+  for (const line of block.split("\n")) {
+    if (line.startsWith("event:")) event = line.slice(6).trim()
+    else if (line.startsWith("data:")) dataLines.push(line.slice(5).trim())
+  }
+  if (dataLines.length === 0) return null
+  try {
+    return { event, data: JSON.parse(dataLines.join("\n")) }
+  } catch {
+    return null
+  }
 }
 
 function MascotAvatar({ className }: { className?: string }) {
@@ -38,6 +56,7 @@ export function ChatInterface() {
   const [location, setLocation] = useState("")
   const scrollRef = useRef<HTMLDivElement>(null)
   const startedRef = useRef(false)
+  const sessionIdRef = useRef<string>(crypto.randomUUID())
 
   const send = useCallback((raw: string) => {
     const text = raw.trim()
@@ -47,16 +66,66 @@ export function ChatInterface() {
     setMessages((prev) => [...prev, userMsg, { id: pendingId, role: "assistant", text: "", pending: true }])
     setInput("")
 
-    setTimeout(() => {
-      const answer = getMockAnswer(text)
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === pendingId
-            ? { ...m, text: answer.text, sources: answer.sources, pending: false }
-            : m,
-        ),
-      )
-    }, 900)
+    const patch = (changes: Partial<Message>) =>
+      setMessages((prev) => prev.map((m) => (m.id === pendingId ? { ...m, ...changes } : m)))
+
+    void (async () => {
+      let answer = ""
+      const audioChunks: Uint8Array[] = []
+      try {
+        const res = await fetch(`${BACKEND_URL}/chat/stream`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "text/event-stream" },
+          body: JSON.stringify({ session_id: sessionIdRef.current, message: text }),
+        })
+        if (!res.ok || !res.body) throw new Error(`backend ${res.status}`)
+
+        const reader = res.body.getReader()
+        const decoder = new TextDecoder()
+        let buffer = ""
+        for (;;) {
+          const { value, done } = await reader.read()
+          if (done) break
+          buffer += decoder.decode(value, { stream: true })
+          const blocks = buffer.split("\n\n")
+          buffer = blocks.pop() ?? ""
+          for (const block of blocks) {
+            const parsed = parseSseBlock(block)
+            if (!parsed) continue
+            const data = parsed.data as Record<string, unknown>
+
+            if (parsed.event === "delta") {
+              answer += String(data.content ?? "")
+              patch({ text: answer, pending: false })
+            } else if (parsed.event === "final") {
+              const rawSources = Array.isArray(data.sources) ? (data.sources as Record<string, unknown>[]) : []
+              const sources: Source[] = rawSources.map((s) => ({
+                title: String(s.title ?? "출처"),
+                ref: String(s.url ?? s.excerpt ?? ""),
+              }))
+              patch({ text: answer || String(data.answer ?? ""), sources, pending: false })
+            } else if (parsed.event === "audio") {
+              const b64 = String(data.audio_base64 ?? "")
+              const bin = atob(b64)
+              const bytes = new Uint8Array(bin.length)
+              for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+              audioChunks.push(bytes)
+            } else if (parsed.event === "audio_done" && audioChunks.length > 0) {
+              const blob = new Blob(audioChunks as BlobPart[], { type: "audio/mpeg" })
+              void new Audio(URL.createObjectURL(blob)).play().catch(() => {})
+            } else if (parsed.event === "error") {
+              throw new Error(String(data.message ?? "stream error"))
+            }
+          }
+        }
+        if (!answer) patch({ text: "답변을 받지 못했어요. 잠시 후 다시 시도해 주세요.", pending: false })
+      } catch (err) {
+        patch({
+          text: `서버에 연결하지 못했어요. (${err instanceof Error ? err.message : "오류"})`,
+          pending: false,
+        })
+      }
+    })()
   }, [])
 
   // Prefill from ?q= and auto-send once
