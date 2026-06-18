@@ -291,10 +291,10 @@ backend 안의 `scripts/`는 현재 수동 `/chat` 테스트용 `manual_chat.py`
 
 ## 🔐 환경 변수
 
-`.env`는 `backend/.env`에 둔다. 커밋하지 않는다.
+Env field 계약은 `backend/.env.schema`에서 관리한다. 실제 값은 `backend/.env.local`, `backend/.env`, 또는 이후 연결할 secret provider에서 관리하고 커밋하지 않는다.
 
 ```bash
-cp .env.example .env
+make env-check
 ```
 
 주요 값:
@@ -320,7 +320,7 @@ cp .env.example .env
 | `BACKEND_ENABLE_RAG_TOOLS` | `true` | `false`로 두면 RAG MCP tools를 로딩하지 않고 no-RAG/no-tool로 agent 실행 |
 | `BACKEND_TOOL_TIMEOUT_MS` | `30000` | tool 실행 timeout |
 
-실제 `backend/.env`는 Git에 커밋하지 않는다. `/health`는 키 없이도 동작하지만 `/chat`은 실제 LLM 호출이므로 `BACKEND_OPENROUTER_API_KEY`가 필요하다.
+실제 `backend/.env`와 `.env.local`은 Git에 커밋하지 않는다. local env 내용을 직접 출력하지 말고 `varlock load --agent --path backend` 또는 `make env-check`를 사용한다. `/health`는 키 없이도 동작하지만 `/chat`은 실제 LLM 호출이므로 `BACKEND_OPENROUTER_API_KEY`가 필요하다.
 
 ## 🐳 Docker 실행
 

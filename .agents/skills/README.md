@@ -12,6 +12,7 @@ This directory is the canonical shared skill source for this repository.
 - `prd/` — product requirements document creation and refinement.
 - `shadcn/` — shadcn/ui component usage, styling, customization, and project guidance.
 - `uv-python/` — Python setup and dependency management with uv.
+- `varlock/` — secure environment variable schema, validation, and injection guidance.
 - `web-design-guidelines/` — UI, UX, and accessibility review guidance.
 
 ## Source Notes

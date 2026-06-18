@@ -6,14 +6,17 @@ COMPOSE_ENV := $(DOCKER_DIR)/.env
 COMPOSE_FILE := $(DOCKER_DIR)/docker-compose.yml
 COMPOSE := docker compose --env-file $(COMPOSE_ENV) -f $(COMPOSE_FILE)
 LEGACY_COMPOSE := docker compose --profile legacy --env-file $(COMPOSE_ENV) -f $(COMPOSE_FILE)
+VARLOCK ?= varlock
+VARLOCK_PATHS := --path $(DOCKER_DIR) --path $(ROOT_DIR)/backend --path $(ROOT_DIR)/rag/be --path $(ROOT_DIR)/rag/fe
 
 .DEFAULT_GOAL := help
 
-.PHONY: help env env-legacy up up-legacy down restart ps logs pull build check clean backend-shell
+.PHONY: help env env-check env-legacy up up-legacy down restart ps logs pull build check clean backend-shell
 
 help:
 	@printf "%s\n" "deploy targets:"
 	@printf "%s\n" "  make up          Start frontend, backend, RAG, Memgraph, Redis"
+	@printf "%s\n" "  make env-check   Validate deploy/service env with Varlock"
 	@printf "%s\n" "  make up-legacy   Start all services plus legacy streamlit_3rd"
 	@printf "%s\n" "  make down        Stop deploy stack"
 	@printf "%s\n" "  make ps          Show deploy containers"
@@ -23,7 +26,7 @@ help:
 	@printf "%s\n" "  make clean       Stop and remove deploy volumes"
 
 env:
-	@test -f $(COMPOSE_ENV) || cp $(DOCKER_DIR)/.env.example $(COMPOSE_ENV)
+	$(VARLOCK) load --path $(DOCKER_DIR) --format env --compact > $(COMPOSE_ENV)
 	@if [ ! -f $(DOCKER_DIR)/.env_backend ]; then \
 		if [ -f $(ROOT_DIR)/backend/.env ]; then \
 			cp $(ROOT_DIR)/backend/.env $(DOCKER_DIR)/.env_backend; \
@@ -41,7 +44,10 @@ env:
 		fi; \
 	fi
 
-env-legacy: env
+env-check:
+	$(VARLOCK) load --agent $(VARLOCK_PATHS) >/dev/null
+
+env-legacy: env env-check
 	@if [ ! -f $(DOCKER_DIR)/.env_streamlit ]; then \
 		if [ -f $(ROOT_DIR)/streamlit_3rd/.env ]; then \
 			cp $(ROOT_DIR)/streamlit_3rd/.env $(DOCKER_DIR)/.env_streamlit; \
@@ -51,7 +57,7 @@ env-legacy: env
 		fi; \
 	fi
 
-up: env
+up: env env-check
 	$(COMPOSE) up -d --build
 
 up-legacy: env-legacy
@@ -74,7 +80,7 @@ pull: env
 build: env
 	$(COMPOSE) build
 
-check: env
+check: env env-check
 	$(COMPOSE) config --services
 
 clean:

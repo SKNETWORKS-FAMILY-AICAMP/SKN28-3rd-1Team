@@ -25,9 +25,9 @@ cd rag
 make be-start
 ```
 
-`make be-start`는 `rag/be/.env`를 준비하고 `uv sync`로 `rag/be/.venv`를
-동기화한 뒤 RAG backend를 실행합니다. 실행 없이 venv만 준비하려면
-`make be-sync`를 사용합니다.
+`make be-start`는 Varlock으로 `rag/be/.env.schema`를 검증하고 `uv sync`로
+`rag/be/.venv`를 동기화한 뒤 RAG backend를 실행합니다. 실행 없이 venv만
+준비하려면 `make be-sync`를 사용합니다.
 
 External read-only MCP endpoint:
 
@@ -73,4 +73,4 @@ Default endpoints:
 - `be/README.md`: Backend runtime, API, env, and test commands
 - `infra/README.md`: Memgraph and Memgraph Lab Docker Compose usage
 
-Makefile target이 있는 작업은 `make`를 우선 사용합니다. Raw `uv`, `bun`, `docker compose` 명령은 Makefile을 디버깅하거나 세부 옵션을 바꿔야 할 때 사용합니다. 현재 Python venv scope는 `rag/be/.venv`이며, `rag/fe`와 `rag/infra`는 Python venv를 사용하지 않습니다.
+Makefile target이 있는 작업은 `make`를 우선 사용합니다. Raw `uv`, `bun`, `docker compose` 명령은 Makefile을 디버깅하거나 세부 옵션을 바꿔야 할 때 사용합니다. 현재 Python venv scope는 `rag/be/.venv`이며, `rag/fe`와 `rag/infra`는 Python venv를 사용하지 않습니다. Env field 계약은 `rag/be/.env.schema`, `rag/fe/.env.schema`, `rag/infra/.env.schema`에서 관리하며 `make env-check`로 검증합니다.

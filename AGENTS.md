@@ -20,7 +20,7 @@ bootcamp-project/
 
 Directories with the `_3rd` postfix, such as `streamlit_3rd/`, are legacy/non-current scope. Do not treat them as active project scope, and do not modify, run, or use them unless the user explicitly asks.
 
-`.env.example` files are managed inside each service directory when needed. Do not add a root-level `.env.example` unless the team explicitly changes this policy.
+`.env.schema` files are the version-controlled contract for environment variables. `.env.example` files may remain as legacy/reference examples inside service directories, but new env field changes should update the relevant `.env.schema` first. Do not add a root-level `.env.example` unless the team explicitly changes this policy.
 
 
 ## Shared Rules
@@ -32,7 +32,8 @@ Directories with the `_3rd` postfix, such as `streamlit_3rd/`, are legacy/non-cu
 - Maintain README files as Markdown documents.
 - Update the root `README.md` and the relevant directory README when structure, setup, or run commands change.
 - Prefer Makefile targets for setup, run, check, and deploy workflows when a Makefile exists. Use raw `uv`, `bun`, or `docker compose` commands only when debugging the Makefile itself or when no target exists.
-- Do not commit secrets. Real `.env` files stay local only.
+- Do not commit secrets. Real `.env`, `.env.local`, and generated deploy env files stay local only.
+- Use Varlock for env schema validation and command env injection when a Makefile target provides it. Do not read local `.env` files directly; use `varlock load --agent` when env inspection is needed.
 - If existing uncommitted changes appear to belong to someone else, do not overwrite them. Ask first.
 
 ## Project Skills
@@ -50,6 +51,7 @@ Use these skills when relevant:
 - `prd`: product requirements document creation and refinement.
 - `shadcn`: shadcn/ui component usage, styling, customization, and project guidance.
 - `uv-python`: repo-specific Python setup and dependency management with uv.
+- `varlock`: secure env schema, validation, secret masking, and command injection workflows.
 - `web-design-guidelines`: Vercel-sourced UI, UX, and accessibility review guidance.
 
 Skill adapter directories for specific tools or agents are local-only unless the team explicitly approves committing them. Generated or personal directories such as `.claude/`, `.codex/`, `.gemini/`, `.factory/`, and `.opencode/` must not be committed.
