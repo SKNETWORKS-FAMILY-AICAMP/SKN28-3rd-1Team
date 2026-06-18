@@ -188,7 +188,7 @@
 | RAG | ![MCP](https://img.shields.io/badge/MCP-Tool%20Server-111827) ![Memgraph](https://img.shields.io/badge/Memgraph-Graph%20DB-FF6B35?logo=memgraph&logoColor=white) ![Neo4j](https://img.shields.io/badge/Neo4j-Compatible-4581C3?logo=neo4j&logoColor=white) ![GraphRAG](https://img.shields.io/badge/GraphRAG-Search-10B981) |
 |Frontend | ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black) ![Next.js](https://img.shields.io/badge/Next.js-App-000000?logo=nextdotjs&logoColor=white) ![TypeScript](https://img.shields.io/badge/TypeScript-TS-3178C6?logo=typescript&logoColor=white) ![Bun](https://img.shields.io/badge/Bun-Package-000000?logo=bun&logoColor=white) ![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-Style-06B6D4?logo=tailwindcss&logoColor=white) ![shadcn/ui](https://img.shields.io/badge/shadcn%2Fui-Components-000000?logo=shadcnui&logoColor=white) |
 | Prototype | ![Streamlit](https://img.shields.io/badge/Streamlit-UI-FF4B4B?logo=streamlit&logoColor=white) ![Pandas](https://img.shields.io/badge/Pandas-Data-150458?logo=pandas&logoColor=white) |
-| Infra | ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white) ![Memgraph Lab](https://img.shields.io/badge/Memgraph%20Lab-Graph%20View-FF6B35?logo=memgraph&logoColor=white) |
+| Deploy | ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white) ![Memgraph Lab](https://img.shields.io/badge/Memgraph%20Lab-Graph%20View-FF6B35?logo=memgraph&logoColor=white) ![Make](https://img.shields.io/badge/Make-Workflow-111827) |
 | Collaboration | ![GitHub](https://img.shields.io/badge/GitHub-Code-181717?logo=github&logoColor=white) ![Linear](https://img.shields.io/badge/Linear-Issues-5E6AD2?logo=linear&logoColor=white) ![Notion](https://img.shields.io/badge/Notion-Docs-000000?logo=notion&logoColor=white) ![Discord](https://img.shields.io/badge/Discord-Chat-5865F2?logo=discord&logoColor=white) |
 
 ## 9. 📁 프로젝트 구조
@@ -217,7 +217,9 @@ SKN28-3rd-1Team/
 │   ├── outputs/             # 발표 자료 생성/검증 산출물
 │   ├── test-data/           # benchmark, LLM-as-a-judge 결과
 │   └── marking_criteria/    # 프로젝트 평가 기준 정리
-├── infra/                   # 통합 Docker Compose 실행 설정
+├── deploy/                  # 통합 배포 실행 설정
+│   ├── docker/              # Docker Compose와 deploy env 파일
+│   └── makefile/            # 통합 실행 Makefile
 ├── .agents/                 # repo-scoped agent skill과 작업 규칙
 ├── AGENTS.md                # 협업 및 agent 작업 규칙
 └── README.md
@@ -232,7 +234,7 @@ SKN28-3rd-1Team/
 | `rag/be/README.md` | RAG Backend API, MCP endpoint, 환경 변수 |
 | `rag/fe/README.md` | RAG 운영 UI 실행 방법 |
 | `streamlit_3rd/README.md` | legacy Streamlit 상담 UI 구조와 backend 연결 방법 |
-| `infra/README.md` | 통합 Docker Compose 서비스와 포트 정보 |
+| `deploy/README.md` | 통합 Docker Compose, Makefile 실행, 포트 정보 |
 | `docs/README.md` | agent guideline, 온보딩, 도구 설정 등 팀 문서 |
 | `rag/related/rag-red-team/README.md` | Neo4j red-team graph 실험과 MCP 실행 방법 |
 | `presentation/test-data/README.md` | 발표용 평가 데이터, benchmark, judge 결과 구조 |
@@ -251,27 +253,23 @@ SKN28-3rd-1Team/
 
 ### 1) 통합 Docker Compose 실행
 
-`rag/related/rag-red-team`과 `streamlit_3rd`를 제외하고, Backend, RAG Backend,
-RAG Frontend, Memgraph, Memgraph Lab, Redis를 같은 `infra_default` Docker
-network에서 함께 실행한다.
+`rag/related/rag-red-team`과 `streamlit_3rd`를 제외하고, Frontend, Backend,
+RAG Backend, RAG Frontend, Memgraph, Memgraph Lab, Redis를 같은 `deploy_default`
+Docker network에서 함께 실행한다.
 
 ```bash
-cp infra/.env.example infra/.env
-cp backend/.env infra/.env_backend
-cp rag/be/.env infra/.env_rag_be
-cp rag/fe/.env infra/.env_rag_fe
-cp rag/infra/.env infra/.env_rag_infra
-
-docker compose --env-file infra/.env -f infra/docker-compose.yml up -d --build
+cd deploy/makefile
+make up
 ```
 
 기본 접속 정보:
 
 ```text
+Frontend:      http://127.0.0.1:3000
 Backend API:   http://127.0.0.1:8100
 RAG Backend:   http://127.0.0.1:8110
 RAG Frontend:  http://127.0.0.1:5174
-Memgraph Lab:  http://127.0.0.1:3000
+Memgraph Lab:  http://127.0.0.1:3001
 Memgraph Bolt: bolt://127.0.0.1:7687
 Redis:         redis://127.0.0.1:6379/0
 ```
@@ -284,24 +282,22 @@ rag-be -> bolt://memgraph:7687
 rag-be -> redis://redis:6379/0
 ```
 
-Legacy Streamlit UI까지 실행해야 할 때만 `cp streamlit_3rd/.env infra/.env_streamlit` 후
-`docker compose --profile legacy --env-file infra/.env -f infra/docker-compose.yml up -d --build`를 사용한다.
+Legacy Streamlit UI까지 실행해야 할 때만 `cd deploy/makefile && make up-legacy`를 사용한다.
 
-`/chat`은 실제 OpenRouter 호출이므로 `infra/.env_backend`의
+`/chat`은 실제 OpenRouter 호출이므로 `deploy/docker/.env_backend`의
 `OPENROUTER_API_KEY` 또는 `BACKEND_OPENROUTER_API_KEY`가 유효해야 한다.
+
+Makefile target이 있는 서비스는 `make`를 우선 사용한다. Python 서비스의
+`make start`, `make test`, `make check` 계열 target은 먼저 `uv sync`를 실행해
+서비스 로컬 `.venv`를 준비한 뒤 `uv run`으로 실행한다. 현재 scope의 Python
+venv는 `backend/.venv`와 `rag/be/.venv`이며, repository root Python이나
+`streamlit_3rd/.venv`를 current scope 작업에 사용하지 않는다.
 
 ### 2) Backend Agent 실행
 
 ```bash
 cd backend
-cp .env.example .env
-uv sync
-
-set -a
-source .env
-set +a
-
-PYTHONPATH=src uv run uvicorn app:app --host 127.0.0.1 --port 8000 --reload
+make start
 ```
 
 상태 확인:
@@ -339,8 +335,7 @@ STREAMLIT_CHAT_BACKEND_MOCK=false
 
 ```bash
 cd rag
-cp infra/.env.example infra/.env
-docker compose --env-file infra/.env -f infra/docker-compose.yml up -d
+make infra-up
 ```
 
 기본 접속 정보:
@@ -353,10 +348,8 @@ Memgraph Lab:  http://127.0.0.1:3000
 ### 5) RAG Backend 실행
 
 ```bash
-cd rag/be
-cp .env.example .env
-uv sync
-PYTHONPATH=src uv run uvicorn app:app --host 127.0.0.1 --port 8010
+cd rag
+make be-start
 ```
 
 주요 endpoint:
@@ -374,9 +367,8 @@ MCP  /mcp
 ### 6) RAG Frontend 실행
 
 ```bash
-cd rag/fe
-bun install
-bun run dev
+cd rag
+make fe-start
 ```
 
 기본 접속:
@@ -403,24 +395,22 @@ Remote MCP 컨테이너는 `docker compose -p rag-red-team -f infra/docker-compo
 
 ```bash
 cd backend
-PYTHONPATH=src uv run python -m compileall src scripts tests
-PYTHONPATH=src uv run python -m unittest discover -s tests
+make check
+make test
 ```
 
 ### 2) RAG Backend
 
 ```bash
-cd rag/be
-PYTHONPATH=src uv run python -m compileall src tests
-PYTHONPATH=src uv run python -m unittest discover -s tests
+cd rag
+make be-check
 ```
 
 ### 3) RAG Frontend
 
 ```bash
-cd rag/fe
-bun run lint
-bun run build
+cd rag
+make fe-check
 ```
 
 ## 12. 🔐 환경 변수 관리
@@ -436,10 +426,18 @@ bun run build
 | 서비스 | 예시 파일 | 주요 값 |
 | --- | --- | --- |
 | Backend | `backend/.env.example` | OpenRouter API key, LangSmith 설정, CORS, RAG MCP URL |
+| Deploy | `deploy/docker/.env.example` | 통합 Docker Compose host 포트, public build args |
 | Streamlit legacy | `streamlit_3rd/.env.example` | Backend API 주소, mock mode 여부 |
 | RAG Backend | `rag/be/.env.example` | Memgraph 연결, MCP endpoint, 모델 설정 |
 | RAG Frontend | `rag/fe/.env.example` | RAG API base URL |
 | RAG Infra | `rag/infra/.env.example` | Memgraph 포트, Lab 포트 |
+
+통합 실행 시 `deploy/makefile/Makefile`은 `deploy/docker/.env`, `deploy/docker/.env_backend`, `deploy/docker/.env_rag_be`를 준비합니다. `deploy/docker/.env`는 포트 같은 non-secret 값이고, `deploy/docker/.env_backend`와 `deploy/docker/.env_rag_be`는 각 서비스의 실제 `.env`를 복사해 Compose에 주입하는 ignored 파일입니다.
+
+Python 가상환경은 서비스별 `.venv`만 사용합니다. `backend/`와 `rag/be/`에서
+`make start`, `make test`, `make check`를 실행하면 필요한 경우 `uv sync`가
+먼저 실행되어 `.venv`가 생성됩니다. `.venv/`와 실제 `.env` 파일은 Git에
+올리지 않습니다.
 
 ## 13. 🤝 협업 방식
 

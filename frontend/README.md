@@ -7,6 +7,7 @@
 
 - Node.js 20.9.0 이상
 - Bun 1.3 이상
+- Make
 - Git
 
 ## 처음 pull 받은 뒤 실행
@@ -14,8 +15,7 @@
 ```bash
 git pull
 cd frontend
-bun install
-bun run dev
+make start
 ```
 
 기본 접속 주소:
@@ -60,16 +60,16 @@ curl -I http://127.0.0.1:3000/chat
 
 ```bash
 # 개발 서버
-bun run dev
+make start
 
 # 프로덕션 빌드
-bun run build
+make build
 
 # 빌드 결과 실행
-bun run start
+make preview
 
 # 린트
-bun run lint
+make lint
 ```
 
 ## 환경 파일

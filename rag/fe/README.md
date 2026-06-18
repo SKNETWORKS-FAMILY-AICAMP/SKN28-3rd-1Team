@@ -13,8 +13,7 @@ Bun + Vite + React 기반의 RAG 운영 UI입니다. 루트 `frontend/` 서비�
 ## Run
 
 ```bash
-bun install
-bun run dev
+make start
 ```
 
 Default URL:
@@ -43,8 +42,8 @@ Review Queue는 문서별 connection candidate를 카드 큐로 보여주고, �
 ## Checks
 
 ```bash
-bun run lint
-bun run build
+make lint
+make build
 ```
 
 ## Source Structure
