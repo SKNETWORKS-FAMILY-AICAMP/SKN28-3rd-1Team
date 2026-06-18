@@ -1,4 +1,5 @@
 import { PencilLine, Search, MessageSquareText } from "lucide-react"
+import { FadeIn } from "@/components/fade-in"
 
 const steps = [
   {
@@ -25,25 +26,27 @@ export function HowItWorks() {
   return (
     <section id="how" className="bg-secondary/40">
       <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 md:py-24">
-        <div className="mx-auto mb-12 max-w-2xl text-center">
+        <FadeIn className="mx-auto mb-12 max-w-2xl text-center">
           <h2 className="font-heading text-3xl text-foreground text-balance sm:text-4xl">
             3단계로 끝나는 복지·법률 상담
           </h2>
           <p className="mt-3 text-pretty text-lg text-muted-foreground">
             복잡한 절차 없이, 질문 한 줄이면 충분해요.
           </p>
-        </div>
+        </FadeIn>
 
         <div className="grid gap-6 md:grid-cols-3">
-          {steps.map((s) => (
-            <div key={s.step} className="relative rounded-3xl border border-border bg-card p-8 shadow-sm">
-              <span className="font-heading text-5xl text-primary/25">{s.step}</span>
-              <span className="mt-2 flex size-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
-                <s.icon className="size-6" />
-              </span>
-              <h3 className="mt-5 font-heading text-xl text-foreground">{s.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{s.desc}</p>
-            </div>
+          {steps.map((s, i) => (
+            <FadeIn key={s.step} delay={i * 150}>
+              <div className="relative rounded-3xl border border-border bg-card p-8 shadow-sm">
+                <span className="font-heading text-5xl text-primary/25">{s.step}</span>
+                <span className="mt-2 flex size-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
+                  <s.icon className="size-6" />
+                </span>
+                <h3 className="mt-5 font-heading text-xl text-foreground">{s.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{s.desc}</p>
+              </div>
+            </FadeIn>
           ))}
         </div>
       </div>
