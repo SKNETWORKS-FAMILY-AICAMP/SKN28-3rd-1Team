@@ -2,6 +2,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { buttonVariants } from "@/components/ui/button"
 import { Sparkles, MessageCircleQuestion, ArrowRight } from "lucide-react"
+import { FadeIn } from "@/components/fade-in"
 
 export function HeroSection() {
   return (
@@ -11,7 +12,7 @@ export function HeroSection() {
       <div className="pointer-events-none absolute -right-20 bottom-0 size-72 rounded-full bg-primary/20 blur-3xl" aria-hidden />
 
       <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-16 sm:px-6 md:grid-cols-2 md:py-24">
-        <div className="flex flex-col items-start gap-6 text-left">
+        <FadeIn direction="left" className="flex flex-col items-start gap-6 text-left">
           <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-card px-4 py-1.5 text-sm font-medium text-primary shadow-sm">
             <Sparkles className="size-4" />
             어르신을 위한 RAG 기반 법률·복지 상담
@@ -64,24 +65,32 @@ export function HeroSection() {
               <p>언제든 답변</p>
             </div>
           </div>
-        </div>
+        </FadeIn>
 
         {/* mascot */}
-        <div className="relative flex justify-center">
-          <div className="relative flex aspect-square w-full max-w-md items-center justify-center rounded-[2.5rem] bg-gradient-to-b from-card to-secondary/60 shadow-xl ring-1 ring-border">
+        <FadeIn direction="right" delay={150} className="relative flex justify-center">
+          <div className="group relative flex aspect-square w-full max-w-md items-center justify-center rounded-[2.5rem] bg-gradient-to-b from-card to-secondary/60 shadow-xl ring-1 ring-border">
             <Image
               src="/images/mascot.png"
               alt="법률 가이드 책을 든 법률 챗봇 마스코트 로디"
               width={520}
               height={520}
               priority
-              className="w-[90%] drop-shadow-2xl"
+              className="w-[90%] drop-shadow-2xl transition-opacity duration-300 group-hover:opacity-0"
+            />
+            <Image
+              src="/images/mascot2.png"
+              alt="법률 챗봇 마스코트 로디 호버"
+              width={520}
+              height={520}
+              priority
+              className="absolute w-[90%] drop-shadow-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100"
             />
             <span className="absolute -right-3 top-10 rounded-2xl bg-card px-4 py-2 text-sm font-medium text-foreground shadow-md ring-1 ring-border">
               안녕하세요, 로디예요!
             </span>
           </div>
-        </div>
+        </FadeIn>
       </div>
     </section>
   )

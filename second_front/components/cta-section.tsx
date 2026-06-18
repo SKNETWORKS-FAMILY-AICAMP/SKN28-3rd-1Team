@@ -2,10 +2,12 @@ import Link from "next/link"
 import Image from "next/image"
 import { buttonVariants } from "@/components/ui/button"
 import { MessageCircleQuestion } from "lucide-react"
+import { FadeIn } from "@/components/fade-in"
 
 export function CtaSection() {
   return (
     <section className="mx-auto max-w-6xl px-4 pb-20 sm:px-6">
+      <FadeIn>
       <div className="relative overflow-hidden rounded-[2.5rem] bg-primary px-6 py-14 text-center shadow-lg sm:px-12">
         <div className="pointer-events-none absolute -right-10 -top-10 size-48 rounded-full bg-primary-foreground/10 blur-2xl" aria-hidden />
         <div className="relative flex flex-col items-center gap-6">
@@ -37,6 +39,7 @@ export function CtaSection() {
           </Link>
         </div>
       </div>
+      </FadeIn>
     </section>
   )
 }

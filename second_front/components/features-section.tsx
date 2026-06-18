@@ -1,4 +1,5 @@
 import { MessagesSquare, BookOpenCheck, FileSearch, ListChecks } from "lucide-react"
+import { FadeIn } from "@/components/fade-in"
 
 const features = [
   {
@@ -26,27 +27,26 @@ const features = [
 export function FeaturesSection() {
   return (
     <section id="features" className="mx-auto max-w-6xl px-4 py-16 sm:px-6 md:py-24">
-      <div className="mx-auto mb-12 max-w-2xl text-center">
+      <FadeIn className="mx-auto mb-12 max-w-2xl text-center">
         <h2 className="font-heading text-3xl text-foreground text-balance sm:text-4xl">
           로디가 도와드리는 것
         </h2>
         <p className="mt-3 text-pretty text-lg text-muted-foreground">
           흩어진 노인복지·법률 정보를 검색해 근거와 함께 쉽게 안내해드려요.
         </p>
-      </div>
+      </FadeIn>
 
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        {features.map((f) => (
-          <div
-            key={f.title}
-            className="group flex flex-col gap-4 rounded-3xl border border-border bg-card p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md"
-          >
-            <span className="flex size-12 items-center justify-center rounded-2xl bg-accent text-accent-foreground transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
-              <f.icon className="size-6" />
-            </span>
-            <h3 className="font-heading text-lg text-foreground">{f.title}</h3>
-            <p className="text-sm leading-relaxed text-muted-foreground">{f.desc}</p>
-          </div>
+        {features.map((f, i) => (
+          <FadeIn key={f.title} delay={i * 100}>
+            <div className="group flex flex-col gap-4 rounded-3xl border border-border bg-card p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md">
+              <span className="flex size-12 items-center justify-center rounded-2xl bg-accent text-accent-foreground transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+                <f.icon className="size-6" />
+              </span>
+              <h3 className="font-heading text-lg text-foreground">{f.title}</h3>
+              <p className="text-sm leading-relaxed text-muted-foreground">{f.desc}</p>
+            </div>
+          </FadeIn>
         ))}
       </div>
     </section>
