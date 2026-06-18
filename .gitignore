@@ -26,6 +26,9 @@ logs/
 # Local operational notes
 user_list.md
 
+# Local reference materials and cloned examples
+reference/
+
 # Python
 __pycache__/
 *.py[cod]
