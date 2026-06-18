@@ -13,7 +13,7 @@ export default function ChatPage() {
           <span className="text-sm font-medium">홈으로</span>
         </Link>
         <Link href="/" className="flex items-center gap-2">
-          <span className="flex size-9 items-center justify-center overflow-hidden rounded-full bg-[#ffb199] ring-2 ring-[#ff764c]/30">
+          <span className="flex size-9 items-center justify-center overflow-hidden rounded-full bg-[#fff3e7] ring-2 ring-[#dfddd8]">
             <Image src="/images/mascot.png" alt="로디" width={36} height={36} className="size-9 object-cover" />
           </span>
           <span className="font-heading text-xl text-[#1a1919]">로디</span>
