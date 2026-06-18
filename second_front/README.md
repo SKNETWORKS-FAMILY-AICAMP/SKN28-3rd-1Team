@@ -6,7 +6,7 @@
 ## Prerequisites
 
 - Node.js 20.9.0 이상
-- npm
+- Bun 1.3 이상
 - Git
 
 ## 처음 pull 받은 뒤 실행
@@ -14,8 +14,8 @@
 ```bash
 git pull
 cd second_front
-npm ci
-npm run dev
+bun install
+bun run dev
 ```
 
 기본 접속 주소:
@@ -27,13 +27,13 @@ http://127.0.0.1:3000
 Next.js가 `0.0.0.0:3000` 바인딩 권한 문제를 내거나 Turbopack 캐시 오류가 나면 webpack 모드로 실행합니다.
 
 ```bash
-npm run dev -- --webpack -H 127.0.0.1
+bun run dev -- --webpack -H 127.0.0.1
 ```
 
 포트 3000을 이미 사용 중이면 다른 포트를 지정합니다.
 
 ```bash
-npm run dev -- --webpack -H 127.0.0.1 -p 3001
+bun run dev -- --webpack -H 127.0.0.1 -p 3001
 ```
 
 이 경우 접속 주소는 `http://127.0.0.1:3001`입니다.
@@ -60,16 +60,16 @@ curl -I http://127.0.0.1:3000/chat
 
 ```bash
 # 개발 서버
-npm run dev
+bun run dev
 
 # 프로덕션 빌드
-npm run build
+bun run build
 
 # 빌드 결과 실행
-npm run start
+bun run start
 
 # 린트
-npm run lint
+bun run lint
 ```
 
 ## 환경 파일
@@ -97,7 +97,7 @@ env.development.local
 
 ```bash
 rm -rf node_modules
-npm ci
+bun install
 ```
 
 ### `Cannot find module 'next/dist/compiled/commander'`
@@ -105,7 +105,7 @@ npm ci
 의존성 설치가 불완전한 상태입니다.
 
 ```bash
-npm ci
+bun install
 ```
 
 ### `listen EPERM: operation not permitted 0.0.0.0:3000`
@@ -113,7 +113,7 @@ npm ci
 localhost만 사용하도록 host를 지정합니다.
 
 ```bash
-npm run dev -- -H 127.0.0.1
+bun run dev -- -H 127.0.0.1
 ```
 
 ### `Failed to open database` 또는 Turbopack persistence 오류
@@ -121,12 +121,12 @@ npm run dev -- -H 127.0.0.1
 Turbopack 캐시 문제일 수 있습니다. webpack 모드로 우회합니다.
 
 ```bash
-npm run dev -- --webpack -H 127.0.0.1
+bun run dev -- --webpack -H 127.0.0.1
 ```
 
 필요하면 `.next` 캐시를 지운 뒤 다시 실행합니다.
 
 ```bash
 rm -rf .next
-npm run dev -- --webpack -H 127.0.0.1
+bun run dev -- --webpack -H 127.0.0.1
 ```

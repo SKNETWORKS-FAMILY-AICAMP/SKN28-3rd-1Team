@@ -87,7 +87,7 @@ export function ChatInterface() {
 
   return (
     <div className="mx-auto flex h-[calc(100dvh-4rem)] w-full max-w-3xl flex-col px-4 sm:px-6">
-      <div className="flex-1 overflow-hidden rounded-[40px] border border-[#dfddd8] bg-white">
+      <div className="flex-1 overflow-hidden rounded-[40px] bg-white">
         {/* messages */}
         <div ref={scrollRef} className="flex h-full flex-col gap-6 overflow-y-auto bg-[#faf6f1] p-6">
           {empty ? (
@@ -110,27 +110,17 @@ export function ChatInterface() {
               </div>
               <div className="grid w-full max-w-lg grid-cols-2 gap-4 px-2 text-left sm:grid-cols-2">
                 <label className="flex items-center gap-3 rounded-[40px] border border-[#dfddd8] bg-white px-4 py-2 text-sm text-[#1a1919] shadow-sm">
-                  <span className="whitespace-nowrap text-sm font-medium text-[#76716f]">출생 연도</span>
-                  <select
+                  <span className="whitespace-nowrap text-sm font-medium text-[#9a3f16]">출생 연도</span>
+                  <input
                     value={age}
                     onChange={(e) => setAge(e.target.value)}
+                    inputMode="numeric"
+                    placeholder="예: 1958년"
                     className="h-10 w-full min-w-0 border-0 bg-transparent text-sm font-medium text-[#1a1919] outline-none placeholder:text-[#898c94]"
-                  >
-                    <option value="" disabled>
-                      연도를 선택하세요
-                    </option>
-                    {Array.from({ length: 87 }, (_, index) => {
-                      const year = 1940 + index
-                      return (
-                        <option key={year} value={`${year}년`}>
-                          {year}년
-                        </option>
-                      )
-                    })}
-                  </select>
+                  />
                 </label>
                 <label className="flex items-center gap-3 rounded-[40px] border border-[#dfddd8] bg-white px-4 py-2 text-sm text-[#1a1919] shadow-sm">
-                  <span className="whitespace-nowrap text-sm font-medium text-[#76716f]">사는 곳</span>
+                  <span className="whitespace-nowrap text-sm font-medium text-[#9a3f16]">사는 곳</span>
                   <input
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
