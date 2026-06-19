@@ -7,7 +7,8 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
-from agent.graph import AgentRunResult, SourceSummary, ToolCallSummary, run_agent, run_agent_stream
+from agents.graph import AgentRunResult, SourceSummary, ToolCallSummary, run_agent, run_agent_stream
+from agents.speech_text_agent import stream_speech_audio
 from logger import get_logger
 
 logger = get_logger(__name__)
@@ -89,6 +90,7 @@ def _sse_event(event: str, data: dict[str, Any]) -> str:
 def chat_stream(request: ChatRequest) -> StreamingResponse:
     async def event_generator():
         answer_parts: list[str] = []
+        final_answer = ""
 
         try:
             async for delta in run_agent_stream(
@@ -104,10 +106,20 @@ def chat_stream(request: ChatRequest) -> StreamingResponse:
                         {"tool_call": _tool_call_response(delta.tool_call).model_dump()},
                     )
                 elif delta.type == "final" and delta.result is not None:
+                    final_answer = delta.result.answer
                     yield _sse_event(
                         "final",
                         _chat_response(delta.result, request.session_id).model_dump(),
                     )
+
+            # 최종 답변을 음성 텍스트로 정리하고 TTS 오디오 청크를 이어서 보낸다.
+            # ELEVENLABS 미설정 시 stream_speech_audio가 즉시 종료한다.
+            async for audio_event in stream_speech_audio(
+                final_answer,
+                session_id=request.session_id,
+            ):
+                event_type = audio_event.pop("type")
+                yield _sse_event(event_type, audio_event)
         except Exception:
             logger.exception("chat stream agent execution failed")
             yield _sse_event("error", {"message": "Agent 실행 중 오류가 발생했습니다."})

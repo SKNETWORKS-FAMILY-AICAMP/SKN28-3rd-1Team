@@ -82,3 +82,31 @@ def get_chat_llm() -> ChatOpenAI:
     return ChatOpenAI(
         **llm_kwargs,
     )
+
+
+# speech_text_agent가 최종 답변을 TTS용 평문 구어체로 정리할 때 쓰는 ChatOpenAI 클라이언트
+@lru_cache
+def get_speech_text_llm() -> ChatOpenAI:
+    if settings.openrouter_api_key is None:
+        logger.error("OPENROUTER_API_KEY is not set")
+        raise RuntimeError("OPENROUTER_API_KEY is not set.")
+
+    logger.info(
+        "creating OpenRouter speech-text llm model=%s",
+        settings.speech_text_model,
+    )
+
+    llm_kwargs: dict[str, Any] = {
+        "model": settings.speech_text_model,
+        "api_key": settings.openrouter_api_key.get_secret_value(),
+        "base_url": settings.openrouter_base_url,
+        "temperature": settings.speech_text_temperature,
+        "timeout": settings.llm_timeout_ms / 1000,
+        "max_retries": settings.llm_max_retries,
+        "default_headers": _openrouter_headers(),
+        "extra_body": _openrouter_extra_body(),
+    }
+    if settings.speech_text_max_tokens:
+        llm_kwargs["max_completion_tokens"] = settings.speech_text_max_tokens
+
+    return ChatOpenAI(**llm_kwargs)

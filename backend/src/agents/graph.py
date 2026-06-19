@@ -10,8 +10,8 @@ from uuid import uuid4
 from langchain.agents import create_agent
 from langgraph.checkpoint.memory import InMemorySaver
 
-from agent.openrouter_llm import get_chat_llm
-from agent.tool import get_tools
+from agents.openrouter_llm import get_chat_llm
+from agents.tool import get_tools
 from logger import get_logger
 from prompt import render_prompt
 
