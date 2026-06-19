@@ -1,0 +1,8 @@
+{
+  "name": "screen_control_agent",
+  "description": "Screen control agent receives frontend UI/control tools only.",
+  "sources": {
+    "rag_mcp": false,
+    "local": true
+  }
+}

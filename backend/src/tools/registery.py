@@ -14,6 +14,7 @@ from tools.local import get_local_tools
 logger = get_logger(__name__)
 
 MAIN_AGENT_PROFILE = "main_agent"
+SCREEN_CONTROL_AGENT_PROFILE = "screen_control_agent"
 _PROFILE_DIR = Path(__file__).with_name("profiles")
 
 
