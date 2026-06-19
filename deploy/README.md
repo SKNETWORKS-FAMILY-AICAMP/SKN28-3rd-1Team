@@ -15,7 +15,7 @@ deploy/
 `deploy/docker/docker-compose.yml`은 기본 실행 시 아래 서비스를 같은 Docker network인 `deploy_default`에 올립니다.
 
 - `frontend`: Next.js 최종 프론트엔드
-- `backend`: Main Agent FastAPI
+- `backend`: Main Agent Django Channels service
 - `rag-be`: RAG Backend + FastMCP Streamable HTTP endpoint
 - `rag-fe`: RAG 운영 UI
 - `memgraph`: GraphRAG DB
