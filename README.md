@@ -419,25 +419,26 @@ make fe-check
 
 - 실제 `.env` 파일은 Git에 올리지 않습니다.
 - `.env.schema`가 env field의 버전 관리 기준입니다.
-- API key, DB URL, LangSmith key 같은 secret 값은 `.env.local` 또는 이후 연결할 secret provider에서 관리합니다.
+- API key, token, password 같은 secret 값은 Infisical에서 관리합니다.
+- 환경별로 달라지는 non-secret runtime config도 active service가 실제로 읽는 값이면 Infisical plain config로 중앙 관리할 수 있습니다.
 - env를 직접 확인해야 할 때는 local `.env`를 읽지 말고 `varlock load --agent`로 redacted 상태만 확인합니다.
-- Makefile target이 Varlock을 지원하는 경우 `make env-check`로 schema와 로컬/provider 값을 검증합니다.
+- Makefile target이 Infisical/Varlock을 지원하는 경우 `make env-check`로 provider 주입과 schema 계약을 검증합니다.
 
 ### 2) 서비스별 환경 파일
 
-| 서비스 | Schema | 기존 예시 파일 | 주요 값 |
+| 서비스 | Schema | 주요 값 |
 | --- | --- | --- |
-| Shared | `.env.schema` | 없음 | `APP_ENV` |
-| Backend | `backend/.env.schema` | `backend/.env.example` | OpenRouter API key, LangSmith 설정, CORS, RAG MCP URL |
-| Deploy | `deploy/docker/.env.schema` | `deploy/docker/.env.example` | 통합 Docker Compose host 포트, public build args |
-| Streamlit legacy | 없음 | `streamlit_3rd/.env.example` | Backend API 주소, mock mode 여부 |
-| RAG Backend | `rag/be/.env.schema` | `rag/be/.env.example` | Memgraph 연결, MCP endpoint, 모델 설정 |
-| RAG Frontend | `rag/fe/.env.schema` | `rag/fe/.env.example` | RAG API base URL |
-| RAG Infra | `rag/infra/.env.schema` | `rag/infra/.env.example` | Memgraph 포트, Lab 포트 |
+| Shared | `.env.schema` | `APP_ENV` |
+| Backend | `backend/.env.schema` | OpenRouter API key, CORS, RAG MCP URL |
+| Deploy | `deploy/docker/.env.schema` | 통합 Docker Compose host 포트, public build args |
+| Streamlit legacy | 없음 | Backend API 주소, mock mode 여부 |
+| RAG Backend | `rag/be/.env.schema` | Memgraph 연결, MCP endpoint, 외부 API key |
+| RAG Frontend | `rag/fe/.env.schema` | RAG API base URL |
+| RAG Infra | `rag/infra/.env.schema` | Memgraph 포트, Lab 포트 |
 
-통합 실행 시 `deploy/makefile/Makefile`은 Varlock으로 `deploy/docker/.env`를 생성하고, 기존 Docker Compose 호환을 위해 `deploy/docker/.env_backend`, `deploy/docker/.env_rag_be`도 준비합니다. `deploy/docker/.env`는 포트 같은 non-secret 값이고, `deploy/docker/.env_backend`와 `deploy/docker/.env_rag_be`는 다음 provider 연동 전까지 사용하는 ignored transitional 파일입니다.
+`.env.example`은 active env 계약으로 사용하지 않습니다. 새 env field 변경은 해당 서비스의 `.env.schema`를 먼저 수정합니다.
 
-현재 단계에서는 Varlock이 env field 계약과 local validation을 담당합니다. Infisical 같은 provider는 다음 단계에서 `make start`/`make up` 앞단에 붙여 secret 값을 자동 주입하도록 연결합니다.
+Backend는 `make env-check`와 `make start`에서 Infisical CLI로 provider 값을 주입하고 Varlock으로 schema 계약을 검증합니다. 다른 서비스도 provider 연결 시 같은 흐름을 따릅니다.
 
 Python 가상환경은 서비스별 `.venv`만 사용합니다. `backend/`와 `rag/be/`에서
 `make start`, `make test`, `make check`를 실행하면 필요한 경우 `uv sync`가
