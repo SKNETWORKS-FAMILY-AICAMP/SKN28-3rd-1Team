@@ -39,7 +39,8 @@ class SpeechSynthesisNode:
         self,
         request: SpeechSynthesisRequest,
     ) -> AsyncIterator[dict[str, Any]]:
-        mime_type = _mime_type(self._settings.elevenlabs_output_format)
+        elevenlabs = self._settings.elevenlabs
+        mime_type = _mime_type(elevenlabs.output_format)
 
         if not self._settings.tts_configured:
             logger.warning("speech synthesis skipped: ELEVENLABS_API_KEY/VOICE_ID not set")
@@ -96,26 +97,28 @@ class SpeechSynthesisNode:
             yield {"type": "tts.completed", "configured": True, "chunks": chunk_count}
 
     def _websocket_url(self) -> str:
-        voice_id = quote(str(self._settings.elevenlabs_voice_id), safe="")
+        elevenlabs = self._settings.elevenlabs
+        voice_id = quote(str(elevenlabs.voice_id), safe="")
         query = urlencode(
             {
-                "model_id": self._settings.elevenlabs_tts_model_id,
-                "output_format": self._settings.elevenlabs_output_format,
+                "model_id": elevenlabs.tts_model_id,
+                "output_format": elevenlabs.output_format,
             }
         )
-        base = self._settings.elevenlabs_tts_ws_base_url.rstrip("/")
+        base = elevenlabs.tts_ws_base_url.rstrip("/")
         return f"{base}/{voice_id}/stream-input?{query}"
 
     def _initial_payload(self) -> dict[str, Any]:
-        api_key = self._settings.elevenlabs_api_key
+        elevenlabs = self._settings.elevenlabs
+        api_key = elevenlabs.api_key
         return {
             "text": " ",
             "voice_settings": {
-                "stability": self._settings.elevenlabs_stability,
-                "similarity_boost": self._settings.elevenlabs_similarity_boost,
-                "style": self._settings.elevenlabs_style,
-                "speed": self._settings.elevenlabs_speed,
-                "use_speaker_boost": self._settings.elevenlabs_use_speaker_boost,
+                "stability": elevenlabs.stability,
+                "similarity_boost": elevenlabs.similarity_boost,
+                "style": elevenlabs.style,
+                "speed": elevenlabs.speed,
+                "use_speaker_boost": elevenlabs.use_speaker_boost,
             },
             "generation_config": {"chunk_length_schedule": [120, 160, 250, 290]},
             "xi_api_key": api_key.get_secret_value() if api_key else None,

@@ -201,7 +201,7 @@ class AgentToolTest(unittest.TestCase):
         tool_module.clear_tools_cache()
 
         with (
-            patch.object(tool_module.settings, "enable_rag_tools", False),
+            patch.object(tool_module.settings.rag, "tools_enabled", False),
             patch.object(tool_module, "_load_rag_mcp_tools") as load_tools,
         ):
             tools = asyncio.run(tool_module.get_tools())
@@ -227,7 +227,7 @@ class SpeechTextAgentTest(unittest.TestCase):
     def test_stream_speech_text_falls_back_without_api_key(self) -> None:
         agent = SpeechTextAgent(system_prompt="ignored")
 
-        with patch.object(speech_text_agent_module.settings, "openrouter_api_key", None):
+        with patch.object(speech_text_agent_module.settings.llm, "openrouter_api_key", None):
             events = asyncio.run(_collect(agent.stream_speech_text("**굵게** 답변입니다")))
 
         final = next(event for event in events if event["type"] == "speech_text.final")
@@ -310,7 +310,7 @@ class ChatStreamAudioTest(unittest.TestCase):
                 ),
             ),
             patch("settings.Settings.tts_configured", new_callable=PropertyMock, return_value=True),
-            patch.object(speech_text_agent_module.settings, "openrouter_api_key", None),
+            patch.object(speech_text_agent_module.settings.llm, "openrouter_api_key", None),
             patch(
                 "agents.speech_text_agent.synthesis.connect",
                 return_value=_FakeWebSocket(ws_messages),
