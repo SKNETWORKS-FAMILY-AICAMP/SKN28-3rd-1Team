@@ -439,6 +439,7 @@ make fe-check
 | 서비스 | Schema | 주요 값 |
 | --- | --- | --- |
 | Shared | `.env.schema` | `APP_ENV` |
+| Frontend | `frontend/.env.schema` | Backend API base URL |
 | Backend | `backend/.env.schema` | OpenRouter API key, CORS, RAG MCP URL |
 | Deploy | `deploy/docker/.env.schema` | 통합 Docker Compose host 포트, public build args |
 | Streamlit legacy | 없음 | Backend API 주소, mock mode 여부 |

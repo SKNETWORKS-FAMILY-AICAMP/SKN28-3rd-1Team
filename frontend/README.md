@@ -1,7 +1,8 @@
 # Frontend
 
 노인·고령층 법률·복지 상담 서비스의 Next.js 기반 프론트엔드입니다.
-현재 화면은 mock 답변 데이터(`lib/mock-legal.ts`)를 사용하므로 별도 API key 없이 실행할 수 있습니다.
+채팅 화면은 Next.js App Router의 `POST /api/chat` route handler를 호출합니다.
+해당 route handler가 FastAPI backend의 `POST /chat/stream` SSE를 받아 AI SDK UI message stream으로 변환합니다.
 
 ## Prerequisites
 
@@ -74,7 +75,13 @@ make lint
 
 ## 환경 파일
 
-현재는 mock 데이터 기반 화면이라 필수 환경 변수가 없습니다.
+환경 변수 계약은 `frontend/.env.schema`에서 관리합니다.
+
+| 변수 | 기본값 | 설명 |
+| --- | --- | --- |
+| `BACKEND_URL` | `http://127.0.0.1:8000` | Next.js route handler가 호출할 FastAPI backend base URL |
+
+브라우저는 FastAPI URL을 직접 알 필요가 없습니다. API key나 token 같은 secret은 `NEXT_PUBLIC_*` 값으로 두지 않습니다.
 
 로컬에서만 쓰는 환경 파일은 Git에 올리지 않습니다.
 
@@ -86,8 +93,6 @@ env.development.local
 .env.test.local
 .env.production.local
 ```
-
-새 환경 변수가 필요해지면 `frontend/.env.schema`를 추가하고 이 README에 값을 설명합니다.
 
 ## 문제 해결
 
