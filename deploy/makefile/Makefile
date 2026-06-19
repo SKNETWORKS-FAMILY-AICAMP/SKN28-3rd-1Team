@@ -7,7 +7,7 @@ COMPOSE_FILE := $(DOCKER_DIR)/docker-compose.yml
 COMPOSE := docker compose --env-file $(COMPOSE_ENV) -f $(COMPOSE_FILE)
 LEGACY_COMPOSE := docker compose --profile legacy --env-file $(COMPOSE_ENV) -f $(COMPOSE_FILE)
 VARLOCK ?= varlock
-VARLOCK_PATHS := --path $(DOCKER_DIR) --path $(ROOT_DIR)/backend --path $(ROOT_DIR)/rag/be --path $(ROOT_DIR)/rag/fe
+VARLOCK_SCHEMA_PATHS := $(DOCKER_DIR) $(ROOT_DIR)/backend $(ROOT_DIR)/rag/be $(ROOT_DIR)/rag/fe
 
 .DEFAULT_GOAL := help
 
@@ -31,21 +31,24 @@ env:
 		if [ -f $(ROOT_DIR)/backend/.env ]; then \
 			cp $(ROOT_DIR)/backend/.env $(DOCKER_DIR)/.env_backend; \
 		else \
-			cp $(ROOT_DIR)/backend/.env.example $(DOCKER_DIR)/.env_backend; \
-			printf "%s\n" "created deploy/docker/.env_backend from backend/.env.example; fill secrets before /chat"; \
+			printf "%s\n" "missing deploy/docker/.env_backend; create it from Infisical/provider export or an ignored local env file before make up"; \
+			exit 1; \
 		fi; \
 	fi
 	@if [ ! -f $(DOCKER_DIR)/.env_rag_be ]; then \
 		if [ -f $(ROOT_DIR)/rag/be/.env ]; then \
 			cp $(ROOT_DIR)/rag/be/.env $(DOCKER_DIR)/.env_rag_be; \
 		else \
-			cp $(ROOT_DIR)/rag/be/.env.example $(DOCKER_DIR)/.env_rag_be; \
-			printf "%s\n" "created deploy/docker/.env_rag_be from rag/be/.env.example; fill secrets before graph ingest"; \
+			printf "%s\n" "missing deploy/docker/.env_rag_be; create it from Infisical/provider export or an ignored local env file before make up"; \
+			exit 1; \
 		fi; \
 	fi
 
 env-check:
-	$(VARLOCK) load --agent $(VARLOCK_PATHS) >/dev/null
+	@for path in $(VARLOCK_SCHEMA_PATHS); do \
+		printf "%s\n" "validating $$path"; \
+		$(VARLOCK) load --agent --path "$$path" >/dev/null; \
+	done
 
 env-legacy: env env-check
 	@if [ ! -f $(DOCKER_DIR)/.env_streamlit ]; then \

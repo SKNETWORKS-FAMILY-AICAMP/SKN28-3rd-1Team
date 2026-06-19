@@ -86,11 +86,11 @@ services:
     env_file:
       - ./.env_backend
     environment:
-      BACKEND_API_HOST: "0.0.0.0"
-      BACKEND_API_PORT: "8000"
-      BACKEND_RELOAD: "false"
-      BACKEND_RAG_MCP_URL: "http://rag-be:8010/mcp/"
-      BACKEND_CORS_ORIGINS: '["http://localhost:3000","http://127.0.0.1:3000","http://localhost:8501","http://127.0.0.1:8501","http://localhost:5173","http://127.0.0.1:5173","http://localhost:8100","http://127.0.0.1:8100"]'
+      RUNTIME_HOST: "0.0.0.0"
+      RUNTIME_PORT: "8000"
+      RUNTIME_RELOAD: "false"
+      RAG_MCP_URL: "http://rag-be:8010/mcp"
+      RUNTIME_CORS_ORIGINS: '["http://localhost:3000","http://127.0.0.1:3000","http://localhost:8501","http://127.0.0.1:8501","http://localhost:5173","http://127.0.0.1:5173","http://localhost:8100","http://127.0.0.1:8100"]'
     ports:
       - "${BACKEND_PUBLISH_HOST:-127.0.0.1}:${BACKEND_HOST_PORT:-8100}:8000"
     depends_on:
