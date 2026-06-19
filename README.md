@@ -3,7 +3,7 @@
 > 노인·고령층을 위한 법률 정보를 쉽고 신뢰할 수 있게 찾도록 돕는 Agentic RAG + GraphRAG 기반 상담 서비스
 
 ![Python](https://img.shields.io/badge/Python-3.13-3776AB?logo=python&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-Backend-009688?logo=fastapi&logoColor=white)
+![Django Channels](https://img.shields.io/badge/Django%20Channels-Backend-0C4B33?logo=django&logoColor=white)
 ![Pydantic](https://img.shields.io/badge/Pydantic-Settings-E92063?logo=pydantic&logoColor=white)
 ![uv](https://img.shields.io/badge/uv-Python%20Tooling-6E56CF)
 ![LangChain](https://img.shields.io/badge/LangChain-Agent-1C3C3C?logo=langchain&logoColor=white)
@@ -31,7 +31,7 @@
 |---|---|---|---|---|---|
 |사진|<img width="467" height="622" alt="image" src="https://github.com/user-attachments/assets/1d55d805-ca88-4045-870c-efcf3cd093cd" />|<img width="457" height="546" alt="image" src="https://github.com/user-attachments/assets/e80bef47-6176-41c2-8471-28b5c4d14d00" />|<img width="283" height="571" alt="image" src="https://github.com/user-attachments/assets/eff9d9d9-f08c-4648-8435-0079015314b9" />|<img width="353" height="488" alt="image" src="https://github.com/user-attachments/assets/6f58acc9-b043-4a64-8387-3f2d78465fda" />|<img width="244" height="488" alt="image" src="https://github.com/user-attachments/assets/369cd18c-71bd-40b8-b035-70873142869c" />|
 | 역할 | 팀장 | RAG | 프론트엔드 | 백엔드 | 기획·문서 |
-| 한 일 | 전체 일정 관리, 작업 방향 컨펌, 파트별 진행 상황 확인 | 노인·고령층 관련 법령 데이터 확인, 문서 전처리와 임베딩 흐름 정리 | 사용자 질문 화면 구성, API 연결 흐름 설계, 결과 화면 UX 정리, RAG 기반 테스트 케이스 설계 | FastAPI `/chat` 구성, LangGraph Agent 실행 구조 정리, MCP tool 연동 준비 | 전체 서비스 흐름 정리, README와 발표 자료 구성, 팀 산출물 내용 정리 |
+| 한 일 | 전체 일정 관리, 작업 방향 컨펌, 파트별 진행 상황 확인 | 노인·고령층 관련 법령 데이터 확인, 문서 전처리와 임베딩 흐름 정리 | 사용자 질문 화면 구성, API 연결 흐름 설계, 결과 화면 UX 정리, RAG 기반 테스트 케이스 설계 | Django Channels `/chat` 구성, LangGraph Agent 실행 구조 정리, MCP tool 연동 준비 | 전체 서비스 흐름 정리, README와 발표 자료 구성, 팀 산출물 내용 정리 |
 
 ### 2) 일정 계획
 
@@ -104,11 +104,11 @@
 ```text
 사용자 질문
   -> Frontend 또는 legacy Streamlit 화면
-  -> Backend FastAPI /chat
+  -> Backend Django ASGI /chat 또는 /chat/stream SSE
   -> LangChain + LangGraph Agent
   -> RAG MCP Tool Server
   -> Memgraph 기반 문서 검색
-  -> OpenRouter LLM 답변 생성
+  -> LLM provider 답변 생성
   -> 출처와 함께 화면에 표시
 ```
 
@@ -146,9 +146,9 @@
 
 | 기능 | 설명 |
 | --- | --- |
-| FastAPI `/chat` | 프론트엔드가 호출하는 메인 채팅 API입니다. |
+| Django ASGI `/chat` | 프론트엔드가 호출하는 메인 채팅 API와 SSE stream입니다. |
 | LangGraph Agent | `session_id` 기반으로 대화 흐름을 이어갈 수 있도록 구성합니다. |
-| OpenRouter LLM | OpenRouter compatible `ChatOpenAI`로 LLM을 호출합니다. |
+| LLM Provider | `ChatOpenRouter` 또는 `ChatCerebras`로 LLM을 호출합니다. |
 | MCP Tool | RAG 검색 기능을 Agent tool로 연결하기 위한 구조입니다. |
 | LangSmith | LLM 호출과 tool calling trace를 검증합니다. |
 
@@ -158,8 +158,8 @@
 
 | 영역 | 상태 |
 | --- | --- |
-| Backend `/chat` API | FastAPI에서 사용자 메시지를 받아 Agent 답변을 반환합니다. |
-| OpenRouter 연동 | `langchain-openai`의 `ChatOpenAI`를 OpenRouter base URL로 사용합니다. |
+| Backend `/chat` API | Django Channels에서 사용자 메시지를 받아 Agent 답변을 반환합니다. |
+| LLM Provider 연동 | `LLM_CHAT_PROVIDER` 설정으로 `ChatOpenRouter` 또는 `ChatCerebras`를 선택합니다. |
 | LangGraph Agent | `create_agent()`와 `InMemorySaver` 기반 session/thread 처리를 사용합니다. |
 | LangSmith 검증 | LLM 호출 trace와 mock tool call trace를 확인했습니다. |
 | RAG Backend | 문서 ingest, 검색 API, read-only MCP endpoint 구조가 있습니다. |
@@ -183,7 +183,7 @@
 
 | 영역 | 사용 기술 |
 | --- | --- |
-| Backend | ![Python](https://img.shields.io/badge/Python-3.13-3776AB?logo=python&logoColor=white) ![FastAPI](https://img.shields.io/badge/FastAPI-API-009688?logo=fastapi&logoColor=white) ![Pydantic](https://img.shields.io/badge/Pydantic-Settings-E92063?logo=pydantic&logoColor=white) ![uv](https://img.shields.io/badge/uv-Package-6E56CF) |
+| Backend | ![Python](https://img.shields.io/badge/Python-3.13-3776AB?logo=python&logoColor=white) ![Django Channels](https://img.shields.io/badge/Django%20Channels-ASGI-0C4B33?logo=django&logoColor=white) ![Pydantic](https://img.shields.io/badge/Pydantic-Settings-E92063?logo=pydantic&logoColor=white) ![uv](https://img.shields.io/badge/uv-Package-6E56CF) |
 | Agent | ![LangChain](https://img.shields.io/badge/LangChain-Agent-1C3C3C?logo=langchain&logoColor=white) ![LangGraph](https://img.shields.io/badge/LangGraph-Flow-1C3C3C?logo=langchain&logoColor=white) ![OpenRouter](https://img.shields.io/badge/OpenRouter-LLM-111827) ![LangSmith](https://img.shields.io/badge/LangSmith-Trace-1C3C3C?logo=langchain&logoColor=white) |
 | RAG | ![MCP](https://img.shields.io/badge/MCP-Tool%20Server-111827) ![Memgraph](https://img.shields.io/badge/Memgraph-Graph%20DB-FF6B35?logo=memgraph&logoColor=white) ![Neo4j](https://img.shields.io/badge/Neo4j-Compatible-4581C3?logo=neo4j&logoColor=white) ![GraphRAG](https://img.shields.io/badge/GraphRAG-Search-10B981) |
 |Frontend | ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black) ![Next.js](https://img.shields.io/badge/Next.js-App-000000?logo=nextdotjs&logoColor=white) ![TypeScript](https://img.shields.io/badge/TypeScript-TS-3178C6?logo=typescript&logoColor=white) ![Bun](https://img.shields.io/badge/Bun-Package-000000?logo=bun&logoColor=white) ![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-Style-06B6D4?logo=tailwindcss&logoColor=white) ![shadcn/ui](https://img.shields.io/badge/shadcn%2Fui-Components-000000?logo=shadcnui&logoColor=white) |
@@ -197,10 +197,12 @@
 
 ```text
 SKN28-3rd-1Team/
-├── backend/                 # FastAPI 기반 Agent Orchestrator
+├── backend/                 # Django Channels 기반 Agent Orchestrator
 │   ├── src/api/             # /chat API
-│   ├── src/agent/           # LangGraph Agent, OpenRouter LLM, tools
-│   └── src/prompt/          # Agent system prompt
+│   ├── src/agents/          # Main Agent, LLM provider, tools
+│   ├── src/graph/           # chat turn stream runner
+│   ├── src/nodes/           # speech/TTS node
+│   └── src/agents/*/*.j2    # agent별 prompt
 ├── rag/
 │   ├── be/                  # RAG backend, ingest, search, MCP endpoint
 │   ├── fe/                  # RAG 운영 UI
@@ -284,8 +286,9 @@ rag-be -> redis://redis:6379/0
 
 Legacy Streamlit UI까지 실행해야 할 때만 `cd deploy/makefile && make up-legacy`를 사용한다.
 
-`/chat`은 실제 OpenRouter 호출이므로 `deploy/docker/.env_backend`의
-`OPENROUTER_API_KEY`가 유효해야 한다.
+`/chat`은 실제 LLM provider 호출이므로 `deploy/docker/.env_backend`에
+선택한 provider의 API key가 유효해야 한다. 기본값은 OpenRouter이며
+`OPENROUTER_API_KEY`를 사용한다.
 
 Makefile target이 있는 서비스는 `make`를 우선 사용한다. Python 서비스의
 `make start`, `make test`, `make check` 계열 target은 먼저 `uv sync`를 실행해
@@ -440,7 +443,7 @@ make fe-check
 | --- | --- | --- |
 | Shared | `.env.schema` | `APP_ENV` |
 | Frontend | `frontend/.env.schema` | Backend API base URL |
-| Backend | `backend/.env.schema` | OpenRouter API key, CORS, RAG MCP URL |
+| Backend | `backend/.env.schema` | LLM provider API key, CORS, RAG MCP URL |
 | Deploy | `deploy/docker/.env.schema` | 통합 Docker Compose host 포트, public build args |
 | Streamlit legacy | 없음 | Backend API 주소, mock mode 여부 |
 | RAG Backend | `rag/be/.env.schema` | Memgraph 연결, MCP endpoint, 외부 API key |

@@ -1,65 +1,35 @@
 from __future__ import annotations
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+import os
+import subprocess
+import sys
 
-from api.chat import router as chat_router
-from settings import settings
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "django_backend.settings")
+
+from django_backend.asgi import application
 from logger import configure_logging, get_logger
+from settings import settings
 
+configure_logging()
 logger = get_logger(__name__)
+logger.info("Starting %s v%s", settings.metadata.name, settings.metadata.version)
 
-# FastAPI 앱 생성, 공통 라우터와 미들웨어 연결
-def create_app() -> FastAPI:
-    configure_logging()
-    logger.info("Starting %s v%s", settings.metadata.name, settings.metadata.version)
-
-    app = FastAPI(title=settings.metadata.name, version=settings.metadata.version)
-
-    if settings.runtime.cors_origins:
-        app.add_middleware(
-            CORSMiddleware,
-            allow_origins=settings.runtime.cors_origins,
-            allow_credentials=True,
-            allow_methods=["*"],
-            allow_headers=["*"],
-        )
-
-    # 서비스 상태 확인 응답 반환
-    @app.get("/health")
-    def health() -> dict[str, str]:
-        return {
-            "status": "ok",
-            "service": settings.metadata.name,
-            "version": settings.metadata.version,
-        }
-
-    # backend가 사용하는 주요 런타임 의존성 반환
-    @app.get("/api/system/dependencies")
-    def dependencies() -> dict[str, object]:
-        return {
-            "runtime": "FastAPI",
-            "agent_stack": ["LangChain", "OpenRouter", "MCP Tool Server"],
-            "settings": "pydantic-settings",
-        }
-
-    app.include_router(chat_router)
-
-    return app
+app = application
 
 
-app = create_app()
-
-
-# uvicorn으로 backend 서버 실행
 def main() -> None:
-    import uvicorn
-
-    uvicorn.run(
-        "app:app",
-        host=settings.runtime.host,
-        port=settings.runtime.port,
-        reload=settings.runtime.reload,
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "daphne",
+            "-b",
+            settings.runtime.host,
+            "-p",
+            str(settings.runtime.port),
+            "app:application",
+        ],
+        check=True,
     )
 
 

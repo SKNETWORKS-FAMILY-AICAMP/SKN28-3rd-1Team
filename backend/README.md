@@ -1,19 +1,19 @@
 # ⚙️ Backend Agent Orchestrator
 
-FastAPI 기반 Agent Orchestrator 서버이다.
+Django ASGI 기반 Agent Orchestrator 서버이다.
 
-Frontend는 `POST /chat`으로 최종 JSON 응답을 받을 수 있고, `POST /chat/stream`으로 생성 중인 답변 조각을 SSE로 받을 수 있다. Backend는 LangChain Agent를 실행한 뒤 자연어 답변을 `answer`로 반환한다. 파일 업로드, RAG ingest, ASR/audio 처리는 backend 책임에서 제외한다.
+Frontend는 `POST /chat`으로 최종 JSON 응답을 받을 수 있고, `POST /chat/stream`의 SSE로 생성 중인 답변 조각, tool call, 음성 오디오 chunk를 받을 수 있다. Backend는 LangGraph를 실행한 뒤 자연어 답변을 `answer`로 반환한다. AI SDK 변환, 파일 업로드, RAG ingest, ASR 처리는 backend 책임에서 제외한다.
 
 ## ✨ 한눈에 보기
 
 | 구분 | 내용 |
 | --- | --- |
-| 🚪 API 입구 | `POST /chat`, `POST /chat/stream` |
-| 🧠 LLM | OpenRouter 기반 `ChatOpenAI`, Cerebras primary provider |
+| 🚪 API 입구 | `POST /chat`, `POST /chat/stream` SSE |
+| 🧠 LLM | `ChatOpenRouter` / `ChatCerebras` 직접 생성 |
 | 🧩 Agent | LangChain `create_agent()` + LangGraph checkpointer |
-| 🛠️ Tool | `agent/tool.py`에서 관리 |
+| 🛠️ Tool | `tools/`에서 MCP/local tool 관리 |
 | 📚 RAG | FastMCP Tool Server에서 read-only MCP tools 로딩 |
-| 💬 응답 | 최종 JSON `answer` 또는 SSE `delta`/`final` 반환 |
+| 💬 응답 | 최종 JSON `answer` 또는 SSE `delta`/`tool_call`/`final`/`speech_text`/`audio`/`audio_done` event 반환 |
 
 ## 🎯 현재 목표
 
@@ -22,11 +22,11 @@ Frontend는 `POST /chat`으로 최종 JSON 응답을 받을 수 있고, `POST /c
 ```text
 Frontend
   -> 🚪 POST /chat 또는 POST /chat/stream
-  -> ⚡  FastAPI chat router
+  -> ⚡  Django ASGI HTTP/SSE transport
   -> 🧠 Main Agent Orchestrator
-  -> 🔗 ChatOpenAI + LangChain tools
+  -> 🔗 ChatOpenRouter/ChatCerebras + LangChain tools
   -> 📚 MCP RAG tool server
-  -> 💬 answer 또는 delta stream
+  -> 💬 answer 또는 backend SSE event stream
 ```
 
 ## 🗂️ BACKEND 구조
@@ -39,21 +39,33 @@ backend/
 ├── scripts/                          # 수동 테스트
 │   └── manual_chat.py                # /chat 테스트
 ├── src/                              # 앱 소스
-│   ├── app.py                        # FastAPI 시작점
+│   ├── app.py                        # Django ASGI 시작점
 │   ├── logger.py                     # 로그 설정
 │   ├── settings/                     # 도메인별 설정 로딩
-│   ├── api/                          # API 라우터
+│   ├── django_backend/               # Django settings, urls, ASGI HTTP/SSE transport
+│   ├── api/                          # framework-neutral chat contract
 │   │   ├── __init__.py               # 패키지 파일
-│   │   └── chat.py                   # /chat API
-│   ├── agent/                        # Agent 구성
+│   │   └── chat.py                   # /chat request/response 모델과 변환 helper
+│   ├── agents/                       # Agent 구성
 │   │   ├── __init__.py               # 패키지 파일
-│   │   ├── graph.py                  # Agent 실행
-│   │   ├── openrouter_llm.py         # LLM 생성
-│   │   └── tool.py                   # Tool 목록
-│   └── prompt/                       # Prompt
-│       ├── __init__.py               # export
-│       ├── prompt_loader.py          # Prompt 렌더링
-│       └── system_prompt.j2          # System prompt
+│   │   ├── main_agent/               # agent.py, system prompt
+│   │   ├── speech_text_agent/        # TTS용 음성 텍스트 생성과 prompt
+│   │   └── screen_control_agent/     # 화면 제어 tool-calling agent
+│   ├── tools/                        # MCP/local/FE tool registry
+│   │   ├── registery.py              # Agent tool cache/registry
+│   │   ├── profiles/                 # agent별 tool profile JSON
+│   │   ├── from_mcp.py               # MCP tool loader
+│   │   └── local.py                  # local tool 확장 위치
+│   ├── utils/                        # 공통 utility
+│   ├── llm/                          # ChatOpenRouter/ChatCerebras 생성
+│   │   ├── openrouter.py             # ChatOpenRouter 생성
+│   │   └── cerebras.py               # ChatCerebras 생성
+│   ├── graph/                        # Graph 실행 경계와 state
+│   │   ├── graph.py                  # StateGraph construction
+│   │   ├── runner.py                 # chat turn stream runner
+│   │   └── state.py                  # StateGraph 전환용 state contract
+│   ├── nodes/                        # Graph node 구현
+│   │   └── speech_synthesis_node/    # ElevenLabs TTS node
 └── tests/                            # 테스트
     └── test_backend_core.py          # 핵심 테스트
 ```
@@ -62,39 +74,46 @@ backend/
 
 | 파일 | 역할 |
 | --- | --- |
-| 🚀 `src/app.py` | FastAPI 앱 생성, CORS 설정, `/health`, router 등록 |
-| 🚪 `src/api/chat.py` | `/chat`, `/chat/stream` endpoint와 최소 Pydantic request/response 모델 |
-| 🧠 `src/agent/graph.py` | `create_agent()` 기반 Main Agent Orchestrator와 streaming 실행 함수 |
-| 🔑 `src/agent/openrouter_llm.py` | OpenRouter 호환 `ChatOpenAI` 생성 |
-| 🛠️ `src/agent/tool.py` | Agent에 붙일 LangChain tool 목록 관리 |
-| 🧾 `src/prompt/prompt_loader.py` | Jinja2 prompt 렌더링 |
-| 💬 `src/prompt/system_prompt.j2` | Agent system prompt |
+| 🚀 `src/app.py` | Django ASGI `application` 진입점 |
+| 🌐 `src/django_backend/` | `/health`, `/chat`, `/chat/stream` HTTP/SSE transport |
+| 🚪 `src/api/chat.py` | `/chat` request/response 모델과 Agent 결과 변환 helper |
+| 🧠 `src/agents/main_agent/` | `create_agent()` 기반 Main Agent 생성/cache와 실행 함수 |
+| 🗣️ `src/agents/speech_text_agent/` | state의 `final_response`를 정규화하고 `final_response_script`로 변환하는 LLM agent |
+| 🔄 `src/graph/` | chat turn 실행 경계, StateGraph 전환용 state, text stream 이후 speech/TTS event 연결 |
+| 🔊 `src/nodes/speech_synthesis_node/` | state의 `final_response_script`를 ElevenLabs SDK TTS stream으로 합성하는 deterministic node |
+| 🔑 `src/llm/` | agent별 model 설정과 provider 설정을 조합해 `ChatOpenRouter` 또는 `ChatCerebras` 생성 |
+| 🛠️ `src/tools/` | Agent에 붙일 LangChain MCP/local tool 목록 관리 |
+| 🧾 `src/utils/prompt_loader.py` | agent-local Jinja2 prompt 렌더링 |
+| 💬 `src/agents/main_agent/system_prompt.j2` | Main Agent system prompt |
+| 🔊 `src/agents/speech_text_agent/speech_text_prompt.j2` | Speech text Agent prompt |
 | ⚙️ `src/settings/` | `METADATA_`, `RUNTIME_`, `LLM_`, `ELEVENLABS_`, `RAG_` 설정 로딩 |
 | 🧪 `scripts/manual_chat.py` | 터미널에서 `/chat`을 직접 호출하는 수동 테스트 스크립트 |
 | ✅ `tests/test_backend_core.py` | health, `/chat`, `/chat/stream` 최소 동작 unittest |
 
 ## 🔄 Runtime 흐름
 
-1. `src/app.py`가 FastAPI 앱을 만들고 `api.chat.router`를 등록한다.
+1. `src/app.py`가 Django ASGI `application`을 노출한다.
 2. Frontend가 `POST /chat` 또는 `POST /chat/stream`으로 `message`를 보낸다.
-3. `src/api/chat.py`가 `ChatRequest`를 검증한다. `/chat`은 `run_agent(...)`, `/chat/stream`은 `run_agent_stream(...)`을 호출한다.
-4. `src/agent/graph.py`가 `create_agent()`와 `InMemorySaver` checkpointer로 Agent를 만든다.
-5. Agent는 `get_chat_llm()`, `get_tools()`, `render_prompt("system_prompt.j2")`를 조합한다.
-6. `src/agent/openrouter_llm.py`가 OpenRouter API key와 provider routing으로 `ChatOpenAI`를 생성한다.
-7. `src/agent/tool.py`가 RAG MCP server에서 read-only MCP tools를 비동기로 로딩하고 캐시한다.
-8. 일반 요청에서는 Agent 실행 결과의 마지막 assistant message를 `answer` 문자열로 반환한다.
-9. 스트리밍 요청에서는 생성 중인 text chunk를 `delta` 이벤트로 순차 전송하고, 마지막에 기존 `ChatResponse`와 호환되는 `final` 이벤트를 전송한다.
+3. `src/django_backend/urls.py`가 `/chat` JSON 요청과 `/chat/stream` SSE 요청을 처리하고 `ChatGraphRunner`에 전달한다.
+4. `src/agents/main_agent/`가 `create_agent()`와 `InMemorySaver` checkpointer로 Agent를 만든다.
+5. Agent는 `get_chat_llm()`, `get_tools(agent_name="main_agent")`, agent-local prompt를 조합한다.
+6. `src/llm/`가 agent별 model 설정과 선택 provider API key로 `ChatOpenRouter` 또는 `ChatCerebras`를 생성한다.
+7. `src/tools/`가 RAG MCP server에서 read-only MCP tools를 비동기로 로딩하고 캐시한다.
+8. 일반 요청에서는 Graph stream의 `final` event를 `answer` 문자열로 변환해 반환한다.
+9. SSE 요청에서는 LangChain `astream_events()`에서 나온 text/tool event를 backend event로 매핑해 `delta`, `tool_call`, `final` event를 순차 전송한다.
+10. `speech_text_agent`가 state의 `final_response`를 읽고 structured output으로 `final_response_script`를 저장한다.
+11. `speech_synthesis_node`가 script만 읽어 ElevenLabs에 전달하고 `speech_text`, `audio`, `audio_done` event를 전송한다.
 
 ## 🖥️ Frontend 연결 위치
 
-Frontend는 RAG 서버나 LLM을 직접 호출하지 않고 backend의 `/chat` 또는 `/chat/stream`만 호출한다.
+Frontend는 RAG 서버나 LLM을 직접 호출하지 않고 backend의 `/chat` 또는 `/chat/stream`만 호출한다. AI SDK `UIMessage` 변환은 Next.js Route Handler/BFF에서 담당하고, backend는 자체 SSE event 계약만 유지한다.
 
 | 구분 | backend 파일 | frontend에서 할 일 |
 | --- | --- | --- |
-| endpoint | `src/api/chat.py` | 최종 응답은 `POST /chat`, 스트리밍 응답은 `POST /chat/stream`으로 `message` 전송 |
+| endpoint | `src/django_backend/` | 최종 응답은 `POST /chat`, 스트리밍 응답은 `POST /chat/stream` SSE로 전송 |
 | CORS | `src/settings/` | frontend 주소가 `RUNTIME_CORS_ORIGINS`에 포함되어 있는지 확인 |
-| 앱 등록 | `src/app.py` | 별도 작업 없음. `app.include_router(chat_router)`로 이미 등록됨 |
-| loading UI | frontend 코드 | `/chat`은 응답 대기 상태를 표시하고, `/chat/stream`은 `delta`를 받을 때마다 답변을 단계적으로 표시 |
+| 앱 등록 | `src/app.py` | 별도 작업 없음. `application` ASGI callable로 이미 등록됨 |
+| loading UI | frontend 코드 | `/chat`은 응답 대기 상태를 표시하고, `/chat/stream`은 `delta` event를 받을 때마다 답변을 단계적으로 표시 |
 
 최종 JSON 응답을 받는 요청 예시는 다음과 같다.
 
@@ -115,7 +134,7 @@ async function sendChat(message: string) {
 }
 ```
 
-스트리밍 UI가 필요한 frontend는 `/chat/stream`을 호출하고 `text/event-stream` 응답의 `delta` 이벤트를 누적해서 표시한다. `/chat`은 기존 호환성을 위해 최종 JSON 응답 계약을 유지한다.
+스트리밍 UI가 필요한 frontend는 `/chat/stream` SSE에 연결하고 `delta` event를 누적해서 표시한다. `/chat`은 기존 호환성을 위해 최종 JSON 응답 계약을 유지한다.
 
 ## 📚 RAG/MCP 연결 위치
 
@@ -125,9 +144,9 @@ RAG는 별도 FastMCP Tool Server가 담당하고, backend는 MCP Client로 tool
 | --- | --- | --- |
 | MCP 서버 URL | `src/settings/` | `settings.rag.mcp_url` 값 사용 |
 | 환경 변수 | Infisical / `.env` | 로컬은 `RAG_MCP_URL="http://127.0.0.1:8010/mcp"`, Docker network 내부는 `http://rag-be:8010/mcp` 사용 |
-| tool 연결 | `src/agent/tool.py` | `MultiServerMCPClient`로 MCP tools를 async 로딩하고 캐시 |
-| Agent 연결 | `src/agent/graph.py` | `create_agent(..., tools=await get_tools(), ...)`에 MCP tools 전달 |
-| 응답 출처 | `src/api/chat.py` | 필요 시 `sources`, `tool_calls` 채우도록 확장 |
+| tool 연결 | `src/tools/` | `MultiServerMCPClient`로 MCP tools를 async 로딩하고 캐시 |
+| Agent 연결 | `src/agents/main_agent/` | `create_agent(..., tools=await get_tools(agent_name="main_agent"), ...)`에 MCP tools 전달 |
+| 응답 출처 | `src/api/chat.py` | 필요 시 `sources`, `tool_calls` 변환 helper를 확장 |
 
 `langchain_mcp_adapters.client.MultiServerMCPClient.get_tools()`와 MCP tool
 호출은 async 경로를 사용한다. 그래서 `/chat`과 `/chat/stream`도 agent를
@@ -162,8 +181,8 @@ backend 실행 진입점은 `src/app.py`이다.
 | 구분 | 값 |
 | --- | --- |
 | 실행 파일 | `src/app.py` |
-| FastAPI app 객체 | `app` |
-| uvicorn import 경로 | `app:app` |
+| ASGI application 객체 | `application` |
+| Daphne import 경로 | `app:application` |
 | 실행 기준 디렉터리 | `backend/` |
 
 `PYTHONPATH=src`를 붙이는 이유는 `src/app.py`를 `app` 모듈로 import하기 위해서다.
@@ -173,7 +192,7 @@ make start
 ```
 
 `make start`는 Infisical CLI로 값을 주입하고 `make env-check`로
-`backend/.env.schema` 계약을 검증한 뒤, `uv sync`와 `uv run`으로 uvicorn을 실행한다.
+`backend/.env.schema` 계약을 검증한 뒤, `uv sync`와 `uv run`으로 Daphne을 실행한다.
 
 `src/app.py` 안의 `main()`을 직접 실행하는 방식도 가능하다.
 
@@ -181,7 +200,7 @@ make start
 PYTHONPATH=src uv run python src/app.py
 ```
 
-개발 중 자동 reload가 필요하면 `RUNTIME_RELOAD=true`를 사용하거나 uvicorn에 `--reload`를 붙인다.
+Daphne 실행은 `RUNTIME_HOST`와 `RUNTIME_PORT`를 사용한다. `RUNTIME_RELOAD`는 기존 env 호환을 위해 남아 있지만 Daphne 자동 reload에는 사용하지 않는다.
 
 ## 💬 Chat API
 
@@ -211,9 +230,9 @@ PYTHONPATH=src uv run python src/app.py
 
 `session_id`는 LangGraph `thread_id`로 전달된다. 같은 `session_id`로 요청하면 프로세스가 살아 있는 동안 `InMemorySaver` checkpointer가 같은 대화 이력을 이어간다. `session_id`가 없으면 요청마다 익명 thread를 새로 만들어 세션 간 이력이 섞이지 않게 처리한다.
 
-### POST `/chat/stream`
+### POST `/chat/stream` SSE
 
-요청 body는 `/chat`과 동일하다.
+클라이언트는 HTTP POST 요청으로 `message`를 보내고, 서버는 `text/event-stream` 응답을 연다.
 
 ```json
 {
@@ -225,34 +244,42 @@ PYTHONPATH=src uv run python src/app.py
 }
 ```
 
-응답은 SSE(`text/event-stream`) 형식이다. 생성 중에는 `delta` 이벤트가 여러 번 전송되고, 완료 시 `final` 이벤트가 한 번 전송된다.
+응답은 SSE event다. 생성 중에는 `delta` event가 여러 번 전송되고, 완료 시 `final` event가 한 번 전송된다.
 
 ```text
 event: delta
-data: {"content": "신청은 "}
-
-event: delta
-data: {"content": "주민센터에서 "}
-
-event: final
-data: {"answer": "신청은 주민센터에서 할 수 있습니다.", "tool_calls": [], "sources": []}
+data: {"type": "delta", "content": "신청은 "}
 ```
 
-`final` 이벤트의 data는 기존 `ChatResponse`와 같은 필드(`answer`, `tool_calls`, `sources`)를 사용한다. `session_id`는 `/chat`과 동일하게 LangGraph `thread_id`로 전달되므로 같은 세션의 대화 문맥이 이어진다.
+```text
+event: delta
+data: {"type": "delta", "content": "주민센터에서 "}
+```
+
+```text
+event: final
+data: {"type": "final", "answer": "신청은 주민센터에서 할 수 있습니다.", "tool_calls": [], "sources": [], "session_id": "optional-session-id"}
+```
+
+`final` event는 기존 `ChatResponse`와 같은 필드(`answer`, `tool_calls`, `sources`, `session_id`)를 사용한다. 이후 `speech_text_agent`가 `final_response_script`를 state에 저장하고, `speech_synthesis_node`가 그 값을 ElevenLabs로 보내 `speech_text`, `audio`, `audio_done` event를 이어 보낸다. `session_id`는 `/chat`과 동일하게 LangGraph `thread_id`로 전달되므로 같은 세션의 대화 문맥이 이어진다.
 
 ## 🧾 Prompt
 
-프롬프트는 Markdown 파일이 아니라 Jinja2 템플릿을 사용한다.
+프롬프트는 각 agent 디렉터리에 있는 Jinja2 템플릿을 사용한다.
 
-- `render_prompt("system_prompt.j2")`로 system prompt를 렌더링한다.
+- `src/agents/main_agent/system_prompt.j2`는 Main Agent system prompt다.
+- `src/agents/speech_text_agent/speech_text_prompt.j2`는 TTS용 speech text prompt다.
+- `src/utils/prompt_loader.py`는 agent-local template path를 받아 렌더링한다.
 - 보기 생성 여부는 backend 분기 코드가 아니라 LLM이 답변 맥락에 따라 판단한다.
 - tool 사용 여부도 LLM이 system prompt와 tool description을 보고 판단한다.
 - frontend component, JSON UI, API schema를 생성하지 않도록 system prompt에 명시한다.
 
 ## 🛠️ Tools and MCP
 
-`src/agent/tool.py`는 RAG Backend의 FastMCP endpoint에서 아래 read-only MCP
-tools를 로딩한다.
+`src/tools/registery.py`는 agent 이름에 맞는 `src/tools/profiles/*.json` profile을
+읽고 Agent에 전달할 tool 목록을 캐시한다. 현재 `main_agent` profile은 RAG MCP
+tool 전체를 받는다. `src/tools/from_mcp.py`는 RAG Backend의 FastMCP endpoint에서
+아래 read-only MCP tools를 로딩한다.
 
 - `memgraph_read_query`
 - `memgraph_vector_search`
@@ -262,6 +289,9 @@ tools를 로딩한다.
 
 원본 MCP tool 이름은 `memgraph.read_query` 형식이고, LangChain/OpenAI에
 전달하는 이름만 안전한 snake style로 바꾼다.
+
+신규 tool 구현은 MCP tool이면 `from_mcp.py`, backend local tool이면 `local.py`,
+agent별 제공 정책은 `profiles/{agent_name}.json`, 조합/캐시는 `registery.py`에 둔다.
 
 RAG 없이 main model만 확인해야 하는 경우에는 `RAG_TOOLS_ENABLED=false`로
 실행한다. 이때 agent에는 빈 tool 목록이 전달되므로 RAG MCP 서버가 떠 있지
@@ -301,26 +331,37 @@ make env-check
 
 | 변수 | 기본값 | 설명 |
 | --- | --- | --- |
-| `OPENROUTER_API_KEY` | 빈 값 | 실제 `/chat` 호출에 필요한 OpenRouter API 키 |
-| `LLM_OPENROUTER_MODEL` | `openai/gpt-oss-120b` | 사용할 LLM 모델 |
+| `OPENROUTER_API_KEY` | 빈 값 | `LLM_CHAT_PROVIDER=openrouter`일 때 필요한 OpenRouter API 키 |
+| `CEREBRAS_API_KEY` | 빈 값 | `LLM_CHAT_PROVIDER=cerebras` 또는 speech text provider가 Cerebras일 때 필요한 API 키 |
+| `LLM_CHAT_PROVIDER` | `cerebras` | main chat LLM provider. `openrouter` 또는 `cerebras` |
+| `LLM_CHAT_MODEL` | `gpt-oss-120b` | main agent가 사용할 모델 |
+| `LLM_CHAT_TEMPERATURE` | `0.2` | main agent LLM temperature |
+| `LLM_CHAT_TIMEOUT_MS` | `60000` | main agent LLM timeout |
+| `LLM_CHAT_MAX_RETRIES` | `2` | main agent LLM 재시도 횟수 |
+| `LLM_CHAT_MAX_TOKENS` | 빈 값 | main agent 응답 max token. 비워두면 제한 없음 |
+| `LLM_CHAT_REASONING_EFFORT` | 빈 값 | 비워두면 main agent provider 요청에서 reasoning 옵션을 생략 |
+| `LLM_SPEECH_TEXT_PROVIDER` | 빈 값 | 비워두면 `LLM_CHAT_PROVIDER`를 따르고, 별도 speech text provider를 지정할 수 있음 |
+| `LLM_SPEECH_TEXT_MODEL` | `gpt-oss-120b` | speech text agent가 사용할 모델 |
+| `LLM_SPEECH_TEXT_TEMPERATURE` | `0.0` | speech text agent LLM temperature |
+| `LLM_SPEECH_TEXT_TIMEOUT_MS` | `60000` | speech text agent LLM timeout |
+| `LLM_SPEECH_TEXT_MAX_RETRIES` | `2` | speech text agent LLM 재시도 횟수 |
+| `LLM_SPEECH_TEXT_MAX_TOKENS` | 빈 값 | speech text agent 응답 max token. 비워두면 제한 없음 |
+| `LLM_SPEECH_TEXT_REASONING_EFFORT` | 빈 값 | 비워두면 speech text provider 요청에서 reasoning 옵션을 생략 |
 | `LLM_OPENROUTER_PROVIDER_ORDER` | `["cerebras"]` | 우선 시도할 OpenRouter provider 순서 |
 | `LLM_OPENROUTER_ALLOW_FALLBACKS` | `true` | primary provider 실패 시 OpenRouter fallback 허용 여부 |
 | `LLM_OPENROUTER_BASE_URL` | `https://openrouter.ai/api/v1` | OpenRouter API base URL |
 | `LLM_OPENROUTER_REQUIRE_PARAMETERS` | `false` | provider가 요청 parameter를 지원해야 하는지 여부 |
+| `LLM_CEREBRAS_BASE_URL` | 빈 값 | 비워두면 Cerebras SDK 기본 endpoint 사용 |
 | `RUNTIME_HOST` | `127.0.0.1` | backend bind host |
 | `RUNTIME_PORT` | `8000` | backend 서버 포트 |
 | `RUNTIME_CORS_ORIGINS` | `["http://localhost:8501","http://127.0.0.1:8501","http://localhost:5173","http://127.0.0.1:5173","http://localhost:3000","http://127.0.0.1:3000"]` | 허용할 frontend origin |
 | `BACKEND_HOST_BIND` | `127.0.0.1` | Docker compose가 host에 공개할 bind 주소 |
 | `BACKEND_HOST_PORT` | `8001` | Docker compose가 host에 공개할 포트 |
-| `LLM_TEMPERATURE` | `0.2` | LLM temperature |
-| `LLM_TIMEOUT_MS` | `60000` | LLM timeout |
-| `LLM_MAX_RETRIES` | `2` | LLM 재시도 횟수 |
-| `LLM_REASONING_EFFORT` | 빈 값 | 비워두면 OpenRouter 요청에서 `reasoning_effort`를 생략 |
 | `RAG_MCP_URL` | `http://127.0.0.1:8010/mcp` | RAG MCP Tool Server URL |
 | `RAG_TOOLS_ENABLED` | `true` | `false`로 두면 RAG MCP tools를 로딩하지 않고 no-RAG/no-tool로 agent 실행 |
 | `RAG_TOOL_TIMEOUT_MS` | `30000` | tool 실행 timeout |
 
-실제 `backend/.env`와 `.env.local`은 Git에 커밋하지 않는다. local env 내용을 직접 출력하지 말고 `varlock load --agent --path backend` 또는 `make env-check`를 사용한다. `/health`는 키 없이도 동작하지만 `/chat`은 실제 LLM 호출이므로 `OPENROUTER_API_KEY`가 필요하다.
+실제 `backend/.env`와 `.env.local`은 Git에 커밋하지 않는다. local env 내용을 직접 출력하지 말고 `varlock load --agent --path backend` 또는 `make env-check`를 사용한다. `/health`는 키 없이도 동작하지만 `/chat`은 실제 LLM 호출이므로 선택한 provider의 API key가 필요하다.
 
 ## 🐳 Docker 실행
 
@@ -346,11 +387,11 @@ RAG 없이 Qwen3.7 Max를 한 번 확인하려면 backend compose만 사용해�
 ```bash
 cd backend
 BACKEND_HOST_PORT=8002 \
-LLM_OPENROUTER_MODEL='qwen/qwen3.7-max' \
+LLM_CHAT_MODEL='qwen/qwen3.7-max' \
 LLM_OPENROUTER_PROVIDER_ORDER='["alibaba"]' \
 LLM_OPENROUTER_ALLOW_FALLBACKS=false \
 RAG_TOOLS_ENABLED=false \
-LLM_REASONING_EFFORT='' \
+LLM_CHAT_REASONING_EFFORT='' \
 docker compose up -d --build backend
 
 curl -s http://127.0.0.1:8002/health
@@ -359,8 +400,8 @@ curl -s http://127.0.0.1:8002/chat \
   -d '{"session_id":"qwen-no-rag-smoke","message":"근로기준법에서 근로자와 사용자 관련해서 기본적으로 어떤 내용을 확인해야 해? 5문장 이내로 답해줘."}'
 ```
 
-이 스모크 테스트는 실제 OpenRouter 호출이므로 `backend/.env`의
-`OPENROUTER_API_KEY`가 유효해야 한다.
+이 스모크 테스트는 실제 LLM provider 호출이므로 `backend/.env`에
+선택한 provider의 API key가 유효해야 한다.
 
 종료:
 
@@ -388,17 +429,13 @@ make check
 
 성공하면 `Compiling ...` 또는 `Listing ...`만 출력되고 에러 없이 종료된다.
 
-### 3. unittest 실행
+### 3. 소스 컴파일 확인
 
 ```bash
-make test
+make check
 ```
 
-현재 테스트는 다음을 확인한다.
-
-- `/health`가 `status: ok`를 반환한다.
-- `/chat`이 `run_agent()` 결과를 `answer`로 반환한다.
-- `/chat/stream`이 `text/event-stream`으로 `delta`와 `final` 이벤트를 반환한다.
+기존 unittest는 FastAPI/WebSocket 기반 legacy 계약이라 제거했다. Django ASGI + SSE 기준 E2E 테스트는 후속으로 추가한다.
 
 ### 4. 서버 실행
 
@@ -409,7 +446,7 @@ make start
 정상 실행 시 아래와 비슷한 로그가 나온다.
 
 ```text
-Uvicorn running on http://127.0.0.1:8000
+Listening on TCP address 127.0.0.1:8000
 ```
 
 종료는 서버 터미널에서 `Ctrl+C`를 누른다.
@@ -430,7 +467,7 @@ curl -s http://127.0.0.1:8000/health
 
 ### 6. chat curl 확인
 
-실제 LLM 호출이므로 `OPENROUTER_API_KEY`가 필요하다.
+실제 LLM 호출이므로 선택한 provider의 API key가 필요하다.
 
 ```bash
 curl -s http://127.0.0.1:8000/chat \
@@ -449,15 +486,14 @@ curl -s http://127.0.0.1:8000/chat \
 ```
 
 RAG MCP tools는 backend agent에 연결되어 있다. 실제 답변 생성과 tool
-선택은 OpenRouter LLM 호출이므로 OpenRouter API key가 유효해야 한다.
+선택은 LLM provider 호출이므로 선택한 provider의 API key가 유효해야 한다.
 
-### 7. chat stream curl 확인
+### 7. chat stream SSE 확인
 
-실제 LLM 호출이므로 `OPENROUTER_API_KEY`가 필요하다. `--no-buffer`를 붙이면 curl이 받은 chunk를 바로 출력한다.
+실제 LLM 호출이므로 선택한 provider의 API key가 필요하다. 아래 명령은 HTTP SSE event stream을 확인한다.
 
 ```bash
-curl --no-buffer http://127.0.0.1:8000/chat/stream \
-  -H "Accept: text/event-stream" \
+curl -N http://127.0.0.1:8000/chat/stream \
   -H "Content-Type: application/json" \
   -d '{"session_id":"manual-stream-session","message":"노인일자리 신청 방법을 5문장으로 알려줘"}'
 ```
@@ -466,23 +502,13 @@ curl --no-buffer http://127.0.0.1:8000/chat/stream \
 
 ```text
 event: delta
-data: {"content": "..."}
+data: {"type":"delta","content":"..."}
 
 event: final
-data: {"answer": "...", "tool_calls": [], "sources": []}
+data: {"type":"final","answer":"...","tool_calls":[],"sources":[],"session_id":"manual-stream-session"}
 ```
 
-chunk가 실제로 여러 번 나뉘어 도착하는지 더 자세히 보려면 trace를 남긴다.
-
-```bash
-curl --no-buffer --trace-time --trace-ascii /tmp/chat_stream_trace.txt \
-  http://127.0.0.1:8000/chat/stream \
-  -H "Accept: text/event-stream" \
-  -H "Content-Type: application/json" \
-  -d '{"session_id":"manual-stream-session","message":"노인일자리 신청 방법을 5문장으로 알려줘"}'
-```
-
-`/tmp/chat_stream_trace.txt`에 `Recv data`가 여러 번 기록되면 chunk가 나뉘어 수신된 것이다.
+`delta` event가 여러 번 출력되면 text chunk가 나뉘어 수신된 것이다.
 
 ### 8. 터미널 수동 테스트
 
@@ -496,10 +522,10 @@ PYTHONPATH=src uv run python scripts/manual_chat.py
 
 | 증상 | 확인할 것 |
 | --- | --- |
-| `/chat`이 500을 반환 | `OPENROUTER_API_KEY` 설정 여부 |
-| `/chat/stream`이 404를 반환 | 최신 backend 코드로 실행 중인지, 서버를 재시작했는지 확인 |
-| `/chat/stream`이 한 번에만 출력됨 | 질문이 너무 짧은지 확인하고, `curl --no-buffer --trace-time`으로 실제 수신 chunk를 확인 |
-| `/health` 연결 실패 | uvicorn이 켜져 있는지, 포트가 `8000`인지 확인 |
+| `/chat`이 500을 반환 | `LLM_CHAT_PROVIDER`와 선택 provider API key 설정 여부 |
+| `/chat/stream` SSE 연결이 실패 | 최신 backend 코드로 실행 중인지, 서버를 재시작했는지 확인 |
+| `/chat/stream`이 한 번에만 출력됨 | 질문이 너무 짧은지 확인하고, curl `-N`으로 실제 SSE event를 확인 |
+| `/health` 연결 실패 | Daphne이 켜져 있는지, 포트가 `8000`인지 확인 |
 | `Address already in use` | 이미 8000 포트를 쓰는 서버 종료 또는 `--port 8001` 사용 |
 | RAG 근거가 안 붙음 | 아직 MCP RAG tool 연결 전 상태인지 확인 |
 | frontend에서 CORS 오류 | `RUNTIME_CORS_ORIGINS`에 frontend 주소 추가 |
@@ -508,11 +534,11 @@ PYTHONPATH=src uv run python scripts/manual_chat.py
 
 - `uv sync` 성공
 - `compileall` 성공
-- `unittest` 성공
+- `make check` 성공
 - `GET /health`가 200 반환
 - `POST /chat`이 `answer` 필드를 포함한 200 반환
-- `POST /chat/stream`이 `text/event-stream`으로 `delta`와 `final` 이벤트 반환
+- `POST /chat/stream` SSE가 `delta`와 `final` event 반환
 - 같은 `session_id`로 연속 요청 시 같은 LangGraph thread를 사용
 - `schemas`, `mock`, `session_store.py`, `rate_limiter.py` import가 남아 있지 않음
 
-남은 구현 작업은 MCP RAG tool을 `src/agent/tool.py`에 연결하고, 필요하면 in-memory checkpointer를 영속 저장소 기반 checkpointer로 교체하는 것이다.
+남은 구현 작업은 MCP RAG tool 설정을 검증하고, 필요하면 in-memory checkpointer를 영속 저장소 기반 checkpointer로 교체하는 것이다.

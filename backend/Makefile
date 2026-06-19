@@ -17,7 +17,7 @@ APP_ENV ?= $(INFISICAL_ENV)
 
 help:
 	@printf "%s\n" "backend targets:"
-	@printf "%s\n" "  make start       Run FastAPI locally with uv"
+	@printf "%s\n" "  make start       Run Django Channels locally with uv"
 	@printf "%s\n" "  make env-check   Validate backend env with Infisical + Varlock"
 	@printf "%s\n" "  make sync        Sync uv environment into .venv"
 	@printf "%s\n" "  make test        Run unittest suite"
@@ -40,7 +40,7 @@ sync:
 	uv sync
 
 start: sync env-check
-	$(INFISICAL) run --projectId $(INFISICAL_PROJECT_ID) --env $(INFISICAL_ENV) --path $(INFISICAL_PATH) -- sh -c 'APP_ENV=$(APP_ENV) PYTHONPATH=$(PYTHONPATH) uv run uvicorn app:app --host $(HOST) --port $(PORT)'
+	$(INFISICAL) run --projectId $(INFISICAL_PROJECT_ID) --env $(INFISICAL_ENV) --path $(INFISICAL_PATH) -- sh -c 'APP_ENV=$(APP_ENV) PYTHONPATH=$(PYTHONPATH) $(VARLOCK) run --inject vars --path $(VARLOCK_PATH) -- uv run daphne -b $(HOST) -p $(PORT) app:application'
 
 dev: start
 
@@ -51,7 +51,7 @@ check: sync
 	PYTHONPATH=$(PYTHONPATH) uv run python -m compileall src scripts tests
 
 docker-up: env-check
-	$(VARLOCK) run --path $(VARLOCK_PATH) -- docker compose up -d --build
+	$(VARLOCK) run --inject vars --path $(VARLOCK_PATH) -- docker compose up -d --build
 
 docker-down:
 	docker compose down

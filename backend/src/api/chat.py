@@ -1,43 +1,31 @@
 from __future__ import annotations
 
-import json
+from collections.abc import Mapping
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
-from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
-from agents.graph import AgentRunResult, SourceSummary, ToolCallSummary, run_agent, run_agent_stream
-from agents.speech_text_agent import stream_speech_audio
-from logger import get_logger
-
-logger = get_logger(__name__)
-
-router = APIRouter(tags=["chat"])
+from graph import run_agent
 
 
-# Frontend가 보내는 사용자 채팅 요청 모델
 class ChatRequest(BaseModel):
     session_id: str | None = None
     message: str = Field(..., min_length=1)
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
-# Agent가 호출한 tool 정보를 frontend에 전달하기 위한 응답 모델
 class ToolCallResult(BaseModel):
     name: str
     status: str
     id: str | None = None
 
 
-# RAG tool이 반환한 출처 정보를 frontend에 전달하기 위한 응답 모델
 class Source(BaseModel):
     title: str | None = None
     url: str | None = None
     excerpt: str | None = None
 
 
-# Frontend에 반환할 최종 채팅 응답 모델
 class ChatResponse(BaseModel):
     answer: str
     tool_calls: list[ToolCallResult] = Field(default_factory=list)
@@ -45,86 +33,55 @@ class ChatResponse(BaseModel):
     session_id: str | None = None
 
 
-def _tool_call_response(tool_call: ToolCallSummary) -> ToolCallResult:
+def tool_call_response(tool_call: Mapping[str, Any]) -> ToolCallResult:
     return ToolCallResult(
-        name=tool_call.name,
-        status=tool_call.status,
-        id=tool_call.id,
+        name=str(tool_call.get("name") or "tool"),
+        status=str(tool_call.get("status") or "completed"),
+        id=str(tool_call.get("id")) if tool_call.get("id") else None,
     )
 
 
-def _source_response(source: SourceSummary) -> Source:
+def source_response(source: Mapping[str, Any]) -> Source:
     return Source(
-        title=source.title,
-        url=source.url,
-        excerpt=source.excerpt,
+        title=str(source.get("title")) if source.get("title") else None,
+        url=str(source.get("url")) if source.get("url") else None,
+        excerpt=str(source.get("excerpt")) if source.get("excerpt") else None,
     )
 
 
-def _chat_response(result: AgentRunResult, session_id: str | None) -> ChatResponse:
+def chat_response_from_result(result: Mapping[str, Any], session_id: str | None) -> ChatResponse:
     return ChatResponse(
-        answer=result.answer,
-        tool_calls=[_tool_call_response(tool_call) for tool_call in result.tool_calls],
-        sources=[_source_response(source) for source in result.sources],
+        answer=str(result.get("answer") or ""),
+        tool_calls=[
+            tool_call_response(tool_call)
+            for tool_call in result.get("tool_calls") or []
+            if isinstance(tool_call, Mapping)
+        ],
+        sources=[
+            source_response(source)
+            for source in result.get("sources") or []
+            if isinstance(source, Mapping)
+        ],
         session_id=session_id,
     )
 
 
-# 사용자의 메시지를 Agent에 전달하고 자연어 답변을 반환
-@router.post("/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest) -> ChatResponse:
-    try:
-        result = await run_agent(request.message, session_id=request.session_id)
-    except Exception as exc:
-        logger.exception("chat agent execution failed")
-        raise HTTPException(status_code=500, detail="Agent 실행 중 오류가 발생했습니다.") from exc
-
-    return _chat_response(result, request.session_id)
+async def run_chat(request: ChatRequest) -> ChatResponse:
+    result = await run_agent(
+        request.message,
+        session_id=request.session_id,
+        metadata=request.metadata,
+    )
+    return chat_response_from_result(result, request.session_id)
 
 
-def _sse_event(event: str, data: dict[str, Any]) -> str:
-    return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
-
-
-@router.post("/chat/stream")
-def chat_stream(request: ChatRequest) -> StreamingResponse:
-    async def event_generator():
-        answer_parts: list[str] = []
-        final_answer = ""
-
-        try:
-            async for delta in run_agent_stream(
-                request.message,
-                session_id=request.session_id,
-            ):
-                if delta.type == "delta":
-                    answer_parts.append(delta.content)
-                    yield _sse_event("delta", {"content": delta.content})
-                elif delta.type == "tool_call" and delta.tool_call is not None:
-                    yield _sse_event(
-                        "tool_call",
-                        {"tool_call": _tool_call_response(delta.tool_call).model_dump()},
-                    )
-                elif delta.type == "final" and delta.result is not None:
-                    final_answer = delta.result.answer
-                    yield _sse_event(
-                        "final",
-                        _chat_response(delta.result, request.session_id).model_dump(),
-                    )
-
-            # 최종 답변을 음성 텍스트로 정리하고 TTS 오디오 청크를 이어서 보낸다.
-            # ELEVENLABS 미설정 시 stream_speech_audio가 즉시 종료한다.
-            async for audio_event in stream_speech_audio(
-                final_answer,
-                session_id=request.session_id,
-            ):
-                event_type = audio_event.pop("type")
-                yield _sse_event(event_type, audio_event)
-        except Exception:
-            logger.exception("chat stream agent execution failed")
-            yield _sse_event("error", {"message": "Agent 실행 중 오류가 발생했습니다."})
-
-    return StreamingResponse(event_generator(), media_type="text/event-stream")
-
-
-__all__ = ["router"]
+__all__ = [
+    "ChatRequest",
+    "ChatResponse",
+    "Source",
+    "ToolCallResult",
+    "chat_response_from_result",
+    "run_chat",
+    "source_response",
+    "tool_call_response",
+]

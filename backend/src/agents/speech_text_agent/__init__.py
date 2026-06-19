@@ -1,10 +1,13 @@
-from agents.speech_text_agent.agent import SpeechTextAgent
-from agents.speech_text_agent.pipeline import stream_speech_audio
-from agents.speech_text_agent.synthesis import SpeechSynthesisNode, SpeechSynthesisRequest
+from agents.speech_text_agent.agent import (
+    SpeechTextAgent,
+    clear_speech_text_agent_cache,
+    create_final_response_script,
+    create_speech_text_agent,
+)
 
 __all__ = [
     "SpeechTextAgent",
-    "SpeechSynthesisNode",
-    "SpeechSynthesisRequest",
-    "stream_speech_audio",
+    "clear_speech_text_agent_cache",
+    "create_final_response_script",
+    "create_speech_text_agent",
 ]

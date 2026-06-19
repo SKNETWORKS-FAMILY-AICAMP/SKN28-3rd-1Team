@@ -11,16 +11,7 @@ from settings import settings
 
 logger = get_logger(__name__)
 
-_TOOLS_CACHE: list[BaseTool] | None = None
-_TOOLS_LOCK: asyncio.Lock | None = None
 _UNSAFE_TOOL_NAME_CHARS = re.compile(r"[^a-zA-Z0-9_-]")
-
-
-def _tools_lock() -> asyncio.Lock:
-    global _TOOLS_LOCK
-    if _TOOLS_LOCK is None:
-        _TOOLS_LOCK = asyncio.Lock()
-    return _TOOLS_LOCK
 
 
 def _safe_tool_name(name: str) -> str:
@@ -78,7 +69,11 @@ def _handle_tool_errors(tools: list[BaseTool]) -> list[BaseTool]:
     return tools
 
 
-async def _load_rag_mcp_tools() -> list[BaseTool]:
+async def load_rag_mcp_tools() -> list[BaseTool]:
+    if not settings.rag.tools_enabled:
+        logger.info("RAG MCP tools disabled by configuration")
+        return []
+
     client = MultiServerMCPClient(
         {
             "rag": {
@@ -91,36 +86,16 @@ async def _load_rag_mcp_tools() -> list[BaseTool]:
         client.get_tools(server_name="rag"),
         timeout=settings.rag.tool_timeout_ms / 1000,
     )
-    return _handle_tool_errors(_normalize_tool_names(tools))
+    if not tools:
+        raise RuntimeError("RAG MCP server returned no tools.")
+
+    tools = _handle_tool_errors(_normalize_tool_names(tools))
+    logger.info(
+        "loaded RAG MCP tools url=%s tools=%s",
+        settings.rag.mcp_url,
+        [tool.name for tool in tools],
+    )
+    return tools
 
 
-# 현재 agent가 사용할 LangChain tool 목록 반환
-async def get_tools() -> list[BaseTool]:
-    global _TOOLS_CACHE
-    if not settings.rag.tools_enabled:
-        logger.info("RAG MCP tools disabled by configuration")
-        return []
-
-    if _TOOLS_CACHE is not None:
-        return _TOOLS_CACHE
-
-    async with _tools_lock():
-        if _TOOLS_CACHE is not None:
-            return _TOOLS_CACHE
-
-        tools = await _load_rag_mcp_tools()
-        if not tools:
-            raise RuntimeError("RAG MCP server returned no tools.")
-
-        _TOOLS_CACHE = tools
-        logger.info(
-            "loaded RAG MCP tools url=%s tools=%s",
-            settings.rag.mcp_url,
-            [tool.name for tool in tools],
-        )
-        return _TOOLS_CACHE
-
-
-def clear_tools_cache() -> None:
-    global _TOOLS_CACHE
-    _TOOLS_CACHE = None
+_load_rag_mcp_tools = load_rag_mcp_tools
