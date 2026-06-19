@@ -35,13 +35,13 @@ Frontend
 backend/
 ├── README.md                         # 안내 문서
 ├── pyproject.toml                    # 의존성
-├── .env.example                      # 환경 변수 예시
+├── .env.schema                       # Varlock 환경 변수 계약
 ├── scripts/                          # 수동 테스트
 │   └── manual_chat.py                # /chat 테스트
 ├── src/                              # 앱 소스
 │   ├── app.py                        # FastAPI 시작점
 │   ├── logger.py                     # 로그 설정
-│   ├── settings.py                   # 설정 로딩
+│   ├── settings/                     # 도메인별 설정 로딩
 │   ├── api/                          # API 라우터
 │   │   ├── __init__.py               # 패키지 파일
 │   │   └── chat.py                   # /chat API
@@ -69,7 +69,7 @@ backend/
 | 🛠️ `src/agent/tool.py` | Agent에 붙일 LangChain tool 목록 관리 |
 | 🧾 `src/prompt/prompt_loader.py` | Jinja2 prompt 렌더링 |
 | 💬 `src/prompt/system_prompt.j2` | Agent system prompt |
-| ⚙️ `src/settings.py` | `BACKEND_` prefix 환경 변수 로딩 |
+| ⚙️ `src/settings/` | `METADATA_`, `RUNTIME_`, `LLM_`, `ELEVENLABS_`, `RAG_` 설정 로딩 |
 | 🧪 `scripts/manual_chat.py` | 터미널에서 `/chat`을 직접 호출하는 수동 테스트 스크립트 |
 | ✅ `tests/test_backend_core.py` | health, `/chat`, `/chat/stream` 최소 동작 unittest |
 
@@ -92,7 +92,7 @@ Frontend는 RAG 서버나 LLM을 직접 호출하지 않고 backend의 `/chat` �
 | 구분 | backend 파일 | frontend에서 할 일 |
 | --- | --- | --- |
 | endpoint | `src/api/chat.py` | 최종 응답은 `POST /chat`, 스트리밍 응답은 `POST /chat/stream`으로 `message` 전송 |
-| CORS | `src/settings.py` | frontend 주소가 `BACKEND_CORS_ORIGINS`에 포함되어 있는지 확인 |
+| CORS | `src/settings/` | frontend 주소가 `RUNTIME_CORS_ORIGINS`에 포함되어 있는지 확인 |
 | 앱 등록 | `src/app.py` | 별도 작업 없음. `app.include_router(chat_router)`로 이미 등록됨 |
 | loading UI | frontend 코드 | `/chat`은 응답 대기 상태를 표시하고, `/chat/stream`은 `delta`를 받을 때마다 답변을 단계적으로 표시 |
 
@@ -123,8 +123,8 @@ RAG는 별도 FastMCP Tool Server가 담당하고, backend는 MCP Client로 tool
 
 | 구분 | backend 파일 | 동작 |
 | --- | --- | --- |
-| MCP 서버 URL | `src/settings.py` | `settings.rag_mcp_url` 값 사용 |
-| 환경 변수 | `.env` | 로컬은 `BACKEND_RAG_MCP_URL="http://127.0.0.1:8010/mcp/"`, Docker network 내부는 `http://rag-be:8010/mcp/` 사용 |
+| MCP 서버 URL | `src/settings/` | `settings.rag.mcp_url` 값 사용 |
+| 환경 변수 | Infisical / `.env` | 로컬은 `RAG_MCP_URL="http://127.0.0.1:8010/mcp"`, Docker network 내부는 `http://rag-be:8010/mcp` 사용 |
 | tool 연결 | `src/agent/tool.py` | `MultiServerMCPClient`로 MCP tools를 async 로딩하고 캐시 |
 | Agent 연결 | `src/agent/graph.py` | `create_agent(..., tools=await get_tools(), ...)`에 MCP tools 전달 |
 | 응답 출처 | `src/api/chat.py` | 필요 시 `sources`, `tool_calls` 채우도록 확장 |
@@ -144,7 +144,7 @@ client = MultiServerMCPClient(
     {
         "rag": {
             "transport": "http",
-            "url": settings.rag_mcp_url,
+            "url": settings.rag.mcp_url,
         }
     }
 )
@@ -172,8 +172,8 @@ backend 실행 진입점은 `src/app.py`이다.
 make start
 ```
 
-`make start`는 `.env`가 없으면 `.env.example`에서 먼저 만들고, `uv sync`로
-`backend/.venv`를 준비한 뒤 `uv run`으로 uvicorn을 실행한다.
+`make start`는 Infisical CLI로 값을 주입하고 `make env-check`로
+`backend/.env.schema` 계약을 검증한 뒤, `uv sync`와 `uv run`으로 uvicorn을 실행한다.
 
 `src/app.py` 안의 `main()`을 직접 실행하는 방식도 가능하다.
 
@@ -181,7 +181,7 @@ make start
 PYTHONPATH=src uv run python src/app.py
 ```
 
-개발 중 자동 reload가 필요하면 `.env`의 `BACKEND_RELOAD=true`를 사용하거나 uvicorn에 `--reload`를 붙인다.
+개발 중 자동 reload가 필요하면 `RUNTIME_RELOAD=true`를 사용하거나 uvicorn에 `--reload`를 붙인다.
 
 ## 💬 Chat API
 
@@ -263,7 +263,7 @@ tools를 로딩한다.
 원본 MCP tool 이름은 `memgraph.read_query` 형식이고, LangChain/OpenAI에
 전달하는 이름만 안전한 snake style로 바꾼다.
 
-RAG 없이 main model만 확인해야 하는 경우에는 `BACKEND_ENABLE_RAG_TOOLS=false`로
+RAG 없이 main model만 확인해야 하는 경우에는 `RAG_TOOLS_ENABLED=false`로
 실행한다. 이때 agent에는 빈 tool 목록이 전달되므로 RAG MCP 서버가 떠 있지
 않아도 `/chat` 호출 경로를 확인할 수 있다.
 
@@ -291,7 +291,7 @@ backend 안의 `scripts/`는 현재 수동 `/chat` 테스트용 `manual_chat.py`
 
 ## 🔐 환경 변수
 
-Env field 계약은 `backend/.env.schema`에서 관리한다. 실제 값은 `backend/.env.local`, `backend/.env`, 또는 이후 연결할 secret provider에서 관리하고 커밋하지 않는다.
+Env field 계약은 `backend/.env.schema`에서 관리한다. 실제 값은 Infisical 또는 ignored local env 파일에서 관리하고 커밋하지 않는다.
 
 ```bash
 make env-check
@@ -301,26 +301,26 @@ make env-check
 
 | 변수 | 기본값 | 설명 |
 | --- | --- | --- |
-| `BACKEND_OPENROUTER_API_KEY` | 빈 값 | 실제 `/chat` 호출에 필요한 OpenRouter API 키. `OPENROUTER_API_KEY`도 호환된다. |
-| `BACKEND_OPENROUTER_MODEL` | `openai/gpt-oss-120b` | 사용할 LLM 모델 |
-| `BACKEND_OPENROUTER_PROVIDER_ORDER` | `["cerebras/fp16"]` | 우선 시도할 OpenRouter provider 순서 |
-| `BACKEND_OPENROUTER_ALLOW_FALLBACKS` | `false` | primary provider 실패 시 OpenRouter fallback 허용 여부. benchmark 기준과 맞추기 위해 기본값은 `false` |
-| `BACKEND_OPENROUTER_BASE_URL` | `https://openrouter.ai/api/v1` | OpenRouter API base URL |
-| `BACKEND_OPENROUTER_REQUIRE_PARAMETERS` | `false` | provider가 요청 parameter를 지원해야 하는지 여부 |
-| `BACKEND_API_HOST` | `127.0.0.1` | backend bind host |
-| `BACKEND_API_PORT` | `8000` | backend 서버 포트 |
-| `BACKEND_CORS_ORIGINS` | `["http://localhost:8501","http://127.0.0.1:8501","http://localhost:5173","http://127.0.0.1:5173","http://localhost:3000","http://127.0.0.1:3000"]` | 허용할 frontend origin |
+| `OPENROUTER_API_KEY` | 빈 값 | 실제 `/chat` 호출에 필요한 OpenRouter API 키 |
+| `LLM_OPENROUTER_MODEL` | `openai/gpt-oss-120b` | 사용할 LLM 모델 |
+| `LLM_OPENROUTER_PROVIDER_ORDER` | `["cerebras"]` | 우선 시도할 OpenRouter provider 순서 |
+| `LLM_OPENROUTER_ALLOW_FALLBACKS` | `true` | primary provider 실패 시 OpenRouter fallback 허용 여부 |
+| `LLM_OPENROUTER_BASE_URL` | `https://openrouter.ai/api/v1` | OpenRouter API base URL |
+| `LLM_OPENROUTER_REQUIRE_PARAMETERS` | `false` | provider가 요청 parameter를 지원해야 하는지 여부 |
+| `RUNTIME_HOST` | `127.0.0.1` | backend bind host |
+| `RUNTIME_PORT` | `8000` | backend 서버 포트 |
+| `RUNTIME_CORS_ORIGINS` | `["http://localhost:8501","http://127.0.0.1:8501","http://localhost:5173","http://127.0.0.1:5173","http://localhost:3000","http://127.0.0.1:3000"]` | 허용할 frontend origin |
 | `BACKEND_HOST_BIND` | `127.0.0.1` | Docker compose가 host에 공개할 bind 주소 |
 | `BACKEND_HOST_PORT` | `8001` | Docker compose가 host에 공개할 포트 |
-| `BACKEND_LLM_TEMPERATURE` | `0.2` | LLM temperature |
-| `BACKEND_LLM_TIMEOUT_MS` | `60000` | LLM timeout |
-| `BACKEND_LLM_MAX_RETRIES` | `2` | LLM 재시도 횟수 |
-| `BACKEND_LLM_REASONING_EFFORT` | 빈 값 | 비워두면 OpenRouter 요청에서 `reasoning_effort`를 생략 |
-| `BACKEND_RAG_MCP_URL` | `http://127.0.0.1:8010/mcp/` | RAG MCP Tool Server URL |
-| `BACKEND_ENABLE_RAG_TOOLS` | `true` | `false`로 두면 RAG MCP tools를 로딩하지 않고 no-RAG/no-tool로 agent 실행 |
-| `BACKEND_TOOL_TIMEOUT_MS` | `30000` | tool 실행 timeout |
+| `LLM_TEMPERATURE` | `0.2` | LLM temperature |
+| `LLM_TIMEOUT_MS` | `60000` | LLM timeout |
+| `LLM_MAX_RETRIES` | `2` | LLM 재시도 횟수 |
+| `LLM_REASONING_EFFORT` | 빈 값 | 비워두면 OpenRouter 요청에서 `reasoning_effort`를 생략 |
+| `RAG_MCP_URL` | `http://127.0.0.1:8010/mcp` | RAG MCP Tool Server URL |
+| `RAG_TOOLS_ENABLED` | `true` | `false`로 두면 RAG MCP tools를 로딩하지 않고 no-RAG/no-tool로 agent 실행 |
+| `RAG_TOOL_TIMEOUT_MS` | `30000` | tool 실행 timeout |
 
-실제 `backend/.env`와 `.env.local`은 Git에 커밋하지 않는다. local env 내용을 직접 출력하지 말고 `varlock load --agent --path backend` 또는 `make env-check`를 사용한다. `/health`는 키 없이도 동작하지만 `/chat`은 실제 LLM 호출이므로 `BACKEND_OPENROUTER_API_KEY`가 필요하다.
+실제 `backend/.env`와 `.env.local`은 Git에 커밋하지 않는다. local env 내용을 직접 출력하지 말고 `varlock load --agent --path backend` 또는 `make env-check`를 사용한다. `/health`는 키 없이도 동작하지만 `/chat`은 실제 LLM 호출이므로 `OPENROUTER_API_KEY`가 필요하다.
 
 ## 🐳 Docker 실행
 
@@ -346,11 +346,11 @@ RAG 없이 Qwen3.7 Max를 한 번 확인하려면 backend compose만 사용해�
 ```bash
 cd backend
 BACKEND_HOST_PORT=8002 \
-BACKEND_OPENROUTER_MODEL='qwen/qwen3.7-max' \
-BACKEND_OPENROUTER_PROVIDER_ORDER='["alibaba"]' \
-BACKEND_OPENROUTER_ALLOW_FALLBACKS=false \
-BACKEND_ENABLE_RAG_TOOLS=false \
-BACKEND_LLM_REASONING_EFFORT='' \
+LLM_OPENROUTER_MODEL='qwen/qwen3.7-max' \
+LLM_OPENROUTER_PROVIDER_ORDER='["alibaba"]' \
+LLM_OPENROUTER_ALLOW_FALLBACKS=false \
+RAG_TOOLS_ENABLED=false \
+LLM_REASONING_EFFORT='' \
 docker compose up -d --build backend
 
 curl -s http://127.0.0.1:8002/health
@@ -360,7 +360,7 @@ curl -s http://127.0.0.1:8002/chat \
 ```
 
 이 스모크 테스트는 실제 OpenRouter 호출이므로 `backend/.env`의
-`OPENROUTER_API_KEY` 또는 `BACKEND_OPENROUTER_API_KEY`가 유효해야 한다.
+`OPENROUTER_API_KEY`가 유효해야 한다.
 
 종료:
 
@@ -430,7 +430,7 @@ curl -s http://127.0.0.1:8000/health
 
 ### 6. chat curl 확인
 
-실제 LLM 호출이므로 `.env`에 `BACKEND_OPENROUTER_API_KEY`가 필요하다.
+실제 LLM 호출이므로 `OPENROUTER_API_KEY`가 필요하다.
 
 ```bash
 curl -s http://127.0.0.1:8000/chat \
@@ -449,11 +449,11 @@ curl -s http://127.0.0.1:8000/chat \
 ```
 
 RAG MCP tools는 backend agent에 연결되어 있다. 실제 답변 생성과 tool
-선택은 OpenRouter LLM 호출이므로 `.env`의 OpenRouter API key가 유효해야 한다.
+선택은 OpenRouter LLM 호출이므로 OpenRouter API key가 유효해야 한다.
 
 ### 7. chat stream curl 확인
 
-실제 LLM 호출이므로 `.env`에 `BACKEND_OPENROUTER_API_KEY`가 필요하다. `--no-buffer`를 붙이면 curl이 받은 chunk를 바로 출력한다.
+실제 LLM 호출이므로 `OPENROUTER_API_KEY`가 필요하다. `--no-buffer`를 붙이면 curl이 받은 chunk를 바로 출력한다.
 
 ```bash
 curl --no-buffer http://127.0.0.1:8000/chat/stream \
@@ -496,13 +496,13 @@ PYTHONPATH=src uv run python scripts/manual_chat.py
 
 | 증상 | 확인할 것 |
 | --- | --- |
-| `/chat`이 500을 반환 | `.env`의 `BACKEND_OPENROUTER_API_KEY` 설정 여부 |
+| `/chat`이 500을 반환 | `OPENROUTER_API_KEY` 설정 여부 |
 | `/chat/stream`이 404를 반환 | 최신 backend 코드로 실행 중인지, 서버를 재시작했는지 확인 |
 | `/chat/stream`이 한 번에만 출력됨 | 질문이 너무 짧은지 확인하고, `curl --no-buffer --trace-time`으로 실제 수신 chunk를 확인 |
 | `/health` 연결 실패 | uvicorn이 켜져 있는지, 포트가 `8000`인지 확인 |
 | `Address already in use` | 이미 8000 포트를 쓰는 서버 종료 또는 `--port 8001` 사용 |
 | RAG 근거가 안 붙음 | 아직 MCP RAG tool 연결 전 상태인지 확인 |
-| frontend에서 CORS 오류 | `BACKEND_CORS_ORIGINS`에 frontend 주소 추가 |
+| frontend에서 CORS 오류 | `RUNTIME_CORS_ORIGINS`에 frontend 주소 추가 |
 
 ## ☑️ 검증 체크리스트
 

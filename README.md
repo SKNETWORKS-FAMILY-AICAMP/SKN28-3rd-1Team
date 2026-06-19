@@ -285,7 +285,7 @@ rag-be -> redis://redis:6379/0
 Legacy Streamlit UI까지 실행해야 할 때만 `cd deploy/makefile && make up-legacy`를 사용한다.
 
 `/chat`은 실제 OpenRouter 호출이므로 `deploy/docker/.env_backend`의
-`OPENROUTER_API_KEY` 또는 `BACKEND_OPENROUTER_API_KEY`가 유효해야 한다.
+`OPENROUTER_API_KEY`가 유효해야 한다.
 
 Makefile target이 있는 서비스는 `make`를 우선 사용한다. Python 서비스의
 `make start`, `make test`, `make check` 계열 target은 먼저 `uv sync`를 실행해
@@ -381,7 +381,17 @@ http://127.0.0.1:5173
 
 ```bash
 cd rag/related/rag-red-team
-cp .env.example .env
+cat > .env <<'EOF'
+NEO4J_URI=bolt://127.0.0.1:7688
+NEO4J_USER=neo4j
+NEO4J_PASSWORD=1234
+NEO4J_DATABASE=neo4j
+NEO4J_HTTP_PORT=7475
+NEO4J_BOLT_PORT=7688
+NEO4J_CONTAINER_NAME=rag-red-team-neo4j
+MCP_HTTP_PORT=9001
+MCP_CONTAINER_NAME=rag-redteam
+EOF
 uv sync
 docker compose -p rag-red-team -f infra/docker-compose.yml up -d
 uv run python -m rag_red_team_neo4j.load_graph
