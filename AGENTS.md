@@ -54,6 +54,11 @@ Use these skills when relevant:
 
 Skill adapter directories for specific tools or agents are local-only unless the team explicitly approves committing them. Generated or personal directories such as `.claude/`, `.codex/`, `.gemini/`, `.factory/`, and `.opencode/` must not be committed.
 
+## Figma Workflow
+
+- For Figma-related design, UI, screen, component, or design-system work, use the team [`main`](https://www.figma.com/design/q4QlpCGwPqi0eTSRXGs54E/main) file as the default source of truth unless the user explicitly provides a different Figma file.
+- The default Figma file key is `q4QlpCGwPqi0eTSRXGs54E`.
+
 ## Git Workflow
 
 This repo uses GitHub Flow.
