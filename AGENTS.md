@@ -68,6 +68,8 @@ Skill adapter directories for specific tools or agents are local-only unless the
 
 - Environment variables and secrets are managed through Infisical. Do not commit secrets or generated secret value files.
 - Use Infisical CLI for runtime, deployment, Makefile, Docker, Docker Compose, and CI/CD secret injection workflows.
+- Before running env validation, runtime secret injection, deployment, Docker, or CI/CD commands, check whether the required CLIs are installed with `command -v infisical` and `command -v varlock`.
+- If `infisical` or `varlock` is missing, do not continue the related env/deploy workflow blindly. Tell the user which CLI is missing and that it must be installed before the workflow can run.
 - Use the Infisical MCP server for agent-time project, environment, folder, member, and secret management tasks.
 - Do not use MCP as the runtime secret injection mechanism for application processes, Docker containers, or deploy commands.
 - Do not print, paste, log, summarize, or document secret values in chat, commits, PRs, docs, or terminal output.
