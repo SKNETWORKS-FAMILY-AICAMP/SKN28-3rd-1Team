@@ -8,8 +8,8 @@ class LlmAgentModelSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="LLM_", extra="ignore")
 
     # Main agent model runtime.
-    chat_provider: str = "openrouter"
-    chat_model: str = "openai/gpt-oss-120b"
+    chat_provider: str = "cerebras"
+    chat_model: str = "gpt-oss-120b"
     chat_temperature: float = 0.2
     chat_timeout_ms: int = 60_000
     chat_max_retries: int = 2
@@ -18,7 +18,7 @@ class LlmAgentModelSettings(BaseSettings):
 
     # Speech text agent model runtime.
     speech_text_provider: str | None = None
-    speech_text_model: str = "openai/gpt-oss-120b"
+    speech_text_model: str = "gpt-oss-120b"
     speech_text_temperature: float = 0.0
     speech_text_timeout_ms: int = 60_000
     speech_text_max_retries: int = 2
