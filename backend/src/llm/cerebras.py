@@ -28,12 +28,13 @@ def create_chat_cerebras(
     kwargs: dict[str, Any] = {
         "model": model,
         "api_key": provider_settings.cerebras_api_key,
-        "base_url": provider_settings.cerebras_base_url,
         "temperature": temperature,
         "timeout": timeout_ms / 1000,
         "max_retries": max_retries,
         "streaming": True,
     }
+    if provider_settings.cerebras_base_url is not None:
+        kwargs["base_url"] = provider_settings.cerebras_base_url
     if max_tokens is not None:
         kwargs["max_tokens"] = max_tokens
     if reasoning_effort in {"low", "medium", "high"}:
