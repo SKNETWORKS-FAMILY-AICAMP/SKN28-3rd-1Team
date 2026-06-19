@@ -13,7 +13,7 @@ rag/related/rag-red-team/
 ├── src/                 # 그래프 적재와 MCP 서버 코드
 ├── Dockerfile           # remote MCP HTTP 서버 컨테이너
 ├── pyproject.toml
-└── .env.example
+└── .env                 # local only, do not commit
 ```
 
 `original-data-toon/`은 법령 원문을 TOON으로 전처리한 실제 원본 데이터다.
@@ -38,7 +38,17 @@ rag/related/rag-red-team/
 
 ```bash
 cd rag/related/rag-red-team
-cp .env.example .env
+cat > .env <<'EOF'
+NEO4J_URI=bolt://127.0.0.1:7688
+NEO4J_USER=neo4j
+NEO4J_PASSWORD=1234
+NEO4J_DATABASE=neo4j
+NEO4J_HTTP_PORT=7475
+NEO4J_BOLT_PORT=7688
+NEO4J_CONTAINER_NAME=rag-red-team-neo4j
+MCP_HTTP_PORT=9001
+MCP_CONTAINER_NAME=rag-redteam
+EOF
 uv sync
 docker compose -p rag-red-team -f infra/docker-compose.yml up -d
 uv run python -m rag_red_team_neo4j.load_graph

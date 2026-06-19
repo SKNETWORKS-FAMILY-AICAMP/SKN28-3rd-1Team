@@ -87,7 +87,7 @@ env.development.local
 .env.production.local
 ```
 
-새 환경 변수가 필요해지면 `frontend/.env.example`을 추가하고 이 README에 값을 설명합니다.
+새 환경 변수가 필요해지면 `frontend/.env.schema`를 추가하고 이 README에 값을 설명합니다.
 
 ## 문제 해결
 

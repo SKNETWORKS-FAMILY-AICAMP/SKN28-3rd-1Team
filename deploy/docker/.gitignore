@@ -3,6 +3,7 @@
 .env.*
 .env_*
 !.env.example
+!.env.schema
 
 # Local container/runtime state
 .podman/

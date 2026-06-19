@@ -12,14 +12,14 @@ logger = get_logger(__name__)
 # FastAPI 앱 생성, 공통 라우터와 미들웨어 연결
 def create_app() -> FastAPI:
     configure_logging()
-    logger.info("Starting %s v%s", settings.service_name, settings.service_version)
+    logger.info("Starting %s v%s", settings.metadata.name, settings.metadata.version)
 
-    app = FastAPI(title=settings.service_name, version=settings.service_version)
+    app = FastAPI(title=settings.metadata.name, version=settings.metadata.version)
 
-    if settings.cors_origins:
+    if settings.runtime.cors_origins:
         app.add_middleware(
             CORSMiddleware,
-            allow_origins=settings.cors_origins,
+            allow_origins=settings.runtime.cors_origins,
             allow_credentials=True,
             allow_methods=["*"],
             allow_headers=["*"],
@@ -30,8 +30,8 @@ def create_app() -> FastAPI:
     def health() -> dict[str, str]:
         return {
             "status": "ok",
-            "service": settings.service_name,
-            "version": settings.service_version,
+            "service": settings.metadata.name,
+            "version": settings.metadata.version,
         }
 
     # backend가 사용하는 주요 런타임 의존성 반환
@@ -57,9 +57,9 @@ def main() -> None:
 
     uvicorn.run(
         "app:app",
-        host=settings.api_host,
-        port=settings.api_port,
-        reload=settings.reload,
+        host=settings.runtime.host,
+        port=settings.runtime.port,
+        reload=settings.runtime.reload,
     )
 
 

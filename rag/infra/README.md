@@ -8,8 +8,8 @@ RAG 로컬 개발용 인프라 실행 파일을 관리합니다.
 Redis는 RAG backend job observability stream 용도로 사용합니다.
 
 ```bash
-cp infra/.env.example infra/.env
-docker compose --env-file infra/.env -f infra/docker-compose.yml up -d
+cd rag/infra
+make up
 ```
 
 서비스 포트:

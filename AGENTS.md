@@ -20,7 +20,7 @@ bootcamp-project/
 
 Directories with the `_3rd` postfix, such as `streamlit_3rd/`, are legacy/non-current scope. Do not treat them as active project scope, and do not modify, run, or use them unless the user explicitly asks.
 
-`.env.example` files are managed inside each service directory when needed. Do not add a root-level `.env.example` unless the team explicitly changes this policy.
+`.env.schema` files are the version-controlled contract for environment variables. `.env.example` files may remain as legacy/reference examples inside service directories, but new env field changes should update the relevant `.env.schema` first. Do not add a root-level `.env.example` unless the team explicitly changes this policy.
 
 
 ## Shared Rules
@@ -32,7 +32,8 @@ Directories with the `_3rd` postfix, such as `streamlit_3rd/`, are legacy/non-cu
 - Maintain README files as Markdown documents.
 - Update the root `README.md` and the relevant directory README when structure, setup, or run commands change.
 - Prefer Makefile targets for setup, run, check, and deploy workflows when a Makefile exists. Use raw `uv`, `bun`, or `docker compose` commands only when debugging the Makefile itself or when no target exists.
-- Do not commit secrets. Real `.env` files stay local only.
+- Do not commit secrets. Real `.env`, `.env.local`, and generated deploy env files stay local only.
+- Keep `.env.schema` files as the version-controlled environment-variable contract. During the Infisical transition, treat Infisical as the project-level secret manager for the active codebase, and use Infisical CLI/MCP to migrate and manage actual secrets.
 - If existing uncommitted changes appear to belong to someone else, do not overwrite them. Ask first.
 
 ## Project Skills
@@ -47,9 +48,13 @@ Use these skills when relevant:
 - `git-commit`: diff analysis, staging guidance, and commit message generation.
 - `git-workflow`: branch, commit, and pull request decisions.
 - `github-issues`: GitHub issue creation, updates, labels, metadata, dependencies, and workflows.
+- `figma-use`: Figma MCP write-to-canvas and Plugin API workflows.
+- `infisical-setup`: Infisical CLI, Docker, CI/CD, Kubernetes, SDK, and machine identity setup guidance.
+- `infisical-api`: Infisical REST API, secret operations, and machine identity auth guidance.
 - `prd`: product requirements document creation and refinement.
 - `shadcn`: shadcn/ui component usage, styling, customization, and project guidance.
 - `uv-python`: repo-specific Python setup and dependency management with uv.
+- `varlock`: secure env schema, validation, secret masking, and command injection workflows.
 - `web-design-guidelines`: Vercel-sourced UI, UX, and accessibility review guidance.
 
 Skill adapter directories for specific tools or agents are local-only unless the team explicitly approves committing them. Generated or personal directories such as `.claude/`, `.codex/`, `.gemini/`, `.factory/`, and `.opencode/` must not be committed.
@@ -58,6 +63,33 @@ Skill adapter directories for specific tools or agents are local-only unless the
 
 - For Figma-related design, UI, screen, component, or design-system work, use the team [`main`](https://www.figma.com/design/q4QlpCGwPqi0eTSRXGs54E/main) file as the default source of truth unless the user explicitly provides a different Figma file.
 - The default Figma file key is `q4QlpCGwPqi0eTSRXGs54E`.
+
+## Infisical Workflow
+
+- Environment variables and secrets are managed through Infisical. Do not commit secrets or generated secret value files.
+- Infisical Secret Manager scope follows active codebase projects, not deploy or Docker directory structure. Use it for actual secrets and for environment-specific runtime config that the active service reads. Do not create or fill Infisical values for `deploy/docker` or compose-only binding values unless the user explicitly asks.
+- Use Infisical CLI for project runtime injection and migration automation after the target codebase project is identified.
+- Use the Infisical MCP server for agent-time project, environment, folder, member, and secret CRUD management.
+- Before running env validation, runtime secret injection, migration, or secret-management commands, check whether the required CLIs are installed with `command -v infisical` and `command -v varlock`.
+- If `infisical` or `varlock` is missing, do not continue the related env/deploy workflow blindly. Tell the user which CLI is missing and that it must be installed before the workflow can run.
+- Do not use MCP as the runtime secret injection mechanism for application processes, Docker containers, or deploy commands.
+- Do not print, paste, log, summarize, or document secret values in chat, commits, PRs, docs, or terminal output.
+- When listing Infisical projects through MCP, use project type `secret-manager`.
+- Before creating, updating, deleting, or renaming Infisical secrets through MCP, confirm the target project, environment, secret path, and secret name unless the user explicitly provided them.
+- Sensitive candidates are API keys, access tokens, passwords, private credentials, JWT/session/webhook signing secrets, and DSNs or URLs containing credentials.
+- Non-secret runtime config may live in Infisical as plain environment-specific config when the active service reads it and team/dev/staging/prod values must stay centralized. Do not mark ports, host binds, image names, container names, local file paths, feature flags, log levels, model names, provider ordering, timeout/retry numbers, public `VITE_*` values, or public `NEXT_PUBLIC_*` values as sensitive unless the user explicitly marks them sensitive.
+- Keep env vars in `.env.schema` only when the active code reads them and they are useful as a contract. Remove stale, unused, duplicate, or compose-only keys during env sanitization.
+- For local runtime commands, prefer Makefile targets once they are wired to Infisical CLI. Expected CLI pattern is `infisical run -- <command>` for process injection.
+- Do not bake secrets into Docker images with `ENV`, `ARG`, or committed env files.
+
+Current Infisical secret-manager scopes:
+
+- `backend`: project ID `f6a512e6-1960-4186-8ece-a3061824c185`, slug `backend-fuhz`
+- `rag/be`: project ID `f31e75a0-5493-42b8-b5ee-151d2555d50d`, slug `rag-be-2-jjq`
+
+`rag/fe` currently uses only public `VITE_*` browser config, so it is excluded from active Secret Manager migration unless a real server-side secret is added later.
+
+Each Infisical project uses `dev`, `staging`, and `prod` environments.
 
 ## Git Workflow
 

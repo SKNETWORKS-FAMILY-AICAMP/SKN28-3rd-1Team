@@ -32,7 +32,7 @@ class SpeechTextAgent:
             return
 
         # OpenRouter 키가 없으면 네트워크 호출 없이 로컬에서 형식만 제거한다.
-        if settings.openrouter_api_key is None:
+        if settings.llm.openrouter_api_key is None:
             speech_text = _strip_formatting(source_text)
             yield {"type": "speech_text.delta", "text": speech_text}
             yield {"type": "speech_text.final", "text": speech_text}

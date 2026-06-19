@@ -29,7 +29,7 @@ be/
 ├── src/tools/                  # Singleton LangChain tools and context binding
 ├── src/settings.py             # Environment settings
 ├── tests/
-├── .env.example
+├── .env.schema
 ├── pyproject.toml
 └── uv.lock
 ```
@@ -40,8 +40,8 @@ be/
 make start
 ```
 
-`make start`는 `.env`가 없으면 `.env.example`에서 먼저 만들고, `uv sync`로
-`rag/be/.venv`를 준비한 뒤 `uv run`으로 uvicorn을 실행합니다.
+`make start`는 `make env-check`로 `rag/be/.env.schema` 계약을 검증하고,
+`uv sync`로 `rag/be/.venv`를 준비한 뒤 `uv run`으로 uvicorn을 실행합니다.
 
 ## API
 
@@ -260,7 +260,7 @@ flowchart LR
 
 ## Environment
 
-- Example file: `.env.example`
+- Schema file: `.env.schema`
 - Local file: `.env` (do not commit)
 - Settings prefix: `RAG_`
 - Text search indexes are configured with `RAG_TEXT_SEARCH_INDEX_NAME`, `RAG_DOCUMENT_TEXT_SEARCH_INDEX_NAME`, and `RAG_REVIEW_NOTE_TEXT_SEARCH_INDEX_NAME`.

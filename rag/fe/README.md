@@ -25,7 +25,7 @@ http://127.0.0.1:5173
 ## Environment
 
 ```bash
-cp .env.example .env
+make env-check
 ```
 
 ```env
@@ -34,6 +34,8 @@ VITE_RAG_API_TIMEOUT_MS=1500
 VITE_RAG_ENABLE_MOCK_FALLBACK=true
 VITE_MEMGRAPH_LAB_URL="http://127.0.0.1:3000"
 ```
+
+Env field 계약은 `.env.schema`에서 관리합니다. 실제 local override는 ignored `.env` 또는 provider 주입으로 관리하고 커밋하지 않습니다.
 
 RAG backend이 응답하지 않으면 FE API client가 mock data를 즉시 제공합니다. `VITE_RAG_ENABLE_MOCK_FALLBACK=false`로 끌 수 있습니다.
 사이드바의 Memgraph 항목은 `VITE_MEMGRAPH_LAB_URL`을 새 창으로 엽니다.

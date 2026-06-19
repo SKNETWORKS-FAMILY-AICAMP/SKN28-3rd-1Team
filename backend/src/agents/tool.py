@@ -83,13 +83,13 @@ async def _load_rag_mcp_tools() -> list[BaseTool]:
         {
             "rag": {
                 "transport": "http",
-                "url": settings.rag_mcp_url,
+                "url": settings.rag.mcp_url,
             }
         }
     )
     tools = await asyncio.wait_for(
         client.get_tools(server_name="rag"),
-        timeout=settings.tool_timeout_ms / 1000,
+        timeout=settings.rag.tool_timeout_ms / 1000,
     )
     return _handle_tool_errors(_normalize_tool_names(tools))
 
@@ -97,7 +97,7 @@ async def _load_rag_mcp_tools() -> list[BaseTool]:
 # 현재 agent가 사용할 LangChain tool 목록 반환
 async def get_tools() -> list[BaseTool]:
     global _TOOLS_CACHE
-    if not settings.enable_rag_tools:
+    if not settings.rag.tools_enabled:
         logger.info("RAG MCP tools disabled by configuration")
         return []
 
@@ -115,7 +115,7 @@ async def get_tools() -> list[BaseTool]:
         _TOOLS_CACHE = tools
         logger.info(
             "loaded RAG MCP tools url=%s tools=%s",
-            settings.rag_mcp_url,
+            settings.rag.mcp_url,
             [tool.name for tool in tools],
         )
         return _TOOLS_CACHE

@@ -489,22 +489,16 @@ MCP endpoint:
 
 ### Environment Variables
 
-`rag/be/.env.example` should include:
+`rag/be/.env.schema` should include the runtime env fields that the service reads:
 
 ```env
-OPENROUTER_API_KEY=
-RAG_LLM_MODEL=
-RAG_EMBEDDING_MODEL=openai/text-embedding-3-large
-RAG_EMBEDDING_DIMENSIONS=3072
-MEMGRAPH_URI=bolt://localhost:7687
-MEMGRAPH_USERNAME=
-MEMGRAPH_PASSWORD=
+RAG_OPENROUTER_API_KEY=
+RAG_MEMGRAPH_URI=bolt://localhost:7687
+RAG_MEMGRAPH_USERNAME=
+RAG_MEMGRAPH_PASSWORD=
 RAG_MCP_HOST=0.0.0.0
 RAG_MCP_PORT=8001
-RAG_EXTERNAL_MCP_PATH=/mcp
 RAG_CORS_ALLOWED_ORIGINS=["http://127.0.0.1:5173","http://localhost:5173"]
-RAG_QUERY_TIMEOUT_MS=30000
-RAG_QUERY_MAX_ROWS=100
 ```
 
 Memgraph Docker Compose variables belong under `rag/infra/.env`.
