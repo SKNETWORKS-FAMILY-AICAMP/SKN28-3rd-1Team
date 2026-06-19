@@ -33,7 +33,7 @@ Directories with the `_3rd` postfix, such as `streamlit_3rd/`, are legacy/non-cu
 - Update the root `README.md` and the relevant directory README when structure, setup, or run commands change.
 - Prefer Makefile targets for setup, run, check, and deploy workflows when a Makefile exists. Use raw `uv`, `bun`, or `docker compose` commands only when debugging the Makefile itself or when no target exists.
 - Do not commit secrets. Real `.env`, `.env.local`, and generated deploy env files stay local only.
-- Use Varlock for env schema validation and command env injection when a Makefile target provides it. Do not read local `.env` files directly; use `varlock load --agent` when env inspection is needed.
+- Keep `.env.schema` files as the version-controlled environment-variable contract. During the Infisical transition, use Infisical CLI for new runtime, deployment, Docker, and CI/CD secret-injection workflows instead of adding new Varlock-based command injection.
 - If existing uncommitted changes appear to belong to someone else, do not overwrite them. Ask first.
 
 ## Project Skills
@@ -48,6 +48,9 @@ Use these skills when relevant:
 - `git-commit`: diff analysis, staging guidance, and commit message generation.
 - `git-workflow`: branch, commit, and pull request decisions.
 - `github-issues`: GitHub issue creation, updates, labels, metadata, dependencies, and workflows.
+- `figma-use`: Figma MCP write-to-canvas and Plugin API workflows.
+- `infisical-setup`: Infisical CLI, Docker, CI/CD, Kubernetes, SDK, and machine identity setup guidance.
+- `infisical-api`: Infisical REST API, secret operations, and machine identity auth guidance.
 - `prd`: product requirements document creation and refinement.
 - `shadcn`: shadcn/ui component usage, styling, customization, and project guidance.
 - `uv-python`: repo-specific Python setup and dependency management with uv.
@@ -60,6 +63,26 @@ Skill adapter directories for specific tools or agents are local-only unless the
 
 - For Figma-related design, UI, screen, component, or design-system work, use the team [`main`](https://www.figma.com/design/q4QlpCGwPqi0eTSRXGs54E/main) file as the default source of truth unless the user explicitly provides a different Figma file.
 - The default Figma file key is `q4QlpCGwPqi0eTSRXGs54E`.
+
+## Infisical Workflow
+
+- Environment variables and secrets are managed through Infisical. Do not commit secrets or generated secret value files.
+- Use Infisical CLI for runtime, deployment, Makefile, Docker, Docker Compose, and CI/CD secret injection workflows.
+- Use the Infisical MCP server for agent-time project, environment, folder, member, and secret management tasks.
+- Do not use MCP as the runtime secret injection mechanism for application processes, Docker containers, or deploy commands.
+- Do not print, paste, log, summarize, or document secret values in chat, commits, PRs, docs, or terminal output.
+- When listing Infisical projects through MCP, use project type `secret-manager`.
+- Before creating, updating, deleting, or renaming Infisical secrets through MCP, confirm the target project, environment, secret path, and secret name unless the user explicitly provided them.
+- For deployment or local runtime commands, prefer Makefile targets once they are wired to Infisical CLI. Expected CLI patterns are `infisical run -- <command>` for process injection and `infisical export` only for generated local env files used by Docker Compose.
+- Do not bake secrets into Docker images with `ENV`, `ARG`, or committed env files.
+
+Current Infisical secret-manager projects:
+
+- `backend`: project ID `f6a512e6-1960-4186-8ece-a3061824c185`, slug `backend-fuhz`
+- `rag/be`: project ID `f31e75a0-5493-42b8-b5ee-151d2555d50d`, slug `rag-be-2-jjq`
+- `rag/fe`: project ID `3d3740f5-909f-466f-8a24-9fc09b70eba7`, slug `rag-fe-oi-ld`
+
+Each Infisical project uses `dev`, `staging`, and `prod` environments.
 
 ## Git Workflow
 
