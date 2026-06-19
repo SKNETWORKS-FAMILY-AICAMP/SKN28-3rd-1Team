@@ -33,7 +33,7 @@ Directories with the `_3rd` postfix, such as `streamlit_3rd/`, are legacy/non-cu
 - Update the root `README.md` and the relevant directory README when structure, setup, or run commands change.
 - Prefer Makefile targets for setup, run, check, and deploy workflows when a Makefile exists. Use raw `uv`, `bun`, or `docker compose` commands only when debugging the Makefile itself or when no target exists.
 - Do not commit secrets. Real `.env`, `.env.local`, and generated deploy env files stay local only.
-- Keep `.env.schema` files as the version-controlled environment-variable contract. During the Infisical transition, use Infisical CLI for new runtime, deployment, Docker, and CI/CD secret-injection workflows instead of adding new Varlock-based command injection.
+- Keep `.env.schema` files as the version-controlled environment-variable contract. During the Infisical transition, treat Infisical as the project-level secret manager for the active codebase, and use Infisical CLI/MCP to migrate and manage actual secrets.
 - If existing uncommitted changes appear to belong to someone else, do not overwrite them. Ask first.
 
 ## Project Skills
@@ -67,22 +67,27 @@ Skill adapter directories for specific tools or agents are local-only unless the
 ## Infisical Workflow
 
 - Environment variables and secrets are managed through Infisical. Do not commit secrets or generated secret value files.
-- Use Infisical CLI for runtime, deployment, Makefile, Docker, Docker Compose, and CI/CD secret injection workflows.
-- Before running env validation, runtime secret injection, deployment, Docker, or CI/CD commands, check whether the required CLIs are installed with `command -v infisical` and `command -v varlock`.
+- Infisical Secret Manager scope follows active codebase projects, not deploy or Docker directory structure. Use it for actual secrets and for environment-specific runtime config that the active service reads. Do not create or fill Infisical values for `deploy/docker` or compose-only binding values unless the user explicitly asks.
+- Use Infisical CLI for project runtime injection and migration automation after the target codebase project is identified.
+- Use the Infisical MCP server for agent-time project, environment, folder, member, and secret CRUD management.
+- Before running env validation, runtime secret injection, migration, or secret-management commands, check whether the required CLIs are installed with `command -v infisical` and `command -v varlock`.
 - If `infisical` or `varlock` is missing, do not continue the related env/deploy workflow blindly. Tell the user which CLI is missing and that it must be installed before the workflow can run.
-- Use the Infisical MCP server for agent-time project, environment, folder, member, and secret management tasks.
 - Do not use MCP as the runtime secret injection mechanism for application processes, Docker containers, or deploy commands.
 - Do not print, paste, log, summarize, or document secret values in chat, commits, PRs, docs, or terminal output.
 - When listing Infisical projects through MCP, use project type `secret-manager`.
 - Before creating, updating, deleting, or renaming Infisical secrets through MCP, confirm the target project, environment, secret path, and secret name unless the user explicitly provided them.
-- For deployment or local runtime commands, prefer Makefile targets once they are wired to Infisical CLI. Expected CLI patterns are `infisical run -- <command>` for process injection and `infisical export` only for generated local env files used by Docker Compose.
+- Sensitive candidates are API keys, access tokens, passwords, private credentials, JWT/session/webhook signing secrets, and DSNs or URLs containing credentials.
+- Non-secret runtime config may live in Infisical as plain environment-specific config when the active service reads it and team/dev/staging/prod values must stay centralized. Do not mark ports, host binds, image names, container names, local file paths, feature flags, log levels, model names, provider ordering, timeout/retry numbers, public `VITE_*` values, or public `NEXT_PUBLIC_*` values as sensitive unless the user explicitly marks them sensitive.
+- Keep env vars in `.env.schema` only when the active code reads them and they are useful as a contract. Remove stale, unused, duplicate, or compose-only keys during env sanitization.
+- For local runtime commands, prefer Makefile targets once they are wired to Infisical CLI. Expected CLI pattern is `infisical run -- <command>` for process injection.
 - Do not bake secrets into Docker images with `ENV`, `ARG`, or committed env files.
 
-Current Infisical secret-manager projects:
+Current Infisical secret-manager scopes:
 
 - `backend`: project ID `f6a512e6-1960-4186-8ece-a3061824c185`, slug `backend-fuhz`
 - `rag/be`: project ID `f31e75a0-5493-42b8-b5ee-151d2555d50d`, slug `rag-be-2-jjq`
-- `rag/fe`: project ID `3d3740f5-909f-466f-8a24-9fc09b70eba7`, slug `rag-fe-oi-ld`
+
+`rag/fe` currently uses only public `VITE_*` browser config, so it is excluded from active Secret Manager migration unless a real server-side secret is added later.
 
 Each Infisical project uses `dev`, `staging`, and `prod` environments.
 

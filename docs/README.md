@@ -6,6 +6,7 @@
 
 - `agent_guidelines/`: 에이전트 작업 흐름과 브랜치/커밋/PR 기준
   - `agent_workspace_guidelines.md`: AGENTS.md의 공통 규칙을 확장한 작업 가이드
+- `requirement_list_ops.md`: 서버 계정별 Codex/MCP/secret/env bootstrap 요구사항
 - `additional_docs/`: 온보딩, 도구 설정, 협업 참고 문서
   - `ai_agent_dependency_prereq_guide.docx`: AI 에이전트 의존성/사전 준비 가이드
   - `linear_mcp_token_setup_guide.docx`: Linear MCP 토큰 발급 및 Codex 연결 가이드
