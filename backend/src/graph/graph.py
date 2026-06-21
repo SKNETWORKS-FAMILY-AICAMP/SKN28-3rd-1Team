@@ -77,6 +77,9 @@ def _speech_text_agent_node(speech_text_agent: SpeechTextAgent) -> Any:
         state: ChatTurnState,
         config: RunnableConfig | None = None,
     ) -> dict[str, Any]:
+        if not state.get("audio_enabled", True):
+            return {"final_response_script": ""}
+
         final_response = str(state.get("final_response") or "").strip()
         script = await create_final_response_script(
             speech_text_agent,
@@ -102,6 +105,9 @@ def _speech_synthesis_node(speech_synthesis_node: SpeechSynthesisNode) -> Any:
         state: ChatTurnState,
         config: RunnableConfig | None = None,
     ) -> dict[str, Any]:
+        if not state.get("audio_enabled", True):
+            return {}
+
         text = str(state.get("final_response_script") or "").strip()
         if not text:
             return {}

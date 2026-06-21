@@ -10,6 +10,7 @@ export const maxDuration = 60
 type ChatRouteRequest = {
   id?: string
   messages?: LegalChatMessage[]
+  audio_enabled?: boolean
 }
 
 function writeAssistantText(writer: UIMessageStreamWriter<LegalChatMessage>, text: string, finishReason: "stop" | "error") {
@@ -45,6 +46,7 @@ export async function POST(request: Request) {
       const backendStream = await createBackendChatStream({
         sessionId: body.id,
         message,
+        audioEnabled: body.audio_enabled ?? true,
         signal: request.signal,
       })
 

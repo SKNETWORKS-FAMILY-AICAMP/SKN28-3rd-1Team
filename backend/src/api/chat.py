@@ -11,6 +11,7 @@ from graph import run_agent
 class ChatRequest(BaseModel):
     session_id: str | None = None
     message: str = Field(..., min_length=1)
+    audio_enabled: bool = True
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -70,6 +71,7 @@ async def run_chat(request: ChatRequest) -> ChatResponse:
     result = await run_agent(
         request.message,
         session_id=request.session_id,
+        audio_enabled=request.audio_enabled,
         metadata=request.metadata,
     )
     return chat_response_from_result(result, request.session_id)

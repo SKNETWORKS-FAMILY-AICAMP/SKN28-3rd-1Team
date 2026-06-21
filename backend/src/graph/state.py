@@ -8,6 +8,7 @@ from langchain.agents import AgentState
 class ChatTurnState(AgentState):
     session_id: str | None
     turn_id: str
+    audio_enabled: bool
 
     # Transport compatibility only. Graph nodes must split concrete state below
     # instead of passing this generic blob through agent prompts.

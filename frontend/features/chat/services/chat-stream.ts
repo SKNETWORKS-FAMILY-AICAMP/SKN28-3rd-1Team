@@ -18,6 +18,7 @@ type ParsedSseBlock = {
 type BackendChatStreamOptions = {
   sessionId?: string
   message: string
+  audioEnabled: boolean
   signal?: AbortSignal
 }
 
@@ -290,7 +291,7 @@ function createBackendUiMessageStream(responseBody: ReadableStream<Uint8Array>) 
   })
 }
 
-export async function createBackendChatStream({ sessionId, message, signal }: BackendChatStreamOptions) {
+export async function createBackendChatStream({ sessionId, message, audioEnabled, signal }: BackendChatStreamOptions) {
   if (!message) {
     return createAssistantTextStream("질문 내용을 찾지 못했어요. 다시 입력해 주세요.", "error")
   }
@@ -299,7 +300,7 @@ export async function createBackendChatStream({ sessionId, message, signal }: Ba
     const response = await fetch(`${BACKEND_URL}/chat/stream`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "text/event-stream" },
-      body: JSON.stringify({ session_id: sessionId, message }),
+      body: JSON.stringify({ session_id: sessionId, message, audio_enabled: audioEnabled }),
       signal,
     })
 

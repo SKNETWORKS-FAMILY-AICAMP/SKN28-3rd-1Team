@@ -115,6 +115,7 @@ async def _chat_stream_events(request: ChatRequest) -> AsyncIterator[str]:
         async for event in get_chat_graph_runner().run_stream(
             message=request.message.strip(),
             session_id=request.session_id,
+            audio_enabled=request.audio_enabled,
             metadata=request.metadata,
         ):
             yield _sse_event(event)

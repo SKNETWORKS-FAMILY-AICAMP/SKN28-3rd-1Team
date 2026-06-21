@@ -24,6 +24,7 @@ class ChatGraphRunner:
         message: str,
         *,
         session_id: str | None = None,
+        audio_enabled: bool = True,
         metadata: dict[str, Any] | None = None,
     ) -> AsyncIterator[dict[str, Any]]:
         graph = await self._get_graph()
@@ -32,6 +33,7 @@ class ChatGraphRunner:
             message,
             session_id=session_id,
             turn_id=turn_id,
+            audio_enabled=audio_enabled,
             metadata=metadata,
         )
 
@@ -64,10 +66,16 @@ class ChatGraphRunner:
         message: str,
         *,
         session_id: str | None = None,
+        audio_enabled: bool = True,
         metadata: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         tool_calls: dict[str, dict[str, Any]] = {}
-        stream = self.run_stream(message, session_id=session_id, metadata=metadata)
+        stream = self.run_stream(
+            message,
+            session_id=session_id,
+            audio_enabled=audio_enabled,
+            metadata=metadata,
+        )
         try:
             async for event in stream:
                 event_type = event.get("type")
@@ -94,11 +102,13 @@ async def run_agent(
     message: str,
     *,
     session_id: str | None = None,
+    audio_enabled: bool = True,
     metadata: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     return await ChatGraphRunner().run_once(
         message,
         session_id=session_id,
+        audio_enabled=audio_enabled,
         metadata=metadata,
     )
 
@@ -107,11 +117,13 @@ async def run_agent_stream(
     message: str,
     *,
     session_id: str | None = None,
+    audio_enabled: bool = True,
     metadata: dict[str, Any] | None = None,
 ) -> AsyncIterator[dict[str, Any]]:
     async for event in ChatGraphRunner().run_stream(
         message,
         session_id=session_id,
+        audio_enabled=audio_enabled,
         metadata=metadata,
     ):
         yield event
@@ -292,12 +304,14 @@ def _initial_state(
     *,
     session_id: str | None,
     turn_id: str,
+    audio_enabled: bool,
     metadata: dict[str, Any] | None,
 ) -> ChatTurnState:
     normalized_metadata = metadata or {}
     base_state: ChatTurnState = {
         "session_id": session_id,
         "turn_id": turn_id,
+        "audio_enabled": audio_enabled,
         "messages": [{"role": "user", "content": message}],
         "metadata": normalized_metadata,
     }
