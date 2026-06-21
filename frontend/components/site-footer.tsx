@@ -25,7 +25,7 @@ export function SiteFooter() {
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
-            <Link href="/chat" className="transition-colors hover:text-foreground">상담 시작</Link>
+            <Link href="/chat_page" className="transition-colors hover:text-foreground">상담 시작</Link>
             <Link href="/#features" className="transition-colors hover:text-foreground">기능 소개</Link>
             <Link href="/#how" className="transition-colors hover:text-foreground">이용 방법</Link>
             <Link href="/#categories" className="transition-colors hover:text-foreground">상담 주제</Link>

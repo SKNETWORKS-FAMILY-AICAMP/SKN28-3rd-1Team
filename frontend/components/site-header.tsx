@@ -35,7 +35,7 @@ export function SiteHeader() {
         </nav>
 
         <Link
-          href="/chat"
+          href="/chat_page"
           className={buttonVariants({
             className: "rounded-full px-4 py-2 font-heading whitespace-nowrap",
           })}

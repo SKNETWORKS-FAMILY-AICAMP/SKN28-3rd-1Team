@@ -27,7 +27,7 @@ export function CtaSection() {
             가입 없이 무료로. 기초연금·노인복지·고용 등 궁금한 점을 첫 질문으로 던져보세요.
           </p>
           <Link
-            href="/chat"
+            href="/chat_page"
             className={buttonVariants({
               size: "lg",
               variant: "secondary",

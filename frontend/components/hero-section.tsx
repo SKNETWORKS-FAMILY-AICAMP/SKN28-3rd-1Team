@@ -30,7 +30,7 @@ export function HeroSection() {
 
           <div className="flex flex-col sm:flex-row items-center gap-3">
             <Link
-              href="/chat"
+              href="/chat_page"
               className={buttonVariants({
                 size: "lg",
                 className:
