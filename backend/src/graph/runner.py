@@ -6,6 +6,7 @@ from uuid import uuid4
 
 from graph.graph import create_chat_turn_graph
 from graph.state import ChatTurnState
+from graph.timing import log_chat_timing, new_timer
 from logger import get_logger
 from utils import application_state, user_input_state
 
@@ -37,13 +38,23 @@ class ChatGraphRunner:
             metadata=metadata,
         )
 
+        started_at = new_timer()
         logger.info(
             "chat graph invocation started session_id=%s turn_id=%s message_chars=%d",
             session_id,
             turn_id,
             len(message),
         )
+        log_chat_timing(
+            "main_agent_start",
+            started_at=started_at,
+            session_id=session_id,
+            turn_id=turn_id,
+            audio_enabled=audio_enabled,
+            message_chars=len(message),
+        )
         started_tool_calls: set[str] = set()
+        timing_flags = {"first_delta": False, "first_audio": False}
         async for event in graph.astream(
             state,
             config={"configurable": {"thread_id": session_id or turn_id}},
@@ -53,8 +64,23 @@ class ChatGraphRunner:
         ):
             backend_event = _backend_event(event, started_tool_calls=started_tool_calls)
             if backend_event is not None:
+                _log_backend_event_timing(
+                    backend_event,
+                    started_at=started_at,
+                    session_id=session_id,
+                    turn_id=turn_id,
+                    audio_enabled=audio_enabled,
+                    flags=timing_flags,
+                )
                 yield backend_event
 
+        log_chat_timing(
+            "stream_completed",
+            started_at=started_at,
+            session_id=session_id,
+            turn_id=turn_id,
+            audio_enabled=audio_enabled,
+        )
         logger.info(
             "chat graph invocation completed session_id=%s turn_id=%s",
             session_id,
@@ -159,6 +185,97 @@ def _record_tool_call(
         "status": str(payload.get("status") or "completed"),
         "id": tool_id or None,
     }
+
+
+def _log_backend_event_timing(
+    event: dict[str, Any],
+    *,
+    started_at: float,
+    session_id: str | None,
+    turn_id: str,
+    audio_enabled: bool,
+    flags: dict[str, bool],
+) -> None:
+    event_type = event.get("type")
+
+    if event_type == "delta":
+        if flags["first_delta"]:
+            return
+        flags["first_delta"] = True
+        log_chat_timing(
+            "first_delta",
+            started_at=started_at,
+            session_id=session_id,
+            turn_id=turn_id,
+            audio_enabled=audio_enabled,
+        )
+        return
+
+    if event_type == "final":
+        log_chat_timing(
+            "final",
+            started_at=started_at,
+            session_id=session_id,
+            turn_id=turn_id,
+            audio_enabled=audio_enabled,
+            answer_chars=len(str(event.get("answer") or "")),
+        )
+        return
+
+    if event_type == "speech_text":
+        log_chat_timing(
+            "speech_text_done",
+            started_at=started_at,
+            session_id=session_id,
+            turn_id=turn_id,
+            audio_enabled=audio_enabled,
+            script_chars=len(str(event.get("text") or "")),
+            script_source=event.get("source"),
+            llm_used=event.get("llm_used"),
+        )
+        return
+
+    if event_type == "audio":
+        if flags["first_audio"]:
+            return
+        flags["first_audio"] = True
+        log_chat_timing(
+            "first_audio",
+            started_at=started_at,
+            session_id=session_id,
+            turn_id=turn_id,
+            audio_enabled=audio_enabled,
+            byte_length=event.get("byte_length"),
+        )
+        return
+
+    if event_type == "audio_done":
+        log_chat_timing(
+            "audio_done",
+            started_at=started_at,
+            session_id=session_id,
+            turn_id=turn_id,
+            audio_enabled=audio_enabled,
+            chunks=event.get("chunks"),
+            configured=event.get("configured"),
+        )
+        return
+
+    if event_type == "tool_call":
+        tool_call = event.get("tool_call")
+        if not isinstance(tool_call, dict):
+            return
+
+        status = str(tool_call.get("status") or "unknown")
+        log_chat_timing(
+            f"tool_call_{status}",
+            started_at=started_at,
+            session_id=session_id,
+            turn_id=turn_id,
+            audio_enabled=audio_enabled,
+            tool_name=tool_call.get("name"),
+            tool_id=tool_call.get("id"),
+        )
 
 
 def _backend_event(

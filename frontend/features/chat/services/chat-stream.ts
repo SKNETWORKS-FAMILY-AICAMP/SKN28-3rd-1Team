@@ -113,7 +113,7 @@ function getToolCallPayload(data: Record<string, unknown>) {
   }
 }
 
-function createBackendUiMessageStream(responseBody: ReadableStream<Uint8Array>) {
+function createBackendUiMessageStream(responseBody: ReadableStream<Uint8Array>, audioEnabled: boolean) {
   let reader: ReadableStreamDefaultReader<Uint8Array> | null = null
 
   return new ReadableStream<LegalChatMessageChunk>({
@@ -127,6 +127,7 @@ function createBackendUiMessageStream(responseBody: ReadableStream<Uint8Array>) 
       let finalAnswer = ""
       let finishReason: "stop" | "error" = "stop"
       let shouldStop = false
+      let audioRequested = false
 
       const startText = () => {
         if (textStarted) return
@@ -167,6 +168,19 @@ function createBackendUiMessageStream(responseBody: ReadableStream<Uint8Array>) 
         if (event === "final") {
           finalAnswer = String(data.answer ?? "")
           sources.splice(0, sources.length, ...toChatSources(data.sources))
+          if (audioEnabled && finalAnswer && !audioRequested) {
+            audioRequested = true
+            controller.enqueue({
+              type: "data-audioRequest",
+              data: {
+                sessionId: typeof data.session_id === "string" ? data.session_id : null,
+                text: finalAnswer,
+                turnId: typeof data.turn_id === "string" ? data.turn_id : null,
+              },
+              transient: true,
+            })
+          }
+          shouldStop = true
           return
         }
 
@@ -300,7 +314,7 @@ export async function createBackendChatStream({ sessionId, message, audioEnabled
     const response = await fetch(`${BACKEND_URL}/chat/stream`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "text/event-stream" },
-      body: JSON.stringify({ session_id: sessionId, message, audio_enabled: audioEnabled }),
+      body: JSON.stringify({ session_id: sessionId, message, audio_enabled: false }),
       signal,
     })
 
@@ -308,7 +322,7 @@ export async function createBackendChatStream({ sessionId, message, audioEnabled
       return createAssistantTextStream(`${CONNECT_ERROR_MESSAGE} (backend ${response.status})`, "error")
     }
 
-    return createBackendUiMessageStream(response.body)
+    return createBackendUiMessageStream(response.body, audioEnabled)
   } catch (error) {
     if (signal?.aborted) return createAbortStream()
     return createAssistantTextStream(`${CONNECT_ERROR_MESSAGE} (${toErrorText(error)})`, "error")

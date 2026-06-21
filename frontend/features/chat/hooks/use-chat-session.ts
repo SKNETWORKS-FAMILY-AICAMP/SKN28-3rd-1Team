@@ -53,6 +53,26 @@ function pauseAudioPlayback(audioRef: MutableRefObject<HTMLAudioElement | null>)
   audioRef.current?.pause()
 }
 
+function parseAudioSseBlock(block: string) {
+  let event = "message"
+  const dataLines: string[] = []
+
+  for (const line of block.split("\n")) {
+    if (line.startsWith("event:")) event = line.slice(6).trim()
+    else if (line.startsWith("data:")) dataLines.push(line.slice(5).trim())
+  }
+
+  if (dataLines.length === 0) return null
+
+  try {
+    const data = JSON.parse(dataLines.join("\n"))
+    if (!data || typeof data !== "object") return null
+    return { event, data: data as Record<string, unknown> }
+  } catch {
+    return null
+  }
+}
+
 export function useChatSession() {
   const searchParams = useSearchParams()
   const [input, setInput] = useState("")
@@ -65,12 +85,15 @@ export function useChatSession() {
   const audioEnabledRef = useRef(audioEnabled)
   const currentAudioRef = useRef<HTMLAudioElement | null>(null)
   const currentAudioUrlRef = useRef<string | null>(null)
+  const audioAbortRef = useRef<AbortController | null>(null)
 
   const setAudioEnabled = useCallback((enabled: boolean) => {
     audioEnabledRef.current = enabled
     setAudioEnabledState(enabled)
 
     if (!enabled) {
+      audioAbortRef.current?.abort()
+      audioAbortRef.current = null
       audioChunksRef.current = []
       pauseAudioPlayback(currentAudioRef)
       setAudioPlayer((current) => {
@@ -139,7 +162,114 @@ export function useChatSession() {
     void audio.play().catch(() => syncStatus("ready"))
   }, [])
 
+  const startAudioStream = useCallback(async (request: { sessionId?: string | null; text: string; turnId?: string | null }) => {
+    if (!audioEnabledRef.current) return
+
+    audioAbortRef.current?.abort()
+    audioChunksRef.current = []
+    stopAudioPlayback(currentAudioRef, currentAudioUrlRef)
+    setAudioPlayer({
+      status: "loading",
+      currentTime: 0,
+      duration: 0,
+      chunks: 0,
+    })
+
+    const abortController = new AbortController()
+    audioAbortRef.current = abortController
+
+    try {
+      const response = await fetch("/api/chat/audio", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "text/event-stream" },
+        body: JSON.stringify({
+          session_id: request.sessionId,
+          text: request.text,
+          turn_id: request.turnId,
+        }),
+        signal: abortController.signal,
+      })
+
+      if (!response.ok || !response.body) {
+        throw new Error(`audio stream failed: ${response.status}`)
+      }
+
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ""
+
+      const handleParsedBlock = (parsed: NonNullable<ReturnType<typeof parseAudioSseBlock>>) => {
+        if (!audioEnabledRef.current) return
+
+        if (parsed.event === "audio") {
+          const audioBase64 = String(parsed.data.audio_base64 ?? "")
+          if (audioBase64) audioChunksRef.current.push(decodeBase64Bytes(audioBase64))
+          return
+        }
+
+        if (parsed.event === "audio_done") {
+          const chunks = Number(parsed.data.chunks ?? 0)
+          const audioChunks = audioChunksRef.current
+          audioChunksRef.current = []
+
+          if (audioChunks.length > 0) {
+            loadAudioChunks(audioChunks, chunks)
+          } else {
+            setAudioPlayer(EMPTY_AUDIO_PLAYER)
+          }
+          return
+        }
+
+        if (parsed.event === "error") {
+          audioChunksRef.current = []
+          setAudioPlayer(EMPTY_AUDIO_PLAYER)
+        }
+      }
+
+      const processBuffer = () => {
+        const blocks = buffer.split("\n\n")
+        buffer = blocks.pop() ?? ""
+
+        for (const block of blocks) {
+          const parsed = parseAudioSseBlock(block)
+          if (parsed) handleParsedBlock(parsed)
+        }
+      }
+
+      for (;;) {
+        const { value, done } = await reader.read()
+        if (done) break
+
+        buffer += decoder.decode(value, { stream: true })
+        processBuffer()
+      }
+
+      buffer += decoder.decode()
+      const remainingBlock = buffer.trim()
+      if (remainingBlock) {
+        const parsed = parseAudioSseBlock(remainingBlock)
+        if (parsed) handleParsedBlock(parsed)
+      }
+    } catch {
+      if (!abortController.signal.aborted) {
+        audioChunksRef.current = []
+        setAudioPlayer(EMPTY_AUDIO_PLAYER)
+      }
+    } finally {
+      if (audioAbortRef.current === abortController) {
+        audioAbortRef.current = null
+      }
+    }
+  }, [loadAudioChunks])
+
   const handleData = useCallback((dataPart: DataUIPart<ChatMessageData>) => {
+    if (dataPart.type === "data-audioRequest") {
+      if (audioEnabledRef.current) {
+        void startAudioStream(dataPart.data)
+      }
+      return
+    }
+
     if (dataPart.type === "data-audio") {
       if (audioEnabledRef.current) {
         setAudioPlayer((current) =>
@@ -163,7 +293,7 @@ export function useChatSession() {
       }
       audioChunksRef.current = []
     }
-  }, [loadAudioChunks])
+  }, [loadAudioChunks, startAudioStream])
 
   const { messages, sendMessage, status, error, clearError } = useChat<LegalChatMessage>({ onData: handleData })
   const isBusy = status === "submitted" || status === "streaming"
@@ -235,6 +365,7 @@ export function useChatSession() {
 
   useEffect(() => {
     return () => {
+      audioAbortRef.current?.abort()
       stopAudioPlayback(currentAudioRef, currentAudioUrlRef)
     }
   }, [])

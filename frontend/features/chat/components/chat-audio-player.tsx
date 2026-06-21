@@ -36,7 +36,7 @@ export function ChatAudioPlayer({
 
   const isLoading = player.status === "loading"
   const isPlaying = player.status === "playing"
-  const hasAudio = !isLoading
+  const hasAudio = player.chunks > 0
   const duration = Math.max(player.duration, 0)
   const currentTime = Math.min(Math.max(player.currentTime, 0), duration || player.currentTime)
   const controlsDisabled = isLoading || !hasAudio || !audioEnabled

@@ -13,6 +13,7 @@ from django.urls import path
 from django.views.decorators.csrf import csrf_exempt
 from pydantic import ValidationError
 
+from api.audio import ChatAudioRequest, stream_chat_audio
 from api.chat import ChatRequest, run_chat
 from api.dependencies import get_chat_graph_runner
 from logger import get_logger
@@ -130,6 +131,57 @@ async def _chat_stream_events(request: ChatRequest) -> AsyncIterator[str]:
         )
 
 
+@csrf_exempt
+async def chat_audio_stream(request: HttpRequest) -> StreamingHttpResponse | JsonResponse:
+    if request.method != "POST":
+        return HttpResponseNotAllowed(["POST"])
+
+    try:
+        payload = json.loads(request.body.decode("utf-8") or "{}")
+    except json.JSONDecodeError:
+        return JsonResponse(
+            {"detail": "JSON body를 전송해 주세요."},
+            status=400,
+        )
+
+    try:
+        audio_request = ChatAudioRequest.model_validate(payload)
+    except ValidationError as exc:
+        return JsonResponse(
+            {"detail": json.loads(exc.json())},
+            status=422,
+        )
+
+    if not audio_request.answer.strip():
+        return JsonResponse(
+            {"detail": "answer는 비어 있을 수 없습니다."},
+            status=422,
+        )
+
+    response = StreamingHttpResponse(
+        _chat_audio_stream_events(audio_request),
+        content_type="text/event-stream; charset=utf-8",
+    )
+    response["Cache-Control"] = "no-cache"
+    response["X-Accel-Buffering"] = "no"
+    return response
+
+
+async def _chat_audio_stream_events(request: ChatAudioRequest) -> AsyncIterator[str]:
+    try:
+        async for event in stream_chat_audio(request):
+            yield _sse_event(event)
+    except Exception:
+        logger.exception("chat audio stream execution failed")
+        yield _sse_event(
+            {
+                "type": "error",
+                "code": "audio_failed",
+                "message": "음성 생성 중 오류가 발생했습니다.",
+            }
+        )
+
+
 def _sse_event(payload: dict) -> str:
     event_type = str(payload.get("type") or "message")
     data = json.dumps(payload, ensure_ascii=False, default=str)
@@ -141,4 +193,5 @@ urlpatterns = [
     path("api/system/dependencies", dependencies),
     path("chat", chat),
     path("chat/stream", chat_stream),
+    path("chat/audio/stream", chat_audio_stream),
 ]

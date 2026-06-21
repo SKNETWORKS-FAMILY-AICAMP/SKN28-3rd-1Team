@@ -16,6 +16,11 @@ export type ChatMessageData = {
   audioDone: {
     chunks: number
   }
+  audioRequest: {
+    sessionId?: string | null
+    text: string
+    turnId?: string | null
+  }
   speechText: {
     text: string
   }
