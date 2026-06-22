@@ -78,7 +78,7 @@ backend/
 | 🚀 `src/app.py` | Django ASGI `application` 진입점 |
 | 🌐 `src/django_backend/` | `/health`, `/chat`, `/chat/stream` HTTP/SSE transport |
 | 🚪 `src/api/chat.py` | `/chat` request/response 모델과 Agent 결과 변환 helper |
-| 🧠 `src/agents/main_agent/` | `create_agent()` 기반 Main Agent 생성/cache와 실행 함수 |
+| 🧠 `src/agents/main_agent/` | `create_agent()` 기반 Main Agent factory |
 | 🗣️ `src/agents/speech_text_agent/` | state의 `final_response`를 정규화하고 `final_response_script`로 변환하는 LLM agent |
 | 🔄 `src/graph/` | chat turn 실행 경계, StateGraph 전환용 state, text stream 이후 speech/TTS event 연결 |
 | 🔊 `src/nodes/speech_synthesis_node/` | state의 `final_response_script`를 ElevenLabs SDK TTS stream으로 합성하는 deterministic node |

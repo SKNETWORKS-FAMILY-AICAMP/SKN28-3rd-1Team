@@ -13,8 +13,6 @@ from utils import render_prompt
 logger = get_logger(__name__)
 _PROMPT_TEMPLATE = Path(__file__).with_name("speech_text_prompt.j2")
 
-_SPEECH_TEXT_AGENT: SpeechTextAgent | None = None
-
 
 class SpeechTextAgent:
     def __init__(
@@ -28,22 +26,12 @@ class SpeechTextAgent:
 
 
 async def create_speech_text_agent() -> SpeechTextAgent:
-    global _SPEECH_TEXT_AGENT
-    if _SPEECH_TEXT_AGENT is not None:
-        return _SPEECH_TEXT_AGENT
-
-    _SPEECH_TEXT_AGENT = SpeechTextAgent()
+    agent = SpeechTextAgent()
     logger.info(
         "created speech text agent model=%s",
-        getattr(_SPEECH_TEXT_AGENT.model, "model_name", None)
-        or getattr(_SPEECH_TEXT_AGENT.model, "model", None),
+        getattr(agent.model, "model_name", None) or getattr(agent.model, "model", None),
     )
-    return _SPEECH_TEXT_AGENT
-
-
-def clear_speech_text_agent_cache() -> None:
-    global _SPEECH_TEXT_AGENT
-    _SPEECH_TEXT_AGENT = None
+    return agent
 
 
 async def create_final_response_script(
