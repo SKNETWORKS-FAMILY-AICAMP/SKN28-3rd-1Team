@@ -47,6 +47,7 @@ bun run dev -- --webpack -H 127.0.0.1 -p 3001
 ```text
 http://127.0.0.1:3000
 http://127.0.0.1:3000/chat_page
+http://127.0.0.1:3000/mocks
 ```
 
 터미널로 확인할 수도 있습니다.
@@ -54,11 +55,14 @@ http://127.0.0.1:3000/chat_page
 ```bash
 curl -I http://127.0.0.1:3000
 curl -I http://127.0.0.1:3000/chat_page
+curl -I http://127.0.0.1:3000/mocks
 curl -I http://127.0.0.1:3000/chat
 ```
 
 `/`와 `/chat_page` 요청이 `HTTP/1.1 200 OK`를 반환하면 서버가 응답하고 있는 상태입니다.
 `/chat`은 `/chat_page`로 리다이렉트되므로 `307 Temporary Redirect`를 반환합니다.
+
+장면별 상담 화면 디자인은 `/mocks/<scene>` 형식으로 확인합니다. 예: `/mocks/chat-start`, `/mocks/map-results`, `/mocks/document-references`.
 
 ## 개발 명령
 

@@ -1,6 +1,7 @@
 "use client"
 
 import Image from "next/image"
+import Link from "next/link"
 import type { FormEvent } from "react"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { ArrowRight, FileText, List, Map, Navigation, Phone, Plus, Save, Send } from "lucide-react"
@@ -30,14 +31,15 @@ type Institution = {
 
 type DocumentSource = {
   title: string
-  organization: string
-  category: string
-  updatedAt: string
-  match: number
   source: string
-  pages: string
+  category: string
+  page: string
+  updated: string
+  match: number
+  tags: string[]
   summary: string
   highlights: string[]
+  citation: string
 }
 
 type Task = {
@@ -89,49 +91,40 @@ const institutions: Institution[] = [
 
 const documentSources: DocumentSource[] = [
   {
-    title: "노인일자리 및 사회활동 지원사업 운영안내",
-    organization: "보건복지부",
-    category: "사업 지침",
-    updatedAt: "최근 지침",
+    title: "노인일자리 사업 신청 안내",
+    source: "공공 신청 안내 자료",
+    category: "신청 자격",
+    page: "p. 6-9",
+    updated: "2026.01",
     match: 94,
-    source: "공공 문서",
-    pages: "p. 12-18",
-    summary: "노인일자리 사업 유형, 참여 자격, 신청 흐름을 안내하는 운영 지침 문서입니다.",
-    highlights: [
-      "참여자는 거주지 관할 수행기관 또는 행정복지센터를 통해 상담과 신청을 진행할 수 있습니다.",
-      "사업 유형에 따라 공익활동, 사회서비스형, 시장형 등으로 나뉘며 모집 조건이 다를 수 있습니다.",
-      "신청 시 신분 확인 서류와 소득·거주 정보 확인이 필요할 수 있습니다.",
-    ],
+    tags: ["참여 조건", "신청 절차", "준비 서류"],
+    summary: "만 60세 이상 또는 사업 유형별 참여 가능 연령, 신청 전 확인해야 할 소득·건강보험 기준, 접수 순서를 정리한 문서예요.",
+    highlights: ["신분증과 주민등록등본을 기본 서류로 확인", "지역 수행기관 상담 후 세부 사업 배정", "사업 유형별 참여 조건이 다를 수 있음"],
+    citation: "신청자는 주소지 기준 수행기관에서 상담을 먼저 받고, 사업 유형에 맞는 서류를 준비합니다.",
   },
   {
-    title: "강남구 노인일자리 수행기관 모집 공고 예시",
-    organization: "지방자치단체",
-    category: "지역 공고",
-    updatedAt: "예시 자료",
+    title: "강남구 수행기관 모집 공고 예시",
+    source: "지자체 공고 참고 자료",
+    category: "지역 기관",
+    page: "p. 2-4",
+    updated: "2026.02",
     match: 88,
-    source: "지역 공고",
-    pages: "p. 2-4",
-    summary: "지역별 수행기관, 접수 기간, 문의처를 확인하는 화면 예시로 사용할 수 있는 문서입니다.",
-    highlights: [
-      "기관별 모집 분야와 접수 가능 기간은 공고마다 다르므로 최신 공고 확인이 필요합니다.",
-      "방문 접수 전 전화 문의를 통해 준비 서류와 상담 가능 시간을 확인하는 것이 좋습니다.",
-      "거주지와 가까운 수행기관을 우선 확인하면 이동 부담을 줄일 수 있습니다.",
-    ],
+    tags: ["강남구", "수행기관", "접수처"],
+    summary: "강남구 안에서 상담과 접수를 맡는 수행기관 목록, 연락처, 방문 접수 기준을 화면 결과와 함께 확인하기 위한 자료예요.",
+    highlights: ["기관별 운영 시간이 달라 방문 전 전화 확인 필요", "거주지와 가까운 기관부터 상담 권장", "모집 기간 종료 후 대기 접수가 될 수 있음"],
+    citation: "모집 기관은 접수 기간, 사업 유형, 배정 인원에 따라 신청 가능 여부가 달라집니다.",
   },
   {
-    title: "노인복지 관련 상담 FAQ",
-    organization: "공공 상담 자료",
-    category: "FAQ",
-    updatedAt: "예시 자료",
+    title: "노인일자리 상담 FAQ",
+    source: "상담 응대 참고 자료",
+    category: "자주 묻는 질문",
+    page: "Q3-Q6",
+    updated: "2025.12",
     match: 81,
-    source: "상담 문서",
-    pages: "Q3-Q6",
-    summary: "노인일자리 신청 전 자주 묻는 질문과 답변을 모아 보여주는 문서 예시입니다.",
-    highlights: [
-      "나이, 거주지, 소득 상황에 따라 신청 가능한 사업이 달라질 수 있습니다.",
-      "동일 기간에 중복 참여가 제한되는 사업이 있을 수 있어 상담 단계에서 확인이 필요합니다.",
-      "온라인 확인이 어려운 경우 가까운 복지관이나 시니어클럽에 문의할 수 있습니다.",
-    ],
+    tags: ["FAQ", "나이 기준", "중복 참여"],
+    summary: "처음 신청하는 사용자가 자주 묻는 나이 조건, 다른 복지 서비스와의 중복 가능 여부, 접수 후 진행 절차를 요약했어요.",
+    highlights: ["기초 정보 확인 후 상담 질문을 구체화", "사업별 중복 참여 제한 여부 확인", "접수 후 선발 결과 안내까지 시간이 걸릴 수 있음"],
+    citation: "처음 신청하는 경우에도 상담자가 거주지와 생년 정보를 기준으로 가능한 사업을 안내할 수 있습니다.",
   },
 ]
 
@@ -181,7 +174,7 @@ export function ChatPageClient() {
   const [messages, setMessages] = useState<ChatMessage[]>([
     createMessage(
       "assistant",
-      "안녕하세요, 로디예요!\n궁금한 점을 편하게 물어보세요.",
+      "안녕하세요, 로디에요!\n궁금한 점을 편하게 물어보세요.",
     ),
   ])
   const [input, setInput] = useState("")
@@ -189,8 +182,10 @@ export function ChatPageClient() {
   const [birthYear, setBirthYear] = useState("")
   const [residence, setResidence] = useState("")
   const [isBusy, setIsBusy] = useState(false)
-  const [tab, setTab] = useState<"map" | "list" | "documents">("map")
+  const [tab, setTab] = useState<"map" | "list">("map")
   const [selectedId, setSelectedId] = useState(0)
+  const [showDocuments, setShowDocuments] = useState(false)
+  const [showDocumentDetail, setShowDocumentDetail] = useState(false)
   const [selectedDocumentId, setSelectedDocumentId] = useState(0)
   const [toast, setToast] = useState("")
   const messagesRef = useRef<HTMLDivElement>(null)
@@ -292,7 +287,7 @@ export function ChatPageClient() {
     setMessages([
       createMessage(
         "assistant",
-        "안녕하세요, 로디예요!\n궁금한 점을 편하게 물어보세요.",
+        "안녕하세요, 로디에요!\n궁금한 점을 편하게 물어보세요.",
       ),
     ])
     setInput("")
@@ -302,6 +297,8 @@ export function ChatPageClient() {
     setIsBusy(false)
     setTab("map")
     setSelectedId(0)
+    setShowDocuments(false)
+    setShowDocumentDetail(false)
     setSelectedDocumentId(0)
     setToast("새 상담을 시작했어요.")
   }
@@ -319,16 +316,20 @@ export function ChatPageClient() {
         <nav className="hidden items-center gap-7 text-sm font-medium text-[#7c736a] md:flex">
           <span>상담 주제</span>
           <span>이용 방법</span>
+          <Link href="/mocks" className="font-medium transition-colors hover:text-[#33302b]">
+            디자인
+          </Link>
           <button
             type="button"
             onClick={() => {
-              if (started) {
-                setTab("documents")
+              if (!started) {
+                setToast("상담을 시작하면 근거 문서를 볼 수 있어요.")
                 return
               }
-              setToast("질문을 보내면 근거 문서를 확인할 수 있어요.")
+              setShowDocuments(true)
+              setShowDocumentDetail(false)
             }}
-            className="transition-colors hover:text-[#33302b]"
+            className="font-medium"
           >
             근거 문서
           </button>
@@ -453,51 +454,130 @@ export function ChatPageClient() {
               <div className="flex min-h-0 flex-1">
                 <div className="flex min-w-0 flex-1 flex-col p-6 pb-4">
                   <h1 className="text-2xl font-extrabold tracking-tight text-[#2f2b26]">
-                    {tab === "documents" ? "상담 근거 문서" : "강남구 노인일자리 신청 가능 기관"}
+                    {showDocuments ? "상담 근거 문서" : "강남구 노인일자리 신청 가능 기관"}
                   </h1>
                   <p className="mt-1.5 text-sm text-[#8c8276]">
-                    {tab === "documents"
-                      ? "문서를 선택하면 오른쪽에서 핵심 근거와 요약을 확인할 수 있어요."
+                    {showDocuments
+                      ? "추천 결과에 활용한 문서와 확인 포인트를 볼 수 있어요."
                       : "지도에서 기관을 선택하면 상세 정보를 확인할 수 있어요."}
                   </p>
 
-              <div className="mt-5 flex w-max gap-1.5 rounded-xl bg-[#f1ebe1] p-1">
-                <button
-                  type="button"
-                  onClick={() => setTab("map")}
-                  className={cn(
-                    "inline-flex items-center gap-2 rounded-[9px] px-5 py-2 text-sm font-semibold",
-                    tab === "map" ? "bg-white text-[#33302b] shadow-sm" : "text-[#9a8f82]",
-                  )}
-                >
-                  <Map className="size-4" />
-                  지도
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTab("list")}
-                  className={cn(
-                    "inline-flex items-center gap-2 rounded-[9px] px-5 py-2 text-sm font-semibold",
-                    tab === "list" ? "bg-white text-[#33302b] shadow-sm" : "text-[#9a8f82]",
-                  )}
-                >
-                  <List className="size-4" />
-                  목록
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTab("documents")}
-                  className={cn(
-                    "inline-flex items-center gap-2 rounded-[9px] px-5 py-2 text-sm font-semibold",
-                    tab === "documents" ? "bg-white text-[#33302b] shadow-sm" : "text-[#9a8f82]",
-                  )}
-                >
-                  <FileText className="size-4" />
-                  문서
-                </button>
-              </div>
+                  <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex w-max gap-1.5 rounded-xl bg-[#f1ebe1] p-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTab("map")
+                          setShowDocuments(false)
+                          setShowDocumentDetail(false)
+                        }}
+                        className={cn(
+                          "inline-flex items-center gap-2 rounded-[9px] px-5 py-2 text-sm font-semibold",
+                          tab === "map" && !showDocuments ? "bg-white text-[#33302b] shadow-sm" : "text-[#9a8f82]",
+                        )}
+                      >
+                        <Map className="size-4" />
+                        지도
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTab("list")
+                          setShowDocuments(false)
+                          setShowDocumentDetail(false)
+                        }}
+                        className={cn(
+                          "inline-flex items-center gap-2 rounded-[9px] px-5 py-2 text-sm font-semibold",
+                          tab === "list" && !showDocuments ? "bg-white text-[#33302b] shadow-sm" : "text-[#9a8f82]",
+                        )}
+                      >
+                        <List className="size-4" />
+                        목록
+                      </button>
+                    </div>
 
-              {tab === "map" ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowDocuments((current) => !current)
+                        setShowDocumentDetail(false)
+                      }}
+                      className={cn(
+                        "inline-flex h-10 items-center gap-2 rounded-[10px] border px-4 text-sm font-bold transition",
+                        showDocuments
+                          ? "border-[#ef8b54] bg-[#ef8b54] text-white shadow-[0_3px_10px_rgba(239,139,84,.24)]"
+                          : "border-[#ead9c6] bg-white text-[#6c6359]",
+                      )}
+                    >
+                      <FileText className="size-4" />
+                      {showDocuments ? "기관 보기" : "문서 레퍼런스"}
+                    </button>
+                  </div>
+
+                  {showDocuments ? (
+                    showDocumentDetail ? (
+                      <DocumentDetailPanel
+                        document={selectedDocument}
+                        documents={documentSources}
+                        selectedDocumentId={selectedDocumentId}
+                        onBack={() => setShowDocumentDetail(false)}
+                        onSelectDocument={(index) => {
+                          setSelectedDocumentId(index)
+                          setShowDocumentDetail(true)
+                        }}
+                      />
+                    ) : (
+                    <div className="mt-3.5 grid min-h-0 flex-1 grid-cols-1 gap-3 overflow-y-auto pr-1 xl:grid-cols-2">
+                      {documentSources.map((document, index) => {
+                        const isSelected = index === selectedDocumentId
+                        return (
+                          <button
+                            key={document.title}
+                            type="button"
+                            onClick={() => {
+                              setSelectedDocumentId(index)
+                              setShowDocumentDetail(true)
+                            }}
+                            className={cn(
+                              "flex min-h-[178px] flex-col rounded-[14px] border bg-white p-4 text-left transition",
+                              isSelected ? "border-[#f0b88e] shadow-[0_3px_12px_rgba(239,139,84,.14)]" : "border-[#efe7da]",
+                            )}
+                          >
+                            <div className="flex items-start gap-3">
+                              <span
+                                className={cn(
+                                  "flex size-9 shrink-0 items-center justify-center rounded-[10px]",
+                                  isSelected ? "bg-[#ef8b54] text-white" : "bg-[#f6eee3] text-[#ef8b54]",
+                                )}
+                              >
+                                <FileText className="size-4" />
+                              </span>
+                              <div className="min-w-0 flex-1">
+                                <div className="text-base font-extrabold leading-snug text-[#332f29]">{document.title}</div>
+                                <div className="mt-1 text-xs font-semibold text-[#9a8f82]">
+                                  {document.source} · {document.page}
+                                </div>
+                              </div>
+                              <span className="rounded-[8px] bg-[#d9efe0] px-2.5 py-1 text-xs font-extrabold text-[#3f9a63]">
+                                {document.match}%
+                              </span>
+                            </div>
+
+                            <div className="mt-3 flex flex-wrap gap-1.5">
+                              {document.tags.map((tag) => (
+                                <span key={tag} className="rounded-lg bg-[#f4ecdf] px-2.5 py-1 text-xs font-semibold text-[#7c7064]">
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+
+                            <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-[#5f574d]">{document.summary}</p>
+                          </button>
+                        )
+                      })}
+                    </div>
+                    )
+                  ) : tab === "map" ? (
                 <div className="relative mt-3.5 min-h-0 flex-1 overflow-hidden rounded-2xl border border-[#ece3d5] bg-[#eef1ec]">
                   <div className="absolute inset-0 bg-linear-to-b from-[#eef1ec] to-[#edf0ea]" />
                   <div className="absolute -right-[4%] -top-[6%] h-[55%] w-[40%] rotate-[-8deg] rounded-bl-[60%] bg-[#d8e6ee]" />
@@ -546,7 +626,7 @@ export function ChatPageClient() {
                     ))}
                   </div>
                 </div>
-              ) : tab === "list" ? (
+              ) : (
                 <div className="mt-3.5 flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto pr-1">
                   {institutions.map((institution, index) => {
                     const isSelected = index === selectedId
@@ -593,181 +673,72 @@ export function ChatPageClient() {
                     )
                   })}
                 </div>
-              ) : (
-                <div className="mt-3.5 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-1">
-                  {documentSources.map((document, index) => {
-                    const isSelected = index === selectedDocumentId
-                    return (
-                      <button
-                        key={document.title}
-                        type="button"
-                        onClick={() => setSelectedDocumentId(index)}
-                        className={cn(
-                          "rounded-[14px] border bg-white p-4 text-left transition",
-                          isSelected ? "border-[#f0b88e] shadow-[0_3px_12px_rgba(239,139,84,.14)]" : "border-[#efe7da]",
-                        )}
-                      >
-                        <div className="flex items-start gap-3">
-                          <span
-                            className={cn(
-                              "flex size-9 shrink-0 items-center justify-center rounded-[10px]",
-                              isSelected ? "bg-[#ef8b54] text-white" : "bg-[#f5eadc] text-[#d88951]",
-                            )}
-                          >
-                            <FileText className="size-4" />
-                          </span>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className="rounded-[7px] bg-[#fbe3d2] px-2.5 py-1 text-xs font-bold text-[#cf7838]">
-                                {document.category}
-                              </span>
-                              <span className="text-xs font-semibold text-[#9a8f82]">{document.organization}</span>
-                            </div>
-                            <h2 className="mt-2 text-base font-extrabold text-[#332f29]">{document.title}</h2>
-                            <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-[#7c736a]">{document.summary}</p>
-                            <div className="mt-3 flex items-center gap-2 text-xs font-semibold text-[#9a8f82]">
-                              <span>{document.source}</span>
-                              <span>·</span>
-                              <span>{document.pages}</span>
-                              <span className="ml-auto rounded-[7px] bg-[#d9efe0] px-2 py-1 text-[#3f9a63]">
-                                관련도 {document.match}%
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </button>
-                    )
-                  })}
-                </div>
               )}
             </div>
 
+                {!showDocuments ? (
                 <aside className="flex w-[312px] shrink-0 flex-col p-6 pl-0">
-                  {tab === "documents" ? (
-                    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto rounded-2xl border border-[#efe7da] bg-white p-5">
-                      <div className="flex items-start gap-3">
-                        <span className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-[#ef8b54] text-white">
-                          <FileText className="size-4" />
-                        </span>
-                        <div className="min-w-0">
-                          <h2 className="text-lg font-extrabold leading-snug text-[#2f2b26]">{selectedDocument.title}</h2>
-                          <div className="mt-2 flex flex-wrap gap-1.5">
-                            <span className="rounded-lg bg-[#fbe3d2] px-2.5 py-1 text-xs font-semibold text-[#cf7838]">
-                              {selectedDocument.category}
-                            </span>
-                            <span className="rounded-lg bg-[#dbe7f3] px-2.5 py-1 text-xs font-semibold text-[#4a77ad]">
-                              {selectedDocument.organization}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="my-4 h-px bg-[#f0e8db]" />
-
-                      <div className="rounded-[13px] bg-[#fbf6ef] p-4">
-                        <div className="mb-2 text-xs font-extrabold text-[#9a8f82]">문서 요약</div>
-                        <p className="text-sm leading-relaxed text-[#4d463d]">{selectedDocument.summary}</p>
-                      </div>
-
-                      <div className="mt-4 flex flex-col gap-3">
-                        <div className="text-xs font-extrabold text-[#9a8f82]">핵심 근거</div>
-                        {selectedDocument.highlights.map((highlight, index) => (
-                          <div key={highlight} className="rounded-[12px] border border-[#efe0cd] bg-white px-3.5 py-3">
-                            <div className="mb-1.5 text-xs font-bold text-[#ef8b54]">근거 {index + 1}</div>
-                            <p className="text-sm leading-relaxed text-[#4d463d]">{highlight}</p>
-                          </div>
-                        ))}
-                      </div>
-
-                      <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
-                        <div className="rounded-[10px] bg-[#f7efe6] px-3 py-2">
-                          <div className="font-bold text-[#9a8f82]">범위</div>
-                          <div className="mt-1 text-[#4d463d]">{selectedDocument.pages}</div>
-                        </div>
-                        <div className="rounded-[10px] bg-[#f7efe6] px-3 py-2">
-                          <div className="font-bold text-[#9a8f82]">관련도</div>
-                          <div className="mt-1 text-[#4d463d]">{selectedDocument.match}%</div>
-                        </div>
-                      </div>
-
-                      <div className="flex-1" />
-                      <div className="mt-4 flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setToast(`${selectedDocument.title} 문서 예시를 열었어요.`)}
-                          className="flex h-11 flex-1 items-center justify-center rounded-[11px] bg-[#ef8b54] text-sm font-bold text-white shadow-[0_2px_8px_rgba(239,139,84,.3)]"
-                        >
-                          문서 열기
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setToast("근거 문장을 상담 요약에 추가했어요.")}
-                          className="flex h-11 flex-1 items-center justify-center rounded-[11px] border border-[#f0b88e] bg-white text-sm font-bold text-[#e07e43]"
-                        >
-                          근거 복사
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
                   <div className="flex min-h-0 flex-1 flex-col overflow-y-auto rounded-2xl border border-[#efe7da] bg-white p-5">
-                    <div className="flex items-center gap-2.5">
-                      <span className="flex size-7 items-center justify-center rounded-full bg-[#ef8b54] text-sm font-bold text-white">
-                        {selectedId + 1}
-                      </span>
-                      <h2 className="text-lg font-extrabold text-[#2f2b26]">{selected.name}</h2>
-                    </div>
+                      <>
+                        <div className="flex items-center gap-2.5">
+                          <span className="flex size-7 items-center justify-center rounded-full bg-[#ef8b54] text-sm font-bold text-white">
+                            {selectedId + 1}
+                          </span>
+                          <h2 className="text-lg font-extrabold text-[#2f2b26]">{selected.name}</h2>
+                        </div>
 
-                    <div className="mt-3 flex flex-wrap gap-1.5">
-                      {selected.badges.map((badge) => (
-                        <span key={badge} className={cn("rounded-lg px-2.5 py-1 text-xs font-semibold", badgeClassName(badge))}>
-                          {badge}
-                        </span>
-                      ))}
-                    </div>
+                        <div className="mt-3 flex flex-wrap gap-1.5">
+                          {selected.badges.map((badge) => (
+                            <span key={badge} className={cn("rounded-lg px-2.5 py-1 text-xs font-semibold", badgeClassName(badge))}>
+                              {badge}
+                            </span>
+                          ))}
+                        </div>
 
-                    <div className="mt-4 flex flex-col gap-3 text-sm text-[#574f46]">
-                      <div className="flex items-center gap-2.5">
-                        <Phone className="size-4 text-[#ef9a52]" />
-                        {selected.phone}
-                      </div>
-                      <div className="flex items-start gap-2.5">
-                        <Navigation className="mt-0.5 size-4 text-[#ef9a52]" />
-                        <span>{selected.address}</span>
-                      </div>
-                      <div className="flex items-center gap-2.5">
-                        <FileText className="size-4 text-[#ef9a52]" />
-                        {selected.hours}
-                      </div>
-                    </div>
+                        <div className="mt-4 flex flex-col gap-3 text-sm text-[#574f46]">
+                          <div className="flex items-center gap-2.5">
+                            <Phone className="size-4 text-[#ef9a52]" />
+                            {selected.phone}
+                          </div>
+                          <div className="flex items-start gap-2.5">
+                            <Navigation className="mt-0.5 size-4 text-[#ef9a52]" />
+                            <span>{selected.address}</span>
+                          </div>
+                          <div className="flex items-center gap-2.5">
+                            <FileText className="size-4 text-[#ef9a52]" />
+                            {selected.hours}
+                          </div>
+                        </div>
 
-                    <div className="my-4 h-px bg-[#f0e8db]" />
+                        <div className="my-4 h-px bg-[#f0e8db]" />
 
-                    <div className="flex flex-col gap-4 text-sm leading-relaxed text-[#4d463d]">
-                      <InfoBlock label="주요 사업" value={selected.business} />
-                      <InfoBlock label="신청 방법" value={selected.apply} />
-                      <InfoBlock label="준비 서류" value={selected.docs} />
-                    </div>
+                        <div className="flex flex-col gap-4 text-sm leading-relaxed text-[#4d463d]">
+                          <InfoBlock label="주요 사업" value={selected.business} />
+                          <InfoBlock label="신청 방법" value={selected.apply} />
+                          <InfoBlock label="준비 서류" value={selected.docs} />
+                        </div>
 
-                    <div className="flex-1" />
-                    <div className="mt-4 flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setToast(`전화 연결: ${selected.phone}`)}
-                        className="flex h-11 flex-1 items-center justify-center rounded-[11px] bg-[#ef8b54] text-sm font-bold text-white shadow-[0_2px_8px_rgba(239,139,84,.3)]"
-                      >
-                        전화 문의
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setToast(`${selected.name} 길찾기를 여는 중...`)}
-                        className="flex h-11 flex-1 items-center justify-center rounded-[11px] border border-[#f0b88e] bg-white text-sm font-bold text-[#e07e43]"
-                      >
-                        길찾기
-                      </button>
-                    </div>
+                        <div className="flex-1" />
+                        <div className="mt-4 flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setToast(`전화 연결: ${selected.phone}`)}
+                            className="flex h-11 flex-1 items-center justify-center rounded-[11px] bg-[#ef8b54] text-sm font-bold text-white shadow-[0_2px_8px_rgba(239,139,84,.3)]"
+                          >
+                            전화 문의
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setToast(`${selected.name} 길찾기를 여는 중...`)}
+                            className="flex h-11 flex-1 items-center justify-center rounded-[11px] border border-[#f0b88e] bg-white text-sm font-bold text-[#e07e43]"
+                          >
+                            길찾기
+                          </button>
+                        </div>
+                      </>
                   </div>
-                  )}
                 </aside>
+                ) : null}
               </div>
 
               <div className="mx-6 mb-5 flex shrink-0 items-center gap-3 rounded-[14px] border border-[#f0e3d1] bg-[#f6eee3] px-5 py-3.5">
@@ -780,21 +751,25 @@ export function ChatPageClient() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => setTab("list")}
+                  onClick={() => {
+                    setTab("list")
+                    setShowDocuments(false)
+                    setShowDocumentDetail(false)
+                  }}
                   className="h-10 rounded-[10px] border border-[#ead9c6] bg-white px-4 text-sm font-semibold text-[#6c6359]"
                 >
                   목록 보기
                 </button>
                 <button
                   type="button"
-                  onClick={() => setTab("documents")}
-                  className="h-10 rounded-[10px] border border-[#ead9c6] bg-white px-4 text-sm font-semibold text-[#6c6359]"
-                >
-                  문서 보기
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMessages((current) => [...current, createMessage("assistant", "어느 지역의 기관을 찾아드릴까요?\n예) “서초구 노인일자리 알려줘” 처럼 입력해 주세요.")])}
+                  onClick={() => {
+                    setShowDocuments(false)
+                    setShowDocumentDetail(false)
+                    setMessages((current) => [
+                      ...current,
+                      createMessage("assistant", "어느 지역의 기관을 찾아드릴까요?\n예) “서초구 노인일자리 알려줘” 처럼 입력해 주세요."),
+                    ])
+                  }}
                   className="h-10 rounded-[10px] border border-[#ead9c6] bg-white px-4 text-sm font-semibold text-[#6c6359]"
                 >
                   다른 지역 검색
@@ -855,10 +830,10 @@ export function ChatPageClient() {
                 onClick={() => setIsProfileStep(true)}
                 className="group flex flex-col items-center rounded-[18px] px-6 py-5 transition hover:bg-white/35 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#ef8b54]"
               >
-                <span className="flex size-[180px] items-center justify-center overflow-hidden rounded-full bg-[#fbe6d4] shadow-[inset_0_0_0_2px_#f4d6bd,0_16px_38px_rgba(239,139,84,.18)] transition group-hover:scale-[1.03]">
-                  <Image src="/images/mascot.png" alt="로디" width={180} height={180} className="size-full object-cover" priority />
+                <span className="flex size-[min(440px,52vw,46vh)] items-center justify-center overflow-hidden rounded-full bg-[#fbe6d4] shadow-[inset_0_0_0_2px_#f4d6bd,0_24px_60px_rgba(239,139,84,.22)] transition group-hover:scale-[1.03]">
+                  <Image src="/images/mascot.png" alt="로디" width={440} height={440} className="size-full object-cover" priority />
                 </span>
-                <span className="mt-7 text-[26px] font-extrabold text-[#2f2b26]">안녕하세요, 로디예요</span>
+                <span className="mt-7 text-[26px] font-extrabold text-[#2f2b26]">안녕하세요, 로디에요</span>
               </button>
               <p className="mt-1 max-w-[400px] text-[15px] leading-[1.65] text-[#8c8276]">
                 로디를 누르고 상담 정보를 먼저 알려주세요.
@@ -874,6 +849,129 @@ export function ChatPageClient() {
         </div>
       ) : null}
     </main>
+  )
+}
+
+function DocumentDetailPanel({
+  document,
+  documents,
+  selectedDocumentId,
+  onBack,
+  onSelectDocument,
+}: {
+  document: DocumentSource
+  documents: DocumentSource[]
+  selectedDocumentId: number
+  onBack: () => void
+  onSelectDocument: (index: number) => void
+}) {
+  return (
+    <div className="mt-3.5 flex min-h-0 flex-1 gap-3">
+      <div className="flex min-w-0 flex-1 flex-col overflow-y-auto rounded-2xl border border-[#eadfce] bg-white px-7 py-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0">
+            <div className="flex items-start gap-3">
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-[13px] bg-[#ef8b54] text-white">
+                <FileText className="size-5" />
+              </span>
+              <div className="min-w-0">
+                <h2 className="text-[28px] font-extrabold leading-tight text-[#2f2b26]">{document.title}</h2>
+                <div className="mt-2 text-sm font-semibold text-[#9a8f82]">
+                  {document.source} · {document.updated}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-1.5">
+              <span className="rounded-lg bg-[#dbe7f3] px-2.5 py-1 text-xs font-semibold text-[#4a77ad]">
+                {document.category}
+              </span>
+              <span className="rounded-lg bg-[#d9efe0] px-2.5 py-1 text-xs font-semibold text-[#3f9a63]">
+                관련도 {document.match}%
+              </span>
+              <span className="rounded-lg bg-[#f4ecdf] px-2.5 py-1 text-xs font-semibold text-[#7c7064]">
+                {document.page}
+              </span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={onBack}
+            className="h-10 rounded-[10px] border border-[#ead9c6] bg-white px-4 text-sm font-bold text-[#6c6359] transition hover:border-[#f0b88e]"
+          >
+            문서 목록
+          </button>
+        </div>
+
+        <div className="mt-3 grid gap-6 lg:grid-cols-[1fr_1fr]">
+          <div className="rounded-[14px] bg-[#fbf6ef] p-5">
+            <InfoBlock label="문서 요약" value={document.summary} />
+          </div>
+
+          <div className="rounded-[14px] border border-[#efe0cd] bg-[#fffaf3] p-5">
+            <div className="mb-2 text-xs font-extrabold text-[#9a8f82]">답변 근거 문장</div>
+            <p className="text-base leading-relaxed text-[#4d463d]">{document.citation}</p>
+          </div>
+        </div>
+
+        <div className="mt-3">
+          <div className="grid gap-3 lg:grid-cols-3">
+            {document.highlights.map((highlight, index) => (
+              <div key={highlight} className="rounded-[13px] border border-[#efe7da] bg-white p-4">
+                <div className="mb-2 text-xs font-bold text-[#ef8b54]">근거 {index + 1}</div>
+                <p className="text-sm leading-relaxed text-[#4d463d]">{highlight}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-6 flex flex-wrap gap-2">
+          {document.tags.map((tag) => (
+            <span key={tag} className="rounded-lg bg-[#f4ecdf] px-2.5 py-1 text-xs font-semibold text-[#7c7064]">
+              {tag}
+            </span>
+          ))}
+        </div>
+
+        <div className="flex-1" />
+      </div>
+
+      <aside className="flex w-[236px] shrink-0 flex-col gap-2 overflow-y-auto rounded-2xl border border-[#eadfce] bg-white p-3">
+        {documents.map((item, index) => {
+          const isSelected = index === selectedDocumentId
+
+          return (
+            <button
+              key={item.title}
+              type="button"
+              onClick={() => onSelectDocument(index)}
+              className={cn(
+                "rounded-[12px] border p-3 text-left transition",
+                isSelected ? "border-[#f0b88e] bg-[#fff7ef] shadow-sm" : "border-[#efe7da] bg-white hover:border-[#f0b88e]",
+              )}
+            >
+              <div className="flex items-start gap-2.5">
+                <span
+                  className={cn(
+                    "flex size-8 shrink-0 items-center justify-center rounded-[9px]",
+                    isSelected ? "bg-[#ef8b54] text-white" : "bg-[#f6eee3] text-[#ef8b54]",
+                  )}
+                >
+                  <FileText className="size-4" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-extrabold leading-snug text-[#332f29]">{item.title}</span>
+                  <span className="mt-1 block text-xs font-semibold text-[#9a8f82]">
+                    {item.source} · {item.page}
+                  </span>
+                </span>
+              </div>
+            </button>
+          )
+        })}
+      </aside>
+    </div>
   )
 }
 
