@@ -1,5 +1,5 @@
-import Link from "next/link"
 import Image from "next/image"
+import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 
 import { mockScenes } from "./mock-scenes"
@@ -25,13 +25,14 @@ export default function MocksPage() {
           <div className="text-xs font-extrabold uppercase tracking-wide text-[#a99c8f]">design scenes</div>
           <h1 className="mt-2 font-heading text-4xl text-[#2f2b26]">상담 화면 장면별 목업</h1>
           <p className="mt-4 text-base leading-relaxed text-[#7d7469]">
-            상담 시작, 개인정보 입력, 지도 결과, 문서 레퍼런스 화면을 분리해서 확인할 수 있어요.
+            실제 상담 화면과 분리해서 시작, 정보 입력, 지도, 기관 상세, 문서 레퍼런스 디자인을 확인할 수 있어요.
           </p>
         </div>
 
         <div className="mt-8 grid gap-4 md:grid-cols-2">
           {mockScenes.map((scene) => {
             const Icon = scene.icon
+
             return (
               <Link
                 key={scene.slug}

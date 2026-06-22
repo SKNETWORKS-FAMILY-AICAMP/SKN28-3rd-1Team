@@ -19,12 +19,12 @@ export async function generateMetadata({ params }: MockScenePageProps): Promise<
 
   if (!scene) {
     return {
-      title: "목업 없음 — 로디",
+      title: "목업 없음 - 로디",
     }
   }
 
   return {
-    title: `${scene.title} — 로디 디자인 목업`,
+    title: `${scene.title} - 로디 디자인 목업`,
     description: scene.description,
   }
 }

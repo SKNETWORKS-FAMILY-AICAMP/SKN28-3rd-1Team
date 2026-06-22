@@ -32,6 +32,9 @@ export function SiteHeader() {
           <Link href="/#categories" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
             상담 주제
           </Link>
+          <Link href="/mocks" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+            디자인
+          </Link>
         </nav>
 
         <Link
