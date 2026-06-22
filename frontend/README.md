@@ -64,6 +64,12 @@ curl -I http://127.0.0.1:3000/chat
 
 장면별 상담 화면 디자인은 `/mocks/<scene>` 형식으로 확인합니다. 예: `/mocks/chat-start`, `/mocks/map-results`, `/mocks/document-references`.
 
+## 대화 ID 정책
+
+AI SDK 기반 채팅 hook은 mount 시 URL query의 `conversation_id`를 확인합니다. 값이 없거나 비어 있으면 browser에서 새 `conversation_id`를 만들고 URL query에 `replace`로 반영합니다.
+
+이 값은 Next.js chat route에서 backend `session_id`로 전달되며, backend는 이를 LangGraph `thread_id`로 사용합니다. `conversation_id` 없이 backend를 호출하면 backend는 fallback thread를 만들지 않고 Agent 호출을 무시합니다. 자세한 정책은 `../docs/chat_thread_policy.md`를 참고합니다.
+
 ## 개발 명령
 
 ```bash

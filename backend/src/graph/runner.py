@@ -7,6 +7,7 @@ from uuid import uuid4
 from graph.graph import create_chat_turn_graph
 from graph.state import ChatTurnState
 from logger import get_logger
+from memory import ChatThreadContextStore, get_chat_thread_context_store
 from utils import application_state, user_input_state
 
 logger = get_logger(__name__)
@@ -16,8 +17,9 @@ _TOOL_STREAM_NODES = {"main_agent", "window_changing_agent"}
 
 
 class ChatGraphRunner:
-    def __init__(self) -> None:
+    def __init__(self, *, thread_context: ChatThreadContextStore | None = None) -> None:
         self._graph: Any | None = None
+        self._thread_context = thread_context or get_chat_thread_context_store()
 
     async def run_stream(
         self,
@@ -26,25 +28,34 @@ class ChatGraphRunner:
         session_id: str | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> AsyncIterator[dict[str, Any]]:
-        graph = await self._get_graph()
         turn_id = uuid4().hex
+        thread_id = self._thread_context.activate(session_id)
+        if thread_id is None:
+            logger.info(
+                "chat graph invocation ignored session_id=%s turn_id=%s reason=missing_conversation_id",
+                session_id,
+                turn_id,
+            )
+            return
+
+        graph = await self._get_graph()
         state = _initial_state(
             message,
-            session_id=session_id,
+            session_id=thread_id,
             turn_id=turn_id,
             metadata=metadata,
         )
 
         logger.info(
-            "chat graph invocation started session_id=%s turn_id=%s message_chars=%d",
-            session_id,
+            "chat graph invocation started conversation_id=%s turn_id=%s message_chars=%d",
+            thread_id,
             turn_id,
             len(message),
         )
         started_tool_calls: set[str] = set()
         async for event in graph.astream(
             state,
-            config={"configurable": {"thread_id": session_id or turn_id}},
+            config={"configurable": {"thread_id": thread_id}},
             stream_mode=["messages", "custom"],
             subgraphs=True,
             version="v2",
@@ -54,8 +65,8 @@ class ChatGraphRunner:
                 yield backend_event
 
         logger.info(
-            "chat graph invocation completed session_id=%s turn_id=%s",
-            session_id,
+            "chat graph invocation completed conversation_id=%s turn_id=%s",
+            thread_id,
             turn_id,
         )
 

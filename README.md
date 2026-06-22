@@ -160,7 +160,7 @@
 | --- | --- |
 | Backend `/chat` API | Django Channels에서 사용자 메시지를 받아 Agent 답변을 반환합니다. |
 | LLM Provider 연동 | `LLM_AGENT_<AGENT>_PROVIDER` 설정으로 agent별 LLM provider와 model을 선택합니다. |
-| LangGraph Agent | `create_agent()`와 `InMemorySaver` 기반 session/thread 처리를 사용합니다. |
+| LangGraph Agent | `ChatThreadContextStore`와 `InMemorySaver` 기반 session/thread 처리를 사용합니다. |
 | LangSmith 검증 | LLM 호출 trace와 mock tool call trace를 확인했습니다. |
 | RAG Backend | 문서 ingest, 검색 API, read-only MCP endpoint 구조가 있습니다. |
 | RAG Frontend | 문서 목록, ingest job, review queue를 확인하는 운영 UI가 있습니다. |
@@ -201,6 +201,7 @@ SKN28-3rd-1Team/
 │   ├── src/api/             # /chat API
 │   ├── src/agents/          # Main Agent, LLM provider, tools
 │   ├── src/graph/           # chat turn stream runner
+│   ├── src/memory/          # conversation id, checkpointer, TTL boundary
 │   ├── src/nodes/           # speech/TTS node
 │   └── src/agents/*/*.j2    # agent별 prompt
 ├── rag/

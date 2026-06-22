@@ -4,10 +4,10 @@ from pathlib import Path
 from typing import Any
 
 from langchain.agents import create_agent
-from langgraph.checkpoint.memory import InMemorySaver
 
 from llm import get_main
 from logger import get_logger
+from memory import get_checkpointer
 from tools import MAIN_AGENT_PROFILE, get_tools
 from utils import render_prompt
 
@@ -29,7 +29,7 @@ async def create_main_agent() -> Any:
         tools=await get_tools(agent_name=MAIN_AGENT_PROFILE),
         system_prompt=render_prompt(_SYSTEM_PROMPT_TEMPLATE),
         state_schema=ChatTurnState,
-        checkpointer=InMemorySaver(),
+        checkpointer=get_checkpointer(),
     )
     return _MAIN_AGENT
 
