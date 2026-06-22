@@ -65,7 +65,15 @@ async def chat(request: HttpRequest) -> JsonResponse:
     try:
         response = await run_chat(chat_request)
     except Exception:
-        logger.exception("chat agent execution failed")
+        logger.exception(
+            "chat agent execution failed",
+            extra={
+                "event": "chat.invocation.failed",
+                "conversation_id": chat_request.session_id,
+                "endpoint": "/chat",
+                "message_chars": len(chat_request.message.strip()),
+            },
+        )
         return JsonResponse(
             {"detail": "Agent 실행 중 오류가 발생했습니다."},
             status=500,
@@ -119,7 +127,15 @@ async def _chat_stream_events(request: ChatRequest) -> AsyncIterator[str]:
         ):
             yield _sse_event(event)
     except Exception:
-        logger.exception("chat stream agent execution failed")
+        logger.exception(
+            "chat stream agent execution failed",
+            extra={
+                "event": "chat.invocation.failed",
+                "conversation_id": request.session_id,
+                "endpoint": "/chat/stream",
+                "message_chars": len(request.message.strip()),
+            },
+        )
         yield _sse_event(
             {
                 "type": "error",

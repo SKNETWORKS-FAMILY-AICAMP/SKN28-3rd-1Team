@@ -173,5 +173,11 @@ def _speech_synthesis_payload(event: dict[str, Any]) -> dict[str, Any] | None:
             "message": event.get("message") or "음성 합성 중 오류가 발생했습니다.",
         }
 
-    logger.debug("ignored speech synthesis event=%s", event_type)
+    logger.debug(
+        "ignored speech synthesis event",
+        extra={
+            "event": "tts.event_ignored",
+            "tts_event_type": event_type,
+        },
+    )
     return None

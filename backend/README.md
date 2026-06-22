@@ -13,7 +13,7 @@ Frontend는 `POST /chat`으로 최종 JSON 응답을 받을 수 있고, `POST /c
 | 🧩 Agent | LangChain `create_agent()` + LangGraph checkpointer |
 | 🛠️ Tool | `tools/`에서 MCP/local tool 관리 |
 | 📚 RAG | FastMCP Tool Server에서 read-only MCP tools 로딩 |
-| 💬 응답 | 최종 JSON `answer` 또는 SSE `delta`/`tool_call`/`final`/`speech_text`/`audio`/`audio_done` event 반환 |
+| 💬 응답 | 최종 JSON `answer` 또는 SSE `delta`/`thinking_delta`/`internal_delta`/`tool_call`/`final`/`speech_text`/`audio`/`audio_done` event 반환 |
 
 ## 🎯 현재 목표
 
@@ -102,7 +102,7 @@ backend/
 6. `src/llm/`가 agent별 model 설정과 선택 provider API key로 `ChatOpenRouter` 또는 `ChatCerebras`를 생성한다.
 7. `src/tools/`가 RAG MCP server에서 read-only MCP tools를 비동기로 로딩하고 캐시한다.
 8. 일반 요청에서는 Graph stream의 `final` event를 `answer` 문자열로 변환해 반환한다.
-9. SSE 요청에서는 LangChain `astream_events()`에서 나온 text/tool event를 backend event로 매핑해 `delta`, `tool_call`, `final` event를 순차 전송한다.
+9. SSE 요청에서는 LangGraph `astream(..., version="v2")`에서 나온 text/tool/custom event를 backend event로 매핑해 `delta`, `thinking_delta`, `internal_delta`, `tool_call`, `final` event를 순차 전송한다.
 10. `speech_text_agent`가 state의 `final_response`를 읽고 structured output으로 `final_response_script`를 저장한다.
 11. `speech_synthesis_node`가 script만 읽어 ElevenLabs에 전달하고 `speech_text`, `audio`, `audio_done` event를 전송한다.
 
@@ -246,7 +246,7 @@ Daphne 실행은 `RUNTIME_HOST`와 `RUNTIME_PORT`를 사용한다. `RUNTIME_RELO
 }
 ```
 
-응답은 SSE event다. 생성 중에는 `delta` event가 여러 번 전송되고, 완료 시 `final` event가 한 번 전송된다.
+응답은 SSE event다. 생성 중에는 `delta` event가 여러 번 전송되고, 완료 시 `final` event가 한 번 전송된다. 모델이 공개 reasoning content block을 제공하면 `thinking_delta` event로 분리된다. 내부 agent 출력은 FE가 일반 답변으로 누적하지 않도록 `internal_delta` event로 분리된다.
 
 ```text
 event: delta
@@ -261,6 +261,20 @@ data: {"type": "delta", "content": "주민센터에서 "}
 ```text
 event: final
 data: {"type": "final", "answer": "신청은 주민센터에서 할 수 있습니다.", "tool_calls": [], "sources": [], "session_id": "optional-session-id"}
+```
+
+`thinking_delta`는 provider/LangChain이 외부로 공개한 reasoning token만 전달한다. 숨겨진 chain-of-thought를 수집하거나 생성하지 않는다.
+
+```text
+event: thinking_delta
+data: {"type": "thinking_delta", "agent": "main_agent", "content": "..."}
+```
+
+`internal_delta`는 `speech_text_agent` 같은 내부 agent token을 전달한다. 현재 FE는 이 이벤트를 일반 답변으로 표시하지 않아도 되며, backend는 같은 이벤트를 `logger.debug`로 남기되 토큰 본문은 로그에 넣지 않고 글자 수만 기록한다.
+
+```text
+event: internal_delta
+data: {"type": "internal_delta", "agent": "speech_text_agent", "kind": "text", "content": "..."}
 ```
 
 `final` event는 기존 `ChatResponse`와 같은 필드(`answer`, `tool_calls`, `sources`, `session_id`)를 사용한다. 이후 `speech_text_agent`가 `final_response_script`를 state에 저장하고, `speech_synthesis_node`가 그 값을 ElevenLabs로 보내 `speech_text`, `audio`, `audio_done` event를 이어 보낸다. `session_id`는 `/chat`과 동일하게 LangGraph `thread_id`로 전달되므로 같은 세션의 대화 문맥이 이어진다. 자세한 정책은 `../docs/chat_thread_policy.md`를 참고한다.

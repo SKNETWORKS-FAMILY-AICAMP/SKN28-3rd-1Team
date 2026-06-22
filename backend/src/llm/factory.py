@@ -18,7 +18,15 @@ def create_agent_llm(agent: LlmAgentName) -> BaseChatModel:
     request = llm_settings.request
     provider_settings = llm_settings.providers
 
-    logger.info("creating LLM agent=%s provider=%s model=%s", agent, provider, model)
+    logger.debug(
+        "creating LLM",
+        extra={
+            "event": "llm.created",
+            "agent": agent,
+            "provider": provider,
+            "model": model,
+        },
+    )
     if provider == "openai":
         return create_chat_openai(
             provider_settings=provider_settings,

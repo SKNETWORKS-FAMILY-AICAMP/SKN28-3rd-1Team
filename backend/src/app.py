@@ -12,7 +12,14 @@ from settings import settings
 
 configure_logging()
 logger = get_logger(__name__)
-logger.info("Starting %s v%s", settings.metadata.name, settings.metadata.version)
+logger.info(
+    "backend service starting",
+    extra={
+        "event": "service.starting",
+        "service": settings.metadata.name,
+        "version": settings.metadata.version,
+    },
+)
 
 app = application
 
@@ -27,6 +34,10 @@ def main() -> None:
             settings.runtime.host,
             "-p",
             str(settings.runtime.port),
+            "-v",
+            "0",
+            "--access-log",
+            os.devnull,
             "app:application",
         ],
         check=True,

@@ -36,10 +36,14 @@ def _normalize_tool_names(tools: list[BaseTool]) -> list[BaseTool]:
         if safe_name == original_name:
             continue
 
-        logger.info(
-            "renaming MCP tool for LangChain compatibility original=%s safe=%s",
-            original_name,
-            safe_name,
+        logger.debug(
+            "renaming MCP tool for LangChain compatibility",
+            extra={
+                "event": "rag_mcp.tool_renamed",
+                "original_tool": original_name,
+                "safe_tool": safe_name,
+                "reason": "langchain_name_compatibility",
+            },
         )
         tool.name = safe_name
         original_description = tool.description or ""
@@ -71,7 +75,14 @@ def _handle_tool_errors(tools: list[BaseTool]) -> list[BaseTool]:
 
 async def load_rag_mcp_tools() -> list[BaseTool]:
     if not settings.rag.tools_enabled:
-        logger.info("RAG MCP tools disabled by configuration")
+        logger.debug(
+            "RAG MCP tools disabled by configuration",
+            extra={
+                "event": "rag_mcp.tools_disabled",
+                "source": "rag_mcp",
+                "configured": False,
+            },
+        )
         return []
 
     client = MultiServerMCPClient(
@@ -90,10 +101,22 @@ async def load_rag_mcp_tools() -> list[BaseTool]:
         raise RuntimeError("RAG MCP server returned no tools.")
 
     tools = _handle_tool_errors(_normalize_tool_names(tools))
-    logger.info(
-        "loaded RAG MCP tools url=%s tools=%s",
-        settings.rag.mcp_url,
-        [tool.name for tool in tools],
+    logger.debug(
+        "loaded RAG MCP tools",
+        extra={
+            "event": "rag_mcp.tools_loaded",
+            "source": "rag_mcp",
+            "tool_count": len(tools),
+        },
+    )
+    logger.debug(
+        "loaded RAG MCP tool names",
+        extra={
+            "event": "rag_mcp.tool_names_loaded",
+            "source": "rag_mcp",
+            "mcp_url": settings.rag.mcp_url,
+            "tools": [tool.name for tool in tools],
+        },
     )
     return tools
 
