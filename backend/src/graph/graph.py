@@ -70,7 +70,10 @@ def _main_agent_result_node(state: ChatTurnState) -> dict[str, Any]:
 
     _writer()(
         {
-            "type": "final",
+            "type": "agent.text.final",
+            "source_agent": "main_agent",
+            "node": "main_agent_result",
+            "text": final_response,
             "answer": final_response,
             "sources": used_information,
             "session_id": state.get("session_id"),
@@ -92,7 +95,9 @@ def _speech_text_result_node(state: ChatTurnState) -> dict[str, Any]:
 
     _writer()(
         {
-            "type": "speech_text",
+            "type": "speech_text.final",
+            "source_agent": "speech_text_agent",
+            "node": "speech_text_result",
             "text": script,
             "session_id": state.get("session_id"),
             "turn_id": state.get("turn_id"),
@@ -167,7 +172,8 @@ def _speech_synthesis_payload(event: dict[str, Any]) -> dict[str, Any] | None:
     event_type = event.get("type")
     if event_type == "tts.audio.chunk":
         return {
-            "type": "audio",
+            "type": "tts.audio.chunk",
+            "node": "speech_synthesis_node",
             "audio_base64": event.get("audio_base64"),
             "mime_type": event.get("mime_type"),
             "chunk_index": event.get("chunk_index"),
@@ -176,7 +182,8 @@ def _speech_synthesis_payload(event: dict[str, Any]) -> dict[str, Any] | None:
 
     if event_type == "tts.completed":
         return {
-            "type": "audio_done",
+            "type": "tts.completed",
+            "node": "speech_synthesis_node",
             "chunks": event.get("chunks", 0),
             "configured": event.get("configured"),
         }

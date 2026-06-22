@@ -42,7 +42,7 @@ def message_event(
 
 
 class ChatGraphRunnerStreamingTest(unittest.IsolatedAsyncioTestCase):
-    async def test_main_agent_text_still_streams_as_public_delta(self) -> None:
+    async def test_main_agent_text_streams_as_agent_text_delta(self) -> None:
         runner = ChatGraphRunner(thread_context=ChatThreadContextStore())
         runner._graph = FakeGraph(
             [
@@ -58,9 +58,19 @@ class ChatGraphRunnerStreamingTest(unittest.IsolatedAsyncioTestCase):
             async for event in runner.run_stream("hello", session_id="conversation-1")
         ]
 
-        self.assertEqual(events, [{"type": "delta", "content": "public token"}])
+        self.assertEqual(
+            events,
+            [
+                {
+                    "type": "agent.text.delta",
+                    "source_agent": "main_agent",
+                    "node": "main_agent",
+                    "text": "public token",
+                }
+            ],
+        )
 
-    async def test_speech_text_agent_text_streams_as_internal_delta_and_debug_log(self) -> None:
+    async def test_speech_text_agent_text_streams_as_speech_text_delta_and_debug_log(self) -> None:
         runner = ChatGraphRunner(thread_context=ChatThreadContextStore())
         runner._graph = FakeGraph(
             [
@@ -81,10 +91,10 @@ class ChatGraphRunnerStreamingTest(unittest.IsolatedAsyncioTestCase):
             events,
             [
                 {
-                    "type": "internal_delta",
-                    "agent": "speech_text_agent",
-                    "kind": "text",
-                    "content": "simplified token",
+                    "type": "speech_text.delta",
+                    "source_agent": "speech_text_agent",
+                    "node": "speech_text_agent",
+                    "text": "simplified token",
                 }
             ],
         )
@@ -97,12 +107,12 @@ class ChatGraphRunnerStreamingTest(unittest.IsolatedAsyncioTestCase):
         extra = internal_logs[0].kwargs["extra"]
         self.assertEqual(extra["conversation_id"], "conversation-1")
         self.assertEqual(extra["agent"], "speech_text_agent")
-        self.assertEqual(extra["stream_event_type"], "internal_delta")
+        self.assertEqual(extra["stream_event_type"], "speech_text.delta")
         self.assertEqual(extra["stream_kind"], "text")
         self.assertEqual(extra["token_chars"], len("simplified token"))
         self.assertNotIn("simplified token", str(internal_logs[0]))
 
-    async def test_reasoning_block_streams_as_thinking_delta_and_debug_log(self) -> None:
+    async def test_reasoning_block_streams_as_agent_reasoning_delta_and_debug_log(self) -> None:
         runner = ChatGraphRunner(thread_context=ChatThreadContextStore())
         runner._graph = FakeGraph(
             [
@@ -130,9 +140,10 @@ class ChatGraphRunnerStreamingTest(unittest.IsolatedAsyncioTestCase):
             events,
             [
                 {
-                    "type": "thinking_delta",
-                    "agent": "main_agent",
-                    "content": "visible reasoning token",
+                    "type": "agent.reasoning.delta",
+                    "source_agent": "main_agent",
+                    "node": "main_agent",
+                    "text": "visible reasoning token",
                 }
             ],
         )
@@ -144,10 +155,101 @@ class ChatGraphRunnerStreamingTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(internal_logs), 1)
         extra = internal_logs[0].kwargs["extra"]
         self.assertEqual(extra["agent"], "main_agent")
-        self.assertEqual(extra["stream_event_type"], "thinking_delta")
-        self.assertEqual(extra["stream_kind"], "thinking")
+        self.assertEqual(extra["stream_event_type"], "agent.reasoning.delta")
+        self.assertEqual(extra["stream_kind"], "reasoning")
         self.assertEqual(extra["token_chars"], len("visible reasoning token"))
         self.assertNotIn("visible reasoning token", str(internal_logs[0]))
+
+    async def test_updates_stream_as_node_lifecycle_event(self) -> None:
+        runner = ChatGraphRunner(thread_context=ChatThreadContextStore())
+        runner._graph = FakeGraph(
+            [
+                {
+                    "type": "updates",
+                    "data": {
+                        "main_agent": {
+                            "messages": [],
+                            "final_response": "ok",
+                        }
+                    },
+                }
+            ]
+        )
+
+        events = [
+            event
+            async for event in runner.run_stream("hello", session_id="conversation-1")
+        ]
+
+        self.assertEqual(
+            events,
+            [
+                {
+                    "type": "node.updated",
+                    "source": "langgraph.updates",
+                    "node": "main_agent",
+                    "nodes": [
+                        {
+                            "node": "main_agent",
+                            "keys": ["final_response", "messages"],
+                        }
+                    ],
+                }
+            ],
+        )
+
+    async def test_tasks_stream_as_task_lifecycle_event(self) -> None:
+        runner = ChatGraphRunner(thread_context=ChatThreadContextStore())
+        runner._graph = FakeGraph(
+            [
+                {
+                    "type": "tasks",
+                    "data": {
+                        "id": "task-1",
+                        "name": "main_agent",
+                        "triggers": ["start:main_agent"],
+                        "input": {},
+                    },
+                },
+                {
+                    "type": "tasks",
+                    "data": {
+                        "id": "task-1",
+                        "name": "main_agent",
+                        "error": None,
+                        "interrupts": [],
+                        "result": {"messages": []},
+                    },
+                },
+            ]
+        )
+
+        events = [
+            event
+            async for event in runner.run_stream("hello", session_id="conversation-1")
+        ]
+
+        self.assertEqual(
+            events,
+            [
+                {
+                    "type": "task.started",
+                    "source": "langgraph.tasks",
+                    "task_id": "task-1",
+                    "node": "main_agent",
+                    "triggers": ["start:main_agent"],
+                },
+                {
+                    "type": "task.completed",
+                    "source": "langgraph.tasks",
+                    "task_id": "task-1",
+                    "node": "main_agent",
+                    "error": None,
+                    "result_keys": ["messages"],
+                    "interrupt_count": 0,
+                },
+            ],
+        )
 
 
 if __name__ == "__main__":
