@@ -27,7 +27,7 @@ export function CategoriesSection() {
         {categories.map((c, i) => (
           <FadeIn key={c.title} delay={i * 80}>
             <Link
-              href={`/chat?q=${encodeURIComponent(c.q)}`}
+              href={`/chat_page?q=${encodeURIComponent(c.q)}`}
               className="group flex items-center gap-4 rounded-3xl border border-border bg-card p-5 shadow-sm transition-all hover:-translate-y-1 hover:border-primary/40 hover:shadow-md"
             >
               <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-accent text-accent-foreground transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
