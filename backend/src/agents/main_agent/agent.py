@@ -7,7 +7,7 @@ from langchain.agents import create_agent
 from langchain.agents.middleware import ModelRequest, dynamic_prompt
 from langgraph.checkpoint.memory import InMemorySaver
 
-from llm import get_chat_llm
+from llm import get_main
 from logger import get_logger
 from tools import MAIN_AGENT_PROFILE, get_tools
 from utils import application_state, render_prompt, state_json, user_input_state
@@ -26,7 +26,7 @@ async def create_main_agent() -> Any:
     from graph.state import ChatTurnState
 
     _MAIN_AGENT = create_agent(
-        model=get_chat_llm(),
+        model=get_main(),
         tools=await get_tools(agent_name=MAIN_AGENT_PROFILE),
         middleware=[_main_agent_prompt(render_prompt(_SYSTEM_PROMPT_TEMPLATE))],
         state_schema=ChatTurnState,

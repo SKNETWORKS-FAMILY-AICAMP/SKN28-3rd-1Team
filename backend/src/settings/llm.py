@@ -1,36 +1,34 @@
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+LlmAgentName = Literal["main", "sanitize", "window"]
+DEFAULT_MAIN_PROVIDER = "cerebras"
+DEFAULT_MAIN_MODEL = "gpt-oss-120b"
+DEFAULT_TIMEOUT_MS = 60_000
+DEFAULT_MAX_RETRIES = 2
+DEFAULT_OPENROUTER_APP_TITLE = "SKN28 Backend Agent"
+DEFAULT_OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 
-class LlmAgentModelSettings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="LLM_", extra="ignore")
 
-    # Main agent model runtime.
-    chat_provider: str = "cerebras"
-    chat_model: str = "gpt-oss-120b"
-    chat_temperature: float = 0.2
-    chat_timeout_ms: int = 60_000
-    chat_max_retries: int = 2
-    chat_max_tokens: int | None = Field(default=None, gt=0)
-    chat_reasoning_effort: str | None = None
+class LlmAgentSettings(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="", extra="ignore")
 
-    # Speech text agent model runtime.
-    speech_text_provider: str | None = None
-    speech_text_model: str = "gpt-oss-120b"
-    speech_text_temperature: float = 0.0
-    speech_text_timeout_ms: int = 60_000
-    speech_text_max_retries: int = 2
-    speech_text_max_tokens: int | None = Field(default=None, gt=0)
-    speech_text_reasoning_effort: str | None = None
+    main_provider: str = Field(default=DEFAULT_MAIN_PROVIDER, validation_alias="LLM_AGENT_MAIN_PROVIDER")
+    main_model: str = Field(default=DEFAULT_MAIN_MODEL, validation_alias="LLM_AGENT_MAIN_MODEL")
+    sanitize_provider: str | None = Field(default=None, validation_alias="LLM_AGENT_SANITIZE_PROVIDER")
+    sanitize_model: str | None = Field(default=None, validation_alias="LLM_AGENT_SANITIZE_MODEL")
+    window_provider: str | None = Field(default=None, validation_alias="LLM_AGENT_WINDOW_PROVIDER")
+    window_model: str | None = Field(default=None, validation_alias="LLM_AGENT_WINDOW_MODEL")
 
     @field_validator(
-        "chat_max_tokens",
-        "speech_text_max_tokens",
-        "chat_reasoning_effort",
-        "speech_text_reasoning_effort",
-        "speech_text_provider",
+        "sanitize_provider",
+        "sanitize_model",
+        "window_provider",
+        "window_model",
         mode="before",
     )
     @classmethod
@@ -39,26 +37,33 @@ class LlmAgentModelSettings(BaseSettings):
             return None
         return value
 
+    def provider(self, agent: LlmAgentName) -> str:
+        if agent == "main":
+            return self.main_provider
+        if agent == "sanitize":
+            return self.sanitize_provider or self.main_provider
+        if agent == "window":
+            return self.window_provider or self.main_provider
+        raise ValueError(f"Unsupported LLM agent: {agent}")
 
-class LlmProviderSettings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="LLM_", extra="ignore")
+    def model(self, agent: LlmAgentName) -> str:
+        if agent == "main":
+            return self.main_model
+        if agent == "sanitize":
+            return self.sanitize_model or self.main_model
+        if agent == "window":
+            return self.window_model or self.main_model
+        raise ValueError(f"Unsupported LLM agent: {agent}")
 
-    # Provider credentials.
-    openrouter_api_key: SecretStr | None = Field(default=None, validation_alias="OPENROUTER_API_KEY")
-    cerebras_api_key: SecretStr | None = Field(default=None, validation_alias="CEREBRAS_API_KEY")
 
-    # OpenRouter provider options.
-    openrouter_app_title: str = "SKN28 Backend Agent"
-    openrouter_app_url: str | None = None
-    openrouter_base_url: str = "https://openrouter.ai/api/v1"
-    openrouter_provider_order: list[str] = Field(default_factory=lambda: ["cerebras"])
-    openrouter_allow_fallbacks: bool = True
-    openrouter_require_parameters: bool = False
+class LlmRequestSettings(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="", extra="ignore")
 
-    # Cerebras provider options.
-    cerebras_base_url: str | None = None
+    timeout_ms: int = Field(default=DEFAULT_TIMEOUT_MS, gt=0, validation_alias="LLM_REQUEST_TIMEOUT_MS")
+    max_retries: int = Field(default=DEFAULT_MAX_RETRIES, ge=0, validation_alias="LLM_REQUEST_MAX_RETRIES")
+    max_tokens: int | None = Field(default=None, gt=0, validation_alias="LLM_RESPONSE_MAX_TOKENS")
 
-    @field_validator("openrouter_app_url", "cerebras_base_url", mode="before")
+    @field_validator("max_tokens", mode="before")
     @classmethod
     def _empty_str_to_none(cls, value: object) -> object:
         if isinstance(value, str) and not value.strip():
@@ -66,12 +71,77 @@ class LlmProviderSettings(BaseSettings):
         return value
 
 
+class LlmProviderSettings(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="", extra="ignore")
+
+    openai_api_key: SecretStr | None = Field(default=None, validation_alias="LLM_PROVIDER_OPENAI_API_KEY")
+    openrouter_api_key: SecretStr | None = Field(default=None, validation_alias="LLM_PROVIDER_OPENROUTER_API_KEY")
+    cerebras_api_key: SecretStr | None = Field(default=None, validation_alias="LLM_PROVIDER_CEREBRAS_API_KEY")
+
+    openai_base_url: str | None = Field(default=None, validation_alias="LLM_PROVIDER_OPENAI_BASE_URL")
+
+    openrouter_app_title: str = Field(
+        default=DEFAULT_OPENROUTER_APP_TITLE,
+        validation_alias="LLM_PROVIDER_OPENROUTER_APP_TITLE",
+    )
+    openrouter_app_url: str | None = Field(default=None, validation_alias="LLM_PROVIDER_OPENROUTER_APP_URL")
+    openrouter_base_url: str | None = Field(
+        default=DEFAULT_OPENROUTER_BASE_URL,
+        validation_alias="LLM_PROVIDER_OPENROUTER_BASE_URL",
+    )
+    openrouter_provider_order: list[str] = Field(
+        default_factory=list,
+        validation_alias="LLM_PROVIDER_OPENROUTER_PROVIDER_ORDER",
+    )
+    openrouter_allow_fallbacks: bool = Field(
+        default=True,
+        validation_alias="LLM_PROVIDER_OPENROUTER_ALLOW_FALLBACKS",
+    )
+    openrouter_require_parameters: bool = Field(
+        default=False,
+        validation_alias="LLM_PROVIDER_OPENROUTER_REQUIRE_PARAMETERS",
+    )
+
+    cerebras_base_url: str | None = Field(default=None, validation_alias="LLM_PROVIDER_CEREBRAS_BASE_URL")
+
+    @field_validator(
+        "openai_api_key",
+        "openrouter_api_key",
+        "cerebras_api_key",
+        "openai_base_url",
+        "openrouter_app_url",
+        "openrouter_base_url",
+        "cerebras_base_url",
+        mode="before",
+    )
+    @classmethod
+    def _empty_str_to_none(cls, value: object) -> object:
+        if isinstance(value, str) and not value.strip():
+            return None
+        return value
+
+    @field_validator("openrouter_provider_order", mode="before")
+    @classmethod
+    def _empty_order_to_list(cls, value: object) -> object:
+        if isinstance(value, str) and not value.strip():
+            return []
+        return value
+
+
 class LlmSettings:
     def __init__(
         self,
         *,
-        agent_models: LlmAgentModelSettings | None = None,
+        agents: LlmAgentSettings | None = None,
+        request: LlmRequestSettings | None = None,
         providers: LlmProviderSettings | None = None,
     ) -> None:
-        self.agent_models = agent_models or LlmAgentModelSettings()
+        self.agents = agents or LlmAgentSettings()
+        self.request = request or LlmRequestSettings()
         self.providers = providers or LlmProviderSettings()
+
+    def agent_provider(self, agent: LlmAgentName) -> str:
+        return self.agents.provider(agent)
+
+    def agent_model(self, agent: LlmAgentName) -> str:
+        return self.agents.model(agent)

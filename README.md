@@ -148,7 +148,7 @@
 | --- | --- |
 | Django ASGI `/chat` | 프론트엔드가 호출하는 메인 채팅 API와 SSE stream입니다. |
 | LangGraph Agent | `session_id` 기반으로 대화 흐름을 이어갈 수 있도록 구성합니다. |
-| LLM Provider | `ChatOpenRouter` 또는 `ChatCerebras`로 LLM을 호출합니다. |
+| LLM Provider | `ChatOpenAI`, `ChatOpenRouter`, `ChatCerebras`로 LLM을 호출합니다. |
 | MCP Tool | RAG 검색 기능을 Agent tool로 연결하기 위한 구조입니다. |
 | LangSmith | LLM 호출과 tool calling trace를 검증합니다. |
 
@@ -159,7 +159,7 @@
 | 영역 | 상태 |
 | --- | --- |
 | Backend `/chat` API | Django Channels에서 사용자 메시지를 받아 Agent 답변을 반환합니다. |
-| LLM Provider 연동 | `LLM_CHAT_PROVIDER` 설정으로 `ChatOpenRouter` 또는 `ChatCerebras`를 선택합니다. |
+| LLM Provider 연동 | `LLM_AGENT_<AGENT>_PROVIDER` 설정으로 agent별 LLM provider와 model을 선택합니다. |
 | LangGraph Agent | `create_agent()`와 `InMemorySaver` 기반 session/thread 처리를 사용합니다. |
 | LangSmith 검증 | LLM 호출 trace와 mock tool call trace를 확인했습니다. |
 | RAG Backend | 문서 ingest, 검색 API, read-only MCP endpoint 구조가 있습니다. |
@@ -238,6 +238,7 @@ SKN28-3rd-1Team/
 | `streamlit_3rd/README.md` | legacy Streamlit 상담 UI 구조와 backend 연결 방법 |
 | `deploy/README.md` | 통합 Docker Compose, Makefile 실행, 포트 정보 |
 | `docs/README.md` | agent guideline, 온보딩, 도구 설정 등 팀 문서 |
+| `docs/llm_env_naming_convention.md` | LLM agent/provider/model env naming과 Infisical 동기화 기준 |
 | `rag/related/rag-red-team/README.md` | Neo4j red-team graph 실험과 MCP 실행 방법 |
 | `presentation/test-data/README.md` | 발표용 평가 데이터, benchmark, judge 결과 구조 |
 
@@ -287,8 +288,7 @@ rag-be -> redis://redis:6379/0
 Legacy Streamlit UI까지 실행해야 할 때만 `cd deploy/makefile && make up-legacy`를 사용한다.
 
 `/chat`은 실제 LLM provider 호출이므로 `deploy/docker/.env_backend`에
-선택한 provider의 API key가 유효해야 한다. 기본값은 OpenRouter이며
-`OPENROUTER_API_KEY`를 사용한다.
+선택한 provider의 `LLM_PROVIDER_*_API_KEY`가 유효해야 한다.
 
 Makefile target이 있는 서비스는 `make`를 우선 사용한다. Python 서비스의
 `make start`, `make test`, `make check` 계열 target은 먼저 `uv sync`를 실행해
@@ -436,6 +436,7 @@ make fe-check
 - 환경별로 달라지는 non-secret runtime config도 active service가 실제로 읽는 값이면 Infisical plain config로 중앙 관리할 수 있습니다.
 - env를 직접 확인해야 할 때는 local `.env`를 읽지 말고 `varlock load --agent`로 redacted 상태만 확인합니다.
 - Makefile target이 Infisical/Varlock을 지원하는 경우 `make env-check`로 provider 주입과 schema 계약을 검증합니다.
+- env var, Infisical, Varlock, LLM provider/model 이름을 바꿀 때는 `AGENTS.md`의 `env-var-governance` skill과 `docs/llm_env_naming_convention.md`를 먼저 확인합니다.
 
 ### 2) 서비스별 환경 파일
 

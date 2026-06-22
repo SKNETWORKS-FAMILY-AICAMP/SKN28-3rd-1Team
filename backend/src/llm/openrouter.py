@@ -16,31 +16,27 @@ def create_chat_openrouter(
     *,
     provider_settings: LlmProviderSettings,
     model: str,
-    temperature: float,
     timeout_ms: int,
     max_retries: int,
     max_tokens: int | None,
-    reasoning_effort: str | None,
 ) -> ChatOpenRouter:
     if not openrouter_configured(provider_settings):
-        raise RuntimeError("OPENROUTER_API_KEY is not set.")
+        raise RuntimeError("LLM_PROVIDER_OPENROUTER_API_KEY is not set.")
 
     kwargs: dict[str, Any] = {
         "model": model,
         "api_key": provider_settings.openrouter_api_key,
-        "base_url": provider_settings.openrouter_base_url,
         "app_title": provider_settings.openrouter_app_title,
         "app_url": provider_settings.openrouter_app_url,
-        "temperature": temperature,
-        "timeout": int(timeout_ms / 1000),
+        "timeout": timeout_ms,
         "max_retries": max_retries,
         "streaming": True,
         "openrouter_provider": _provider_routing(provider_settings),
     }
+    if provider_settings.openrouter_base_url is not None:
+        kwargs["base_url"] = provider_settings.openrouter_base_url
     if max_tokens is not None:
-        kwargs["max_completion_tokens"] = max_tokens
-    if reasoning_effort:
-        kwargs["reasoning"] = {"effort": reasoning_effort}
+        kwargs["max_tokens"] = max_tokens
 
     return ChatOpenRouter(**kwargs)
 
