@@ -335,7 +335,7 @@ def _parse_sse_event(
     try:
         payload = json.loads(data)
     except json.JSONDecodeError as error:
-        logger.warning("chat_backend_sse_parse_failed", event=event_name)
+        logger.warning("chat_backend_sse_parse_failed", sse_event=event_name)
         raise ChatBackendError("백엔드 스트림 이벤트를 해석할 수 없습니다.") from error
 
     if not isinstance(payload, dict):
@@ -357,7 +357,7 @@ def _parse_sse_event(
         message = str(payload.get("message") or "백엔드 스트림 처리 중 오류가 발생했습니다.")
         raise ChatBackendError(message)
 
-    logger.info("chat_backend_sse_event_ignored", event=event_name)
+    logger.info("chat_backend_sse_event_ignored", sse_event=event_name)
     return ChatStreamEvent(type="ignored")
 
 

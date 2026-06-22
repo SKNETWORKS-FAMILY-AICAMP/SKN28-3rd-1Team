@@ -8,7 +8,7 @@ from agents.main_agent import create_main_agent
 from agents.screen_control_agent import create_screen_control_agent
 from agents.speech_text_agent import (
     SpeechTextAgent,
-    create_final_response_script,
+    create_final_response_script_result,
     create_speech_text_agent,
 )
 from graph.state import ChatTurnState
@@ -77,8 +77,11 @@ def _speech_text_agent_node(speech_text_agent: SpeechTextAgent) -> Any:
         state: ChatTurnState,
         config: RunnableConfig | None = None,
     ) -> dict[str, Any]:
+        if not state.get("audio_enabled", True):
+            return {"final_response_script": ""}
+
         final_response = str(state.get("final_response") or "").strip()
-        script = await create_final_response_script(
+        result = await create_final_response_script_result(
             speech_text_agent,
             final_response,
             config=config or {},
@@ -87,12 +90,14 @@ def _speech_text_agent_node(speech_text_agent: SpeechTextAgent) -> Any:
         _writer()(
             {
                 "type": "speech_text",
-                "text": script,
+                "text": result.text,
+                "source": result.source,
+                "llm_used": result.llm_used,
                 "session_id": state.get("session_id"),
                 "turn_id": state.get("turn_id"),
             }
         )
-        return {"final_response_script": script}
+        return {"final_response_script": result.text}
 
     return invoke_speech_text_agent
 
@@ -102,6 +107,9 @@ def _speech_synthesis_node(speech_synthesis_node: SpeechSynthesisNode) -> Any:
         state: ChatTurnState,
         config: RunnableConfig | None = None,
     ) -> dict[str, Any]:
+        if not state.get("audio_enabled", True):
+            return {}
+
         text = str(state.get("final_response_script") or "").strip()
         if not text:
             return {}

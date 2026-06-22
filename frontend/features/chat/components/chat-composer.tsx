@@ -1,4 +1,6 @@
 import { SendHorizonal, Sparkles } from "lucide-react"
+import type { ReactNode } from "react"
+
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 
@@ -6,11 +8,12 @@ type ChatComposerProps = {
   input: string
   isBusy: boolean
   error?: Error
+  audioPlayer?: ReactNode
   onInputChange: (value: string) => void
   onSubmit: () => void
 }
 
-export function ChatComposer({ input, isBusy, error, onInputChange, onSubmit }: ChatComposerProps) {
+export function ChatComposer({ input, isBusy, error, audioPlayer, onInputChange, onSubmit }: ChatComposerProps) {
   return (
     <form
       onSubmit={(event) => {
@@ -44,6 +47,7 @@ export function ChatComposer({ input, isBusy, error, onInputChange, onSubmit }: 
           <span className="sr-only">전송</span>
         </Button>
       </div>
+      {audioPlayer}
       <p className="mt-3 text-center text-xs leading-5 text-[#76716f]">
         <Sparkles className="inline-block size-3" /> 로디는 참고용 정보를 제공해요. 구체적 사안은 변호사 상담을 권장드려요.
       </p>

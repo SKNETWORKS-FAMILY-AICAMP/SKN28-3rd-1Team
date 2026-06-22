@@ -5,6 +5,7 @@ import {
   ConversationContent,
   ConversationScrollButton,
 } from "@/components/ai-elements/conversation"
+import { ChatAudioPlayer } from "@/features/chat/components/chat-audio-player"
 import { ChatComposer } from "@/features/chat/components/chat-composer"
 import { ChatEmptyState } from "@/features/chat/components/chat-empty-state"
 import { ChatMessageList } from "@/features/chat/components/chat-message-list"
@@ -19,6 +20,13 @@ export function ChatInterface() {
     setBirthYear,
     location,
     setLocation,
+    audioEnabled,
+    setAudioEnabled,
+    audioPlayer,
+    playAudio,
+    pauseAudio,
+    replayAudio,
+    seekAudio,
     send,
     status,
     error,
@@ -28,7 +36,7 @@ export function ChatInterface() {
 
   return (
     <div className="mx-auto flex h-[calc(100dvh-4rem)] w-full max-w-3xl flex-col px-4 sm:px-6">
-      <div className="flex-1 overflow-hidden rounded-[40px] bg-white">
+      <div className="min-h-0 flex-1 overflow-hidden rounded-[40px] bg-white">
         <Conversation className="h-full bg-[#faf6f1]">
           <ConversationContent className="gap-6 p-6">
             {empty ? (
@@ -51,6 +59,17 @@ export function ChatInterface() {
         input={input}
         isBusy={isBusy}
         error={error}
+        audioPlayer={
+          <ChatAudioPlayer
+            player={audioPlayer}
+            audioEnabled={audioEnabled}
+            onAudioEnabledChange={setAudioEnabled}
+            onPlay={playAudio}
+            onPause={pauseAudio}
+            onReplay={replayAudio}
+            onSeek={seekAudio}
+          />
+        }
         onInputChange={setInput}
         onSubmit={() => send(input)}
       />
