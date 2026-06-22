@@ -13,8 +13,8 @@ from django.urls import path
 from django.views.decorators.csrf import csrf_exempt
 from pydantic import ValidationError
 
-from api.chat import ChatRequest, run_chat
-from api.dependencies import get_chat_graph_runner
+from django_backend.dependencies import get_chat_graph_runner
+from django_backend.schemas import ChatStreamRequest
 from logger import get_logger
 from settings import settings
 
@@ -42,47 +42,6 @@ def dependencies(_: HttpRequest) -> JsonResponse:
 
 
 @csrf_exempt
-async def chat(request: HttpRequest) -> JsonResponse:
-    if request.method != "POST":
-        return HttpResponseNotAllowed(["POST"])
-
-    try:
-        payload = json.loads(request.body.decode("utf-8") or "{}")
-    except json.JSONDecodeError:
-        return JsonResponse(
-            {"detail": "JSON body를 전송해 주세요."},
-            status=400,
-        )
-
-    try:
-        chat_request = ChatRequest.model_validate(payload)
-    except ValidationError as exc:
-        return JsonResponse(
-            {"detail": json.loads(exc.json())},
-            status=422,
-        )
-
-    try:
-        response = await run_chat(chat_request)
-    except Exception:
-        logger.exception(
-            "chat agent execution failed",
-            extra={
-                "event": "chat.invocation.failed",
-                "conversation_id": chat_request.session_id,
-                "endpoint": "/chat",
-                "message_chars": len(chat_request.message.strip()),
-            },
-        )
-        return JsonResponse(
-            {"detail": "Agent 실행 중 오류가 발생했습니다."},
-            status=500,
-        )
-
-    return JsonResponse(response.model_dump())
-
-
-@csrf_exempt
 async def chat_stream(request: HttpRequest) -> StreamingHttpResponse | JsonResponse:
     if request.method != "POST":
         return HttpResponseNotAllowed(["POST"])
@@ -96,7 +55,7 @@ async def chat_stream(request: HttpRequest) -> StreamingHttpResponse | JsonRespo
         )
 
     try:
-        chat_request = ChatRequest.model_validate(payload)
+        chat_request = ChatStreamRequest.model_validate(payload)
     except ValidationError as exc:
         return JsonResponse(
             {"detail": json.loads(exc.json())},
@@ -118,7 +77,7 @@ async def chat_stream(request: HttpRequest) -> StreamingHttpResponse | JsonRespo
     return response
 
 
-async def _chat_stream_events(request: ChatRequest) -> AsyncIterator[str]:
+async def _chat_stream_events(request: ChatStreamRequest) -> AsyncIterator[str]:
     try:
         async for event in get_chat_graph_runner().run_stream(
             message=request.message.strip(),
@@ -154,6 +113,5 @@ def _sse_event(payload: dict) -> str:
 urlpatterns = [
     path("health", health),
     path("api/system/dependencies", dependencies),
-    path("chat", chat),
     path("chat/stream", chat_stream),
 ]

@@ -58,7 +58,8 @@ class FakeGraph:
         yield {
             "type": "custom",
             "data": {
-                "type": "final",
+                "type": "agent.text.final",
+                "text": "ok",
                 "answer": "ok",
                 "tool_calls": [],
                 "sources": [],
@@ -71,9 +72,12 @@ class ChatGraphRunnerThreadContextTest(unittest.IsolatedAsyncioTestCase):
         runner = ChatGraphRunner(thread_context=ChatThreadContextStore())
 
         with patch.object(runner, "_get_graph", new_callable=AsyncMock) as get_graph:
-            result = await runner.run_once("hello", session_id=None)
+            events = [
+                event
+                async for event in runner.run_stream("hello", session_id=None)
+            ]
 
-        self.assertEqual(result["answer"], "")
+        self.assertEqual(events, [])
         get_graph.assert_not_called()
 
     async def test_session_id_becomes_thread_id(self) -> None:
@@ -81,9 +85,12 @@ class ChatGraphRunnerThreadContextTest(unittest.IsolatedAsyncioTestCase):
         runner = ChatGraphRunner(thread_context=ChatThreadContextStore())
         runner._graph = fake_graph
 
-        result = await runner.run_once("hello", session_id="conversation-1")
+        events = [
+            event
+            async for event in runner.run_stream("hello", session_id="conversation-1")
+        ]
 
-        self.assertEqual(result["answer"], "ok")
+        self.assertEqual(events[0]["type"], "agent.text.final")
         self.assertEqual(
             fake_graph.config,
             {"configurable": {"thread_id": "conversation-1"}},
