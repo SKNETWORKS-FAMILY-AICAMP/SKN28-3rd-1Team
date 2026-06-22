@@ -8,8 +8,8 @@ export function HeroSection() {
   return (
     <section className="relative overflow-hidden">
       {/* soft decorative blobs */}
-      <div className="pointer-events-none absolute -left-24 top-10 size-72 rounded-full bg-accent/40 blur-3xl" aria-hidden />
-      <div className="pointer-events-none absolute -right-20 bottom-0 size-72 rounded-full bg-primary/20 blur-3xl" aria-hidden />
+      <div className="pointer-events-none absolute -left-24 top-10 size-72 rounded-full bg-accent/30 blur-[120px]" aria-hidden />
+      <div className="pointer-events-none absolute -right-20 bottom-0 size-72 rounded-full bg-primary/15 blur-[120px]" aria-hidden />
 
       <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-16 sm:px-6 md:grid-cols-2 md:py-24">
         <FadeIn direction="left" className="flex flex-col items-start gap-6 text-left">

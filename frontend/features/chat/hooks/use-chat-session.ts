@@ -39,7 +39,7 @@ export function useChatSession() {
   const pathname = usePathname()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [conversationId] = useState(() => {
+  const [conversationId, setConversationId] = useState(() => {
     const queryConversationId = searchParams.get(CONVERSATION_ID_QUERY_PARAM)?.trim()
     return queryConversationId || createConversationId()
   })
@@ -61,7 +61,7 @@ export function useChatSession() {
     }
   }, [])
 
-  const { messages, sendMessage, status, error, clearError } = useChat<LegalChatMessage>({
+  const { messages, setMessages, sendMessage, status, error, clearError } = useChat<LegalChatMessage>({
     id: conversationId,
     onData: handleData,
   })
@@ -74,10 +74,32 @@ export function useChatSession() {
 
       clearError()
       setInput("")
-      void sendMessage({ text })
+      const profile = {
+        birthYear: birthYear.trim(),
+        location: location.trim(),
+      }
+      const body =
+        profile.birthYear || profile.location
+          ? {
+              profile,
+            }
+          : undefined
+
+      void sendMessage({ text }, body ? { body } : undefined)
     },
-    [clearError, isBusy, sendMessage],
+    [birthYear, clearError, isBusy, location, sendMessage],
   )
+
+  const reset = useCallback(() => {
+    clearError()
+    audioChunksRef.current = []
+    setMessages([])
+    setInput("")
+    setBirthYear("")
+    setLocation("")
+    setConversationId(createConversationId())
+    startedRef.current = true
+  }, [clearError, setMessages])
 
   useEffect(() => {
     const queryConversationId = searchParams.get(CONVERSATION_ID_QUERY_PARAM)?.trim()
@@ -116,5 +138,6 @@ export function useChatSession() {
     error,
     isBusy,
     empty: messages.length === 0,
+    reset,
   }
 }

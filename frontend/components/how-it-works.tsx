@@ -24,7 +24,7 @@ const steps = [
 
 export function HowItWorks() {
   return (
-    <section id="how" className="bg-secondary/40">
+    <section id="how" className="bg-gradient-to-b from-background via-secondary/20 to-background border-y border-border/5">
       <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 md:py-24">
         <FadeIn className="mx-auto mb-12 max-w-2xl text-center">
           <h2 className="font-heading text-3xl text-foreground text-balance sm:text-4xl">

@@ -11,8 +11,8 @@ from graph.state import ChatTurnState
 from logger import get_logger
 from memory import get_checkpointer
 from nodes.agent_wrappers import (
+    create_screen_control_agent_node,
     create_speech_text_agent_node,
-    create_window_control_agent_node,
 )
 from nodes.speech_synthesis_node import SpeechSynthesisNode, SpeechSynthesisRequest
 
@@ -24,7 +24,7 @@ def build_chat_turn_graph(
     main_agent: Any,
     speech_text_agent: Any,
     speech_synthesis_node: SpeechSynthesisNode,
-    window_changing_agent: Any,
+    screen_control_agent: Any,
     checkpointer: Any | None = None,
 ) -> Any:
     graph = StateGraph(ChatTurnState)
@@ -35,18 +35,18 @@ def build_chat_turn_graph(
     graph.add_node("speech_text_result", _speech_text_result_node)
     graph.add_node("speech_synthesis_node", _speech_synthesis_node(speech_synthesis_node))
     graph.add_node(
-        "window_changing_agent",
-        create_window_control_agent_node(window_changing_agent),
+        "screen_control_agent",
+        create_screen_control_agent_node(screen_control_agent),
     )
 
     graph.add_edge(START, "main_agent")
     graph.add_edge("main_agent", "main_agent_result")
     graph.add_edge("main_agent_result", "speech_text_agent")
-    graph.add_edge("main_agent_result", "window_changing_agent")
+    graph.add_edge("main_agent_result", "screen_control_agent")
     graph.add_edge("speech_text_agent", "speech_text_result")
     graph.add_edge("speech_text_result", "speech_synthesis_node")
     graph.add_edge("speech_synthesis_node", END)
-    graph.add_edge("window_changing_agent", END)
+    graph.add_edge("screen_control_agent", END)
 
     compile_kwargs: dict[str, Any] = {"name": "chat-turn-graph"}
     if checkpointer is not None:
@@ -59,7 +59,7 @@ async def create_chat_turn_graph() -> Any:
         main_agent=await create_main_agent(),
         speech_text_agent=await create_speech_text_agent(),
         speech_synthesis_node=SpeechSynthesisNode(),
-        window_changing_agent=await create_screen_control_agent(),
+        screen_control_agent=await create_screen_control_agent(),
         checkpointer=get_checkpointer(),
     )
 
