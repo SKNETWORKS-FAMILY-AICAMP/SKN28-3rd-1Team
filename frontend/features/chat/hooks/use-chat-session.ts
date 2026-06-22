@@ -2,10 +2,20 @@
 
 import { useChat } from "@ai-sdk/react"
 import type { DataUIPart } from "ai"
-import { useSearchParams } from "next/navigation"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useCallback, useEffect, useRef, useState } from "react"
 
 import type { ChatMessageData, LegalChatMessage } from "@/features/chat/types"
+
+const CONVERSATION_ID_QUERY_PARAM = "conversation_id"
+
+function createConversationId() {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return `conversation-${crypto.randomUUID()}`
+  }
+
+  return `conversation-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`
+}
 
 function decodeBase64Bytes(value: string): Uint8Array {
   const binary = atob(value)
@@ -26,7 +36,13 @@ function playAudioChunks(audioChunks: Uint8Array[]) {
 }
 
 export function useChatSession() {
+  const pathname = usePathname()
+  const router = useRouter()
   const searchParams = useSearchParams()
+  const [conversationId] = useState(() => {
+    const queryConversationId = searchParams.get(CONVERSATION_ID_QUERY_PARAM)?.trim()
+    return queryConversationId || createConversationId()
+  })
   const [input, setInput] = useState("")
   const [birthYear, setBirthYear] = useState("")
   const [location, setLocation] = useState("")
@@ -45,7 +61,10 @@ export function useChatSession() {
     }
   }, [])
 
-  const { messages, sendMessage, status, error, clearError } = useChat<LegalChatMessage>({ onData: handleData })
+  const { messages, sendMessage, status, error, clearError } = useChat<LegalChatMessage>({
+    id: conversationId,
+    onData: handleData,
+  })
   const isBusy = status === "submitted" || status === "streaming"
 
   const send = useCallback(
@@ -59,6 +78,15 @@ export function useChatSession() {
     },
     [clearError, isBusy, sendMessage],
   )
+
+  useEffect(() => {
+    const queryConversationId = searchParams.get(CONVERSATION_ID_QUERY_PARAM)?.trim()
+    if (queryConversationId === conversationId) return
+
+    const nextSearchParams = new URLSearchParams(searchParams.toString())
+    nextSearchParams.set(CONVERSATION_ID_QUERY_PARAM, conversationId)
+    router.replace(`${pathname}?${nextSearchParams.toString()}`, { scroll: false })
+  }, [conversationId, pathname, router, searchParams])
 
   useEffect(() => {
     if (startedRef.current) return

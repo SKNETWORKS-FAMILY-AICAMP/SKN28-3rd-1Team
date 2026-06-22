@@ -6,11 +6,7 @@ from langgraph.graph import END, START, StateGraph
 
 from agents.main_agent import create_main_agent
 from agents.screen_control_agent import create_screen_control_agent
-from agents.speech_text_agent import (
-    SpeechTextAgent,
-    create_final_response_script,
-    create_speech_text_agent,
-)
+from agents.speech_text_agent import create_speech_text_agent
 from graph.state import ChatTurnState
 from logger import get_logger
 from nodes.speech_synthesis_node import SpeechSynthesisNode, SpeechSynthesisRequest
@@ -21,7 +17,7 @@ logger = get_logger(__name__)
 def build_chat_turn_graph(
     *,
     main_agent: Any,
-    speech_text_agent: SpeechTextAgent,
+    speech_text_agent: Any,
     speech_synthesis_node: SpeechSynthesisNode,
     window_changing_agent: Any,
 ) -> Any:
@@ -29,7 +25,8 @@ def build_chat_turn_graph(
 
     graph.add_node("main_agent", main_agent)
     graph.add_node("main_agent_result", _main_agent_result_node)
-    graph.add_node("speech_text_agent", _speech_text_agent_node(speech_text_agent))
+    graph.add_node("speech_text_agent", speech_text_agent)
+    graph.add_node("speech_text_result", _speech_text_result_node)
     graph.add_node("speech_synthesis_node", _speech_synthesis_node(speech_synthesis_node))
     graph.add_node("window_changing_agent", window_changing_agent)
 
@@ -37,7 +34,8 @@ def build_chat_turn_graph(
     graph.add_edge("main_agent", "main_agent_result")
     graph.add_edge("main_agent_result", "speech_text_agent")
     graph.add_edge("main_agent_result", "window_changing_agent")
-    graph.add_edge("speech_text_agent", "speech_synthesis_node")
+    graph.add_edge("speech_text_agent", "speech_text_result")
+    graph.add_edge("speech_text_result", "speech_synthesis_node")
     graph.add_edge("speech_synthesis_node", END)
     graph.add_edge("window_changing_agent", END)
 
@@ -72,29 +70,20 @@ def _main_agent_result_node(state: ChatTurnState) -> dict[str, Any]:
     }
 
 
-def _speech_text_agent_node(speech_text_agent: SpeechTextAgent) -> Any:
-    async def invoke_speech_text_agent(
-        state: ChatTurnState,
-        config: RunnableConfig | None = None,
-    ) -> dict[str, Any]:
-        final_response = str(state.get("final_response") or "").strip()
-        script = await create_final_response_script(
-            speech_text_agent,
-            final_response,
-            config=config or {},
-        )
+def _speech_text_result_node(state: ChatTurnState) -> dict[str, Any]:
+    script = _final_message_text(state) or str(state.get("final_response") or "").strip()
+    if not script:
+        script = "답변을 생성하지 못했습니다. 잠시 후 다시 시도해 주세요."
 
-        _writer()(
-            {
-                "type": "speech_text",
-                "text": script,
-                "session_id": state.get("session_id"),
-                "turn_id": state.get("turn_id"),
-            }
-        )
-        return {"final_response_script": script}
-
-    return invoke_speech_text_agent
+    _writer()(
+        {
+            "type": "speech_text",
+            "text": script,
+            "session_id": state.get("session_id"),
+            "turn_id": state.get("turn_id"),
+        }
+    )
+    return {"final_response_script": script}
 
 
 def _speech_synthesis_node(speech_synthesis_node: SpeechSynthesisNode) -> Any:

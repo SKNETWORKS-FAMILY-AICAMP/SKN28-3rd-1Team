@@ -57,6 +57,7 @@ backend/
 │   │   ├── from_mcp.py               # MCP tool loader
 │   │   └── local.py                  # local tool 확장 위치
 │   ├── utils/                        # 공통 utility
+│   ├── memory/                       # conversation id, checkpointer, TTL boundary
 │   ├── llm/                          # ChatOpenRouter/ChatCerebras 생성
 │   │   ├── openrouter.py             # ChatOpenRouter 생성
 │   │   └── cerebras.py               # ChatCerebras 생성
@@ -77,10 +78,11 @@ backend/
 | 🚀 `src/app.py` | Django ASGI `application` 진입점 |
 | 🌐 `src/django_backend/` | `/health`, `/chat`, `/chat/stream` HTTP/SSE transport |
 | 🚪 `src/api/chat.py` | `/chat` request/response 모델과 Agent 결과 변환 helper |
-| 🧠 `src/agents/main_agent/` | `create_agent()` 기반 Main Agent 생성/cache와 실행 함수 |
+| 🧠 `src/agents/main_agent/` | `create_agent()` 기반 Main Agent factory |
 | 🗣️ `src/agents/speech_text_agent/` | state의 `final_response`를 정규화하고 `final_response_script`로 변환하는 LLM agent |
 | 🔄 `src/graph/` | chat turn 실행 경계, StateGraph 전환용 state, text stream 이후 speech/TTS event 연결 |
 | 🔊 `src/nodes/speech_synthesis_node/` | state의 `final_response_script`를 ElevenLabs SDK TTS stream으로 합성하는 deterministic node |
+| 🧠 `src/memory/` | `ChatThreadContextStore`가 LangGraph checkpointer와 20분 inactivity TTL을 관리 |
 | 🔑 `src/llm/` | agent별 model 설정과 provider 설정을 조합해 `ChatOpenRouter` 또는 `ChatCerebras` 생성 |
 | 🛠️ `src/tools/` | Agent에 붙일 LangChain MCP/local tool 목록 관리 |
 | 🧾 `src/utils/prompt_loader.py` | agent-local Jinja2 prompt 렌더링 |
@@ -95,7 +97,7 @@ backend/
 1. `src/app.py`가 Django ASGI `application`을 노출한다.
 2. Frontend가 `POST /chat` 또는 `POST /chat/stream`으로 `message`를 보낸다.
 3. `src/django_backend/urls.py`가 `/chat` JSON 요청과 `/chat/stream` SSE 요청을 처리하고 `ChatGraphRunner`에 전달한다.
-4. `src/agents/main_agent/`가 `create_agent()`와 `InMemorySaver` checkpointer로 Agent를 만든다.
+4. `src/memory/`가 process-local `InMemorySaver` checkpointer를 만들고, `src/agents/main_agent/`는 이를 주입받아 Agent를 만든다.
 5. Agent는 역할별 LLM getter(`get_main()`, `get_sanitize()`, `get_window()`), `get_tools(agent_name="main_agent")`, agent-local prompt를 조합한다.
 6. `src/llm/`가 agent별 model 설정과 선택 provider API key로 `ChatOpenRouter` 또는 `ChatCerebras`를 생성한다.
 7. `src/tools/`가 RAG MCP server에서 read-only MCP tools를 비동기로 로딩하고 캐시한다.
@@ -210,7 +212,7 @@ Daphne 실행은 `RUNTIME_HOST`와 `RUNTIME_PORT`를 사용한다. `RUNTIME_RELO
 
 ```json
 {
-  "session_id": "optional-session-id",
+  "session_id": "conversation-id",
   "message": "노인일자리 신청 방법 알려줘",
   "metadata": {
     "source": "frontend"
@@ -228,7 +230,7 @@ Daphne 실행은 `RUNTIME_HOST`와 `RUNTIME_PORT`를 사용한다. `RUNTIME_RELO
 }
 ```
 
-`session_id`는 LangGraph `thread_id`로 전달된다. 같은 `session_id`로 요청하면 프로세스가 살아 있는 동안 `InMemorySaver` checkpointer가 같은 대화 이력을 이어간다. `session_id`가 없으면 요청마다 익명 thread를 새로 만들어 세션 간 이력이 섞이지 않게 처리한다.
+`session_id`는 LangGraph `thread_id`로 전달된다. 같은 `session_id`로 요청하면 프로세스가 살아 있는 동안 `ChatThreadContextStore`가 감싼 `InMemorySaver` checkpointer가 같은 대화 이력을 이어간다. 20분 동안 활성화되지 않은 chat thread는 만료되어 checkpointer에서 삭제된다. `session_id`가 없거나 빈 값이면 fallback thread를 만들지 않고 요청을 로그로만 남긴 뒤 Agent를 호출하지 않는다.
 
 ### POST `/chat/stream` SSE
 
@@ -236,7 +238,7 @@ Daphne 실행은 `RUNTIME_HOST`와 `RUNTIME_PORT`를 사용한다. `RUNTIME_RELO
 
 ```json
 {
-  "session_id": "optional-session-id",
+  "session_id": "conversation-id",
   "message": "노인일자리 신청 방법 알려줘",
   "metadata": {
     "source": "frontend"
@@ -261,7 +263,7 @@ event: final
 data: {"type": "final", "answer": "신청은 주민센터에서 할 수 있습니다.", "tool_calls": [], "sources": [], "session_id": "optional-session-id"}
 ```
 
-`final` event는 기존 `ChatResponse`와 같은 필드(`answer`, `tool_calls`, `sources`, `session_id`)를 사용한다. 이후 `speech_text_agent`가 `final_response_script`를 state에 저장하고, `speech_synthesis_node`가 그 값을 ElevenLabs로 보내 `speech_text`, `audio`, `audio_done` event를 이어 보낸다. `session_id`는 `/chat`과 동일하게 LangGraph `thread_id`로 전달되므로 같은 세션의 대화 문맥이 이어진다.
+`final` event는 기존 `ChatResponse`와 같은 필드(`answer`, `tool_calls`, `sources`, `session_id`)를 사용한다. 이후 `speech_text_agent`가 `final_response_script`를 state에 저장하고, `speech_synthesis_node`가 그 값을 ElevenLabs로 보내 `speech_text`, `audio`, `audio_done` event를 이어 보낸다. `session_id`는 `/chat`과 동일하게 LangGraph `thread_id`로 전달되므로 같은 세션의 대화 문맥이 이어진다. 자세한 정책은 `../docs/chat_thread_policy.md`를 참고한다.
 
 ## 🧾 Prompt
 
