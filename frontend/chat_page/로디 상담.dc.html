@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+<template id="__bundler_thumbnail" data-bg-color="#ece7e0">
+  <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+    <rect width="1200" height="800" fill="#ece7e0"/>
+    <circle cx="600" cy="330" r="150" fill="#fbe6d4" stroke="#f4d6bd" stroke-width="6"/>
+    <circle cx="540" cy="300" r="46" fill="#e8c9ad"/>
+    <circle cx="660" cy="300" r="46" fill="#e8c9ad"/>
+    <circle cx="600" cy="330" r="96" fill="#fbe6d4"/>
+    <circle cx="572" cy="320" r="13" fill="#4a3f36"/>
+    <circle cx="628" cy="320" r="13" fill="#4a3f36"/>
+    <ellipse cx="600" cy="358" rx="20" ry="14" fill="#7a6353"/>
+    <rect x="470" y="520" width="260" height="70" rx="35" fill="#ef8b54"/>
+    <text x="600" y="566" font-family="sans-serif" font-size="40" font-weight="700" fill="#ffffff" text-anchor="middle">로디</text>
+  </svg>
+</template>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+::-webkit-scrollbar{width:8px;height:8px;}
+::-webkit-scrollbar-thumb{background:#e3dacd;border-radius:8px;}
+::-webkit-scrollbar-track{background:transparent;}
+@keyframes rodyPop{0%{opacity:0;transform:translateY(6px);}100%{opacity:1;transform:translateY(0);}}
+@keyframes rodyDot{0%,60%,100%{opacity:.3;transform:translateY(0);}30%{opacity:1;transform:translateY(-3px);}}
+@keyframes rodyToast{0%{opacity:0;transform:transl(-50%,8px);}100%{opacity:1;transform:translate(-50%,0);}}
+</style>
+</helmet>
+
+<div style="height:100vh;min-height:660px;display:flex;flex-direction:column;background:#ece7e0;font-family:Pretendard,sans-serif;color:#3a342e;-webkit-font-smoothing:antialiased;overflow:hidden;">
+
+  <!-- ============ HEADER ============ -->
+  <div style="height:64px;flex:none;background:#ffffff;border-bottom:1px solid #efe7da;display:flex;align-items:center;padding:0 26px;gap:30px;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="width:38px;height:38px;border-radius:50%;background:#fbe6d4;display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:inset 0 0 0 1px #f4d6bd;"><img src="/images/mascot.png" alt="로디" style="width:100%;height:100%;object-fit:cover;display:block;"></div>
+      <span style="font-size:19px;font-weight:800;letter-spacing:-.02em;color:#33302b;">로디</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:26px;font-size:14.5px;color:#7c736a;font-weight:500;">
+      <span style="cursor:pointer;">상담 주제</span>
+      <span style="cursor:pointer;">이용 방법</span>
+      <span style="cursor:pointer;">근거 문서</span>
+    </div>
+    <div style="flex:1;"></div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div onClick="{{ onSave }}" style="display:flex;align-items:center;gap:7px;height:38px;padding:0 15px;border:1px solid #ead9c6;border-radius:10px;font-size:13.5px;font-weight:600;color:#6c6359;cursor:pointer;background:#fff;">
+        <span style="color:#ef8b54;">▣</span> 상담 요약 저장
+      </div>
+      <div onClick="{{ onNew }}" style="display:flex;align-items:center;gap:7px;height:38px;padding:0 15px;border:1px solid #ead9c6;border-radius:10px;font-size:13.5px;font-weight:600;color:#6c6359;cursor:pointer;background:#fff;">
+        <span style="color:#ef8b54;">↗</span> 새 상담
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ BODY ============ -->
+  <div style="flex:1;min-height:0;display:flex;">
+
+    <!-- ----- LEFT : CHAT ----- -->
+    <div style="width:330px;flex:none;background:#fbf6ef;border-right:1px solid #efe7da;display:flex;flex-direction:column;min-height:0;">
+      <div style="padding:18px 20px 10px;font-size:14px;font-weight:700;color:#9a8f82;letter-spacing:.01em;">대화</div>
+
+      <div ref="{{ msgRef }}" style="flex:1;min-height:0;overflow-y:auto;padding:6px 18px 14px;display:flex;flex-direction:column;gap:16px;">
+        <sc-for list="{{ messages }}" as="m" hint-placeholder-count="2">
+          <div style="display:flex;gap:8px;align-items:flex-start;animation:rodyPop .25s ease;">
+            <sc-if value="{{ m.isBot }}" hint-placeholder-val="{{ true }}">
+              <div style="width:30px;height:30px;flex:none;border-radius:50%;background:#fbe6d4;display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:inset 0 0 0 1px #f4d6bd;"><img src="/images/mascot.png" alt="로디" style="width:100%;height:100%;object-fit:cover;display:block;"></div>
+            </sc-if>
+            <sc-if value="{{ m.isUser }}" hint-placeholder-val="{{ true }}">
+              <div style="width:30px;height:30px;flex:none;border-radius:50%;background:#e8ddce;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#8a7c69;">나</div>
+            </sc-if>
+            <div style="min-width:0;">
+              <div style="{{ m.bubbleStyle }}">{{ m.text }}</div>
+              <sc-if value="{{ m.time }}" hint-placeholder-val="x">
+                <div style="font-size:11px;color:#b1a597;text-align:right;margin-top:4px;">{{ m.time }}</div>
+              </sc-if>
+            </div>
+          </div>
+        </sc-for>
+        <sc-if value="{{ isTyping }}" hint-placeholder-val="">
+          <div style="display:flex;gap:8px;align-items:flex-start;">
+            <div style="width:30px;height:30px;flex:none;border-radius:50%;background:#fbe6d4;display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:inset 0 0 0 1px #f4d6bd;"><img src="/images/mascot.png" alt="로디" style="width:100%;height:100%;object-fit:cover;display:block;"></div>
+            <div style="background:#fff;border:1px solid #eee3d6;border-radius:4px 14px 14px 14px;padding:13px 16px;display:flex;gap:4px;">
+              <span style="width:7px;height:7px;border-radius:50%;background:#e6a878;animation:rodyDot 1.1s infinite;"></span>
+              <span style="width:7px;height:7px;border-radius:50%;background:#e6a878;animation:rodyDot 1.1s infinite .2s;"></span>
+              <span style="width:7px;height:7px;border-radius:50%;background:#e6a878;animation:rodyDot 1.1s infinite .4s;"></span>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+
+      <!-- task progress -->
+      <sc-if value="{{ showTasks }}" hint-placeholder-val="{{ true }}">
+        <div style="margin:0 16px 12px;background:#fff;border:1px solid #f0e7da;border-radius:14px;padding:14px 16px;">
+          <div style="font-size:13px;font-weight:800;color:#5b5249;margin-bottom:11px;">작업 진행 상황</div>
+          <div style="display:flex;flex-direction:column;gap:9px;">
+            <sc-for list="{{ tasks }}" as="t" hint-placeholder-count="4">
+              <div style="display:flex;align-items:center;gap:8px;font-size:13px;">
+                <span style="color:#bfae9b;font-size:12px;">◇</span>
+                <span style="flex:1;color:#5f574d;">{{ t.label }}</span>
+                <span style="{{ t.tagStyle }}">{{ t.tag }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- input -->
+      <div style="padding:0 16px 16px;">
+        <div style="display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #ecd9c4;border-radius:14px;padding:7px 8px 7px 16px;">
+          <input value="{{ input }}" onInput="{{ onInput }}" onKeyDown="{{ onKey }}" placeholder="메시지를 입력하세요..." style="flex:1;border:none;outline:none;background:transparent;font-family:inherit;font-size:14px;color:#4a423a;" />
+          <div onClick="{{ onSend }}" style="width:38px;height:38px;flex:none;border-radius:11px;background:#ef8b54;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 6px rgba(239,139,84,.35);">
+            <span style="color:#fff;font-size:16px;transform:translateX(1px);">➤</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ----- RIGHT AREA ----- -->
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column;min-height:0;">
+
+      <!-- WELCOME (before first message) -->
+      <sc-if value="{{ notStarted }}" hint-placeholder-val="{{ true }}">
+        <div style="flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;text-align:center;">
+          <div style="width:120px;height:120px;border-radius:50%;background:#fbe6d4;display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:inset 0 0 0 2px #f4d6bd,0 12px 32px rgba(239,139,84,.16);"><img src="/images/mascot.png" alt="로디" style="width:100%;height:100%;object-fit:cover;display:block;"></div>
+          <div style="font-size:26px;font-weight:800;color:#2f2b26;margin-top:24px;letter-spacing:-.02em;">안녕하세요, 로디예요</div>
+          <div style="font-size:15px;color:#8c8276;line-height:1.65;margin-top:12px;max-width:400px;">노인일자리 신청이 처음이어도 괜찮아요.<br>아래 질문을 눌러보거나, 왼쪽에 궁금한 점을 입력해 주세요.</div>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-top:30px;width:100%;max-width:420px;">
+            <sc-for list="{{ chips }}" as="c" hint-placeholder-count="3">
+              <div onClick="{{ c.onClick }}" style="background:#fff;border:1px solid #efe0cd;border-radius:13px;padding:15px 18px;font-size:14.5px;font-weight:600;color:#5b5249;cursor:pointer;display:flex;align-items:center;gap:12px;justify-content:space-between;transition:all .15s ease;" style-hover="border-color:#f0b88e;box-shadow:0 4px 14px rgba(239,139,84,.13);">
+                <span style="text-align:left;">{{ c.label }}</span>
+                <span style="color:#ef8b54;flex:none;font-size:17px;">→</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- RESULTS (after first message) -->
+      <sc-if value="{{ started }}" hint-placeholder-val="">
+      <div style="flex:1;min-height:0;display:flex;">
+
+        <!-- CENTER : MAP / LIST -->
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;padding:24px 22px 16px 26px;min-height:0;">
+          <div style="font-size:23px;font-weight:800;letter-spacing:-.02em;color:#2f2b26;">강남구 노인일자리 신청 가능 기관</div>
+          <div style="font-size:14px;color:#8c8276;margin-top:6px;">지도에서 기관을 선택하면 상세 정보를 확인할 수 있어요.</div>
+
+          <!-- tabs -->
+          <div style="display:flex;gap:6px;margin-top:18px;background:#f1ebe1;padding:4px;border-radius:12px;width:max-content;">
+            <div onClick="{{ onTabMap }}" style="{{ tabMapStyle }}">지도</div>
+            <div onClick="{{ onTabList }}" style="{{ tabListStyle }}">목록</div>
+          </div>
+
+          <!-- MAP -->
+          <sc-if value="{{ isMap }}" hint-placeholder-val="{{ true }}">
+            <div style="flex:1;min-height:0;margin-top:14px;border-radius:16px;border:1px solid #ece3d5;overflow:hidden;position:relative;background:#eef1ec;">
+              <!-- abstract map base -->
+              <div style="position:absolute;inset:0;background:linear-gradient(0deg,#edf0ea,#eef1ec);"></div>
+              <div style="position:absolute;top:-6%;right:-4%;width:40%;height:55%;background:#d8e6ee;border-radius:0 0 0 60% / 0 0 0 40%;transform:rotate(-8deg);"></div>
+              <div style="position:absolute;left:8%;top:18%;width:26%;height:30%;background:#dcebd9;border-radius:40% 50% 45% 55%;"></div>
+              <div style="position:absolute;right:14%;bottom:10%;width:22%;height:26%;background:#dcebd9;border-radius:55% 45% 50% 40%;"></div>
+              <!-- roads -->
+              <div style="position:absolute;left:0;top:46%;width:100%;height:9px;background:#fff;box-shadow:0 0 0 1px #e7e2d6;"></div>
+              <div style="position:absolute;left:38%;top:0;width:9px;height:100%;background:#fff;box-shadow:0 0 0 1px #e7e2d6;"></div>
+              <div style="position:absolute;left:0;top:22%;width:100%;height:5px;background:#fff;opacity:.85;"></div>
+              <div style="position:absolute;left:70%;top:0;width:5px;height:100%;background:#fff;opacity:.85;"></div>
+              <div style="position:absolute;left:-10%;top:60%;width:130%;height:6px;background:#fbe0bf;transform:rotate(-18deg);transform-origin:left;"></div>
+              <!-- station labels -->
+              <div style="position:absolute;left:26%;top:18%;font-size:11px;color:#9aa18f;">선릉역</div>
+              <div style="position:absolute;left:54%;top:39%;font-size:11px;color:#9aa18f;">강남역</div>
+              <div style="position:absolute;left:22%;bottom:18%;font-size:11px;color:#9aa18f;">역삼역</div>
+              <!-- pins -->
+              <sc-for list="{{ pins }}" as="p" hint-placeholder-count="3">
+                <div onClick="{{ p.onClick }}" style="{{ p.wrapStyle }}">
+                  <div style="{{ p.pinStyle }}">{{ p.num }}</div>
+                </div>
+              </sc-for>
+              <!-- zoom -->
+              <div style="position:absolute;right:14px;bottom:14px;display:flex;flex-direction:column;background:#fff;border:1px solid #e7ddcd;border-radius:9px;overflow:hidden;">
+                <div style="width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:17px;color:#7c736a;border-bottom:1px solid #efe7da;cursor:pointer;">+</div>
+                <div style="width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:17px;color:#7c736a;cursor:pointer;">−</div>
+              </div>
+              <!-- legend -->
+              <div style="position:absolute;left:14px;bottom:12px;display:flex;gap:16px;font-size:11.5px;color:#7c7468;background:rgba(255,255,255,.82);padding:7px 12px;border-radius:9px;backdrop-filter:blur(2px);">
+                <span style="display:flex;align-items:center;gap:6px;"><span style="width:9px;height:9px;border-radius:50%;background:#5fb87f;"></span>1km 이내</span>
+                <span style="display:flex;align-items:center;gap:6px;"><span style="width:9px;height:9px;border-radius:50%;background:#ef9a52;"></span>1~2km 이내</span>
+                <span style="display:flex;align-items:center;gap:6px;"><span style="width:9px;height:9px;border-radius:50%;background:#b3aaa0;"></span>2km 이상</span>
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- LIST -->
+          <sc-if value="{{ isList }}" hint-placeholder-val="">
+            <div style="flex:1;min-height:0;margin-top:14px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding-right:4px;">
+              <sc-for list="{{ instList }}" as="it" hint-placeholder-count="3">
+                <div onClick="{{ it.onClick }}" style="{{ it.cardStyle }}">
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="{{ it.numStyle }}">{{ it.num }}</div>
+                    <div style="font-size:15.5px;font-weight:700;color:#332f29;">{{ it.name }}</div>
+                    <div style="flex:1;"></div>
+                    <div style="{{ it.distStyle }}">{{ it.dist }}</div>
+                  </div>
+                  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
+                    <sc-for list="{{ it.badges }}" as="b" hint-placeholder-count="2">
+                      <span style="{{ b.style }}">{{ b.label }}</span>
+                    </sc-for>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:7px;margin-top:10px;font-size:13px;color:#8a8073;">
+                    <span style="color:#ef9a52;">◎</span>{{ it.address }}
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+
+        <!-- DETAIL CARD -->
+        <div style="width:312px;flex:none;padding:24px 24px 16px 0;display:flex;flex-direction:column;min-height:0;">
+          <div style="flex:1;min-height:0;overflow-y:auto;background:#fff;border:1px solid #efe7da;border-radius:16px;padding:20px;display:flex;flex-direction:column;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="width:26px;height:26px;flex:none;border-radius:50%;background:#ef8b54;color:#fff;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;">{{ selected.num }}</div>
+              <div style="font-size:18px;font-weight:800;color:#2f2b26;letter-spacing:-.01em;">{{ selected.name }}</div>
+            </div>
+
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:13px;">
+              <sc-for list="{{ selected.badges }}" as="b" hint-placeholder-count="3">
+                <span style="{{ b.style }}">{{ b.label }}</span>
+              </sc-for>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:11px;margin-top:17px;font-size:13.5px;color:#574f46;">
+              <div style="display:flex;align-items:center;gap:10px;"><span style="color:#ef9a52;width:15px;text-align:center;">✆</span>{{ selected.phone }}</div>
+              <div style="display:flex;align-items:flex-start;gap:10px;"><span style="color:#ef9a52;width:15px;text-align:center;">◎</span><span style="flex:1;">{{ selected.address }}</span></div>
+              <div style="display:flex;align-items:center;gap:10px;"><span style="color:#ef9a52;width:15px;text-align:center;">◷</span>{{ selected.hours }}</div>
+            </div>
+
+            <div style="height:1px;background:#f0e8db;margin:17px 0;"></div>
+
+            <div style="display:flex;flex-direction:column;gap:15px;">
+              <div>
+                <div style="font-size:12.5px;font-weight:800;color:#9a8f82;margin-bottom:5px;">주요 사업</div>
+                <div style="font-size:13.5px;line-height:1.55;color:#4d463d;">{{ selected.business }}</div>
+              </div>
+              <div>
+                <div style="font-size:12.5px;font-weight:800;color:#9a8f82;margin-bottom:5px;">신청 방법</div>
+                <div style="font-size:13.5px;line-height:1.55;color:#4d463d;">{{ selected.apply }}</div>
+              </div>
+              <div>
+                <div style="font-size:12.5px;font-weight:800;color:#9a8f82;margin-bottom:5px;">준비 서류</div>
+                <div style="font-size:13.5px;line-height:1.55;color:#4d463d;">{{ selected.docs }}</div>
+              </div>
+            </div>
+
+            <div style="flex:1;min-height:14px;"></div>
+            <div style="display:flex;gap:9px;margin-top:16px;">
+              <div onClick="{{ onCall }}" style="flex:1;height:42px;border-radius:11px;background:#ef8b54;color:#fff;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 8px rgba(239,139,84,.3);">전화 문의</div>
+              <div onClick="{{ onRoute }}" style="flex:1;height:42px;border-radius:11px;background:#fff;border:1.5px solid #f0b88e;color:#e07e43;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;">길찾기</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- HINT BAR -->
+      <sc-if value="{{ showHint }}" hint-placeholder-val="{{ true }}">
+        <div style="flex:none;margin:0 24px 18px 26px;background:#f6eee3;border:1px solid #f0e3d1;border-radius:14px;padding:14px 18px;display:flex;align-items:center;gap:14px;">
+          <div style="width:36px;height:36px;flex:none;border-radius:50%;background:#fbe6d4;display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:inset 0 0 0 1px #f4d6bd;"><img src="/images/mascot.png" alt="로디" style="width:100%;height:100%;object-fit:cover;display:block;"></div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:14px;font-weight:700;color:#4d453c;">더 자세한 신청 조건이나 다른 기관도 궁금하신가요?</div>
+            <div style="font-size:12.5px;color:#9a8f82;margin-top:3px;">필요하면 목록 보기 또는 추가 검색을 도와드릴게요.</div>
+          </div>
+          <div onClick="{{ onTabList }}" style="height:38px;padding:0 16px;border-radius:10px;background:#fff;border:1px solid #ead9c6;font-size:13px;font-weight:600;color:#6c6359;display:flex;align-items:center;cursor:pointer;">목록 보기</div>
+          <div onClick="{{ onOtherRegion }}" style="height:38px;padding:0 16px;border-radius:10px;background:#fff;border:1px solid #ead9c6;font-size:13px;font-weight:600;color:#6c6359;display:flex;align-items:center;cursor:pointer;white-space:nowrap;">다른 지역 검색</div>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <sc-if value="{{ toast }}" hint-placeholder-val="">
+    <div style="position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:#3a342e;color:#fff;font-size:13.5px;font-weight:500;padding:11px 20px;border-radius:11px;box-shadow:0 8px 24px rgba(0,0,0,.2);animation:rodyToast .25s ease;z-index:50;">{{ toast }}</div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;showTaskPanel&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;showHintBar&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;simulateTyping&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.msgRef = React.createRef();
+    this.institutions = [
+      { name:'강남시니어클럽', x:54, y:48, tier:0,
+        badges:['수행기관','공익활동','사회서비스형'],
+        phone:'02-123-4567', address:'서울특별시 강남구 선릉로 123길 45', hours:'평일 09:00 - 18:00',
+        business:'노인일자리 및 사회활동 지원사업 운영 (공익활동, 사회서비스형, 시장형)',
+        apply:'방문 접수 또는 전화 문의 후 상담',
+        docs:'신분증, 주민등록등본, 통장사본 등' },
+      { name:'역삼노인종합복지관', x:40, y:67, tier:1,
+        badges:['수행기관','공익활동'],
+        phone:'02-234-5678', address:'서울특별시 강남구 역삼로 200', hours:'평일 09:00 - 18:00',
+        business:'노인 공익활동형 일자리 운영 및 지역사회 참여 지원',
+        apply:'복지관 방문 접수 후 상담 진행',
+        docs:'신분증, 주민등록등본' },
+      { name:'신사종합사회복지관', x:30, y:38, tier:2,
+        badges:['수행기관','시장형사업단'],
+        phone:'02-345-6789', address:'서울특별시 강남구 압구정로 50', hours:'평일 09:00 - 17:00',
+        business:'시장형사업단(카페·매장 등) 운영 및 일자리 연계',
+        apply:'전화 예약 후 방문 상담',
+        docs:'신분증, 통장사본' },
+    ];
+    this.state = {
+      messages: this.seed(),
+      started:false,
+      input:'', tab:'map', selectedId:0, isTyping:false, toast:'',
+      tasks:[
+        {label:'지역 정보 확인', done:true},
+        {label:'수행기관 검색', done:true},
+        {label:'신청 조건 확인', done:true},
+        {label:'결과 정리', done:false},
+      ],
+    };
+  }
+
+  seed(){
+    return [
+      { role:'bot', text:'안녕하세요, 로디예요!\n노인일자리 신청이 처음이어도 괜찮아요.\n궁금한 점을 편하게 물어보세요.' },
+    ];
+  }
+
+  componentDidUpdate(prevP, prevS){
+    if(prevS.messages !== this.state.messages || prevS.isTyping !== this.state.isTyping){
+      const el = this.msgRef.current; if(el) el.scrollTop = el.scrollHeight;
+    }
+  }
+
+  nowTime(){
+    const d=new Date(); let h=d.getHours(); const m=String(d.getMinutes()).padStart(2,'0');
+    const ap=h<12?'오전':'오후'; let hh=h%12; if(hh===0)hh=12; return ap+' '+hh+':'+m;
+  }
+
+  setToast(t){ this.setState({toast:t}); clearTimeout(this._tt); this._tt=setTimeout(()=>this.setState({toast:''}),2200); }
+
+  tierColor(t){ return t===0?'#5fb87f':t===1?'#ef9a52':'#b3aaa0'; }
+  tierLabel(t){ return t===0?'1km 이내':t===1?'1~2km 이내':'2km 이상'; }
+
+  badgeMeta(label){
+    const m={
+      '수행기관':['#fbe3d2','#cf7838'],
+      '공익활동':['#d9efe0','#3f9a63'],
+      '사회서비스형':['#dbe7f3','#4a77ad'],
+      '시장형사업단':['#e9e1f2','#7a64ad'],
+    };
+    const c=m[label]||['#eee5d8','#8a7d6c'];
+    return 'display:inline-flex;align-items:center;padding:4px 10px;border-radius:8px;font-size:12px;font-weight:600;background:'+c[0]+';color:'+c[1]+';';
+  }
+
+  select(id){ this.setState({selectedId:id}); }
+
+  reply(text){
+    const t = text.toLowerCase();
+    const sel = this.institutions[this.state.selectedId];
+    if(/전화|연락|번호/.test(t)) return { text:sel.name+'의 연락처는 '+sel.phone+' 입니다.\n전화 문의 후 방문하시면 안내받으실 수 있어요.' };
+    if(/서류|준비|챙겨|가져/.test(t)) return { text:'준비 서류는 '+sel.docs+' 입니다.\n기관별로 추가 서류가 있을 수 있으니 방문 전 확인해 주세요.' };
+    if(/가까|거리|제일|가장|근처/.test(t)) return { text:'가장 가까운 곳은 강남시니어클럽(1km 이내)이에요.\n오른쪽에서 상세 정보를 확인해 보세요.', sel:0, tab:'map' };
+    if(/신청|조건|자격|방법|어떻게/.test(t)) return { text:'신청 방법은 “'+sel.apply+'” 입니다.\n만 60세 이상이면 대부분 신청 가능하나, 사업 유형별 소득 기준이 있을 수 있어요.' };
+    if(/시간|운영|몇\s*시|언제|영업/.test(t)) return { text:sel.name+'의 운영 시간은 '+sel.hours+' 입니다.' };
+    if(/목록|리스트|전체|다른/.test(t)) return { text:'신청 가능한 기관 목록을 정리했어요.\n가운데 목록 탭에서 한눈에 비교해 보세요.', tab:'list' };
+    return { text:'말씀해 주신 내용을 반영해 자료를 정리했어요.\n오른쪽 지도와 기관 카드에서 자세한 내용을 확인해 보세요.' };
+  }
+
+  send(raw){
+    const text=(raw==null?this.state.input:raw).trim();
+    if(!text) return;
+    const userMsg={ role:'user', text, time:this.nowTime() };
+    this.setState(s=>({
+      messages:[...s.messages, userMsg],
+      started:true,
+      input:'', isTyping:true,
+      tasks:s.tasks.map(t=>t.label==='결과 정리'?{...t,done:true}:t),
+    }));
+    const r=this.reply(text);
+    const typing = (this.props.simulateTyping ?? true);
+    const finish=()=>{
+      this.setState(s=>{
+        const ns={ messages:[...s.messages,{role:'bot',text:r.text}], isTyping:false };
+        if(r.sel!=null) ns.selectedId=r.sel;
+        if(r.tab) ns.tab=r.tab;
+        return ns;
+      });
+    };
+    if(typing) setTimeout(finish, 750); else finish();
+  }
+
+  newChat(){
+    clearTimeout(this._tt);
+    this.setState({
+      messages:this.seed(), started:false, input:'', tab:'map', selectedId:0, isTyping:false, toast:'',
+      tasks:[
+        {label:'지역 정보 확인', done:true},
+        {label:'수행기관 검색', done:true},
+        {label:'신청 조건 확인', done:true},
+        {label:'결과 정리', done:false},
+      ],
+    });
+    this.setToast('새 상담을 시작했어요.');
+  }
+
+  otherRegion(){
+    this.setState(s=>({ messages:[...s.messages,{role:'bot',text:'어느 지역의 기관을 찾아드릴까요?\n예) “서초구 노인일자리 알려줘” 처럼 입력해 주세요.'}] }));
+  }
+
+  renderVals(){
+    const s=this.state;
+    const sel=this.institutions[s.selectedId];
+
+    const messages=s.messages.map(m=>{
+      const isUser=m.role==='user';
+      const bubbleStyle = isUser
+        ? 'background:#f7e7d8;color:#4a4038;padding:11px 14px;border-radius:4px 14px 14px 14px;font-size:14px;line-height:1.55;white-space:pre-wrap;max-width:236px;'
+        : 'background:#fff;border:1px solid #eee3d6;color:#403a33;padding:11px 14px;border-radius:4px 14px 14px 14px;font-size:14px;line-height:1.55;white-space:pre-wrap;max-width:236px;';
+      return { text:m.text, time:m.time||'', isUser, isBot:!isUser, bubbleStyle };
+    });
+
+    const tasks=s.tasks.map(t=>({
+      label:t.label,
+      tag:t.done?'완료':'진행 중',
+      tagStyle:'font-size:12px;font-weight:700;display:flex;align-items:center;gap:4px;color:'+(t.done?'#42a564':'#e88a3f')+';'
+        +(t.done?'':''),
+    }));
+    // prepend check / dot glyph via tag text
+    tasks.forEach(t=>{ t.tag=(t.tag==='완료'?'✓ ':'◔ ')+t.tag; });
+
+    const pins=this.institutions.map((it,i)=>{
+      const selected=i===s.selectedId;
+      const color=selected?'#ef8b54':this.tierColor(it.tier);
+      const sz=selected?34:28;
+      return {
+        num:i+1,
+        wrapStyle:'position:absolute;left:'+it.x+'%;top:'+it.y+'%;transform:translate(-50%,-100%);cursor:pointer;z-index:'+(selected?5:2)+';',
+        pinStyle:'width:'+sz+'px;height:'+sz+'px;border-radius:50% 50% 50% 50%;background:'+color+';color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(0,0,0,.18)'+(selected?',0 0 0 5px rgba(239,139,84,.22)':'')+';border:2px solid #fff;transition:all .15s ease;',
+        onClick:()=>this.select(i),
+      };
+    });
+
+    const instList=this.institutions.map((it,i)=>{
+      const selected=i===s.selectedId;
+      const tc=this.tierColor(it.tier);
+      return {
+        num:i+1, name:it.name, address:it.address, dist:this.tierLabel(it.tier),
+        cardStyle:'background:#fff;border:1.5px solid '+(selected?'#f0b88e':'#efe7da')+';border-radius:14px;padding:15px 16px;cursor:pointer;box-shadow:'+(selected?'0 3px 12px rgba(239,139,84,.14)':'none')+';transition:all .15s ease;',
+        numStyle:'width:24px;height:24px;flex:none;border-radius:50%;background:'+(selected?'#ef8b54':'#e8ddce')+';color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;',
+        distStyle:'font-size:12px;font-weight:600;color:'+tc+';background:'+tc+'1f;padding:3px 9px;border-radius:7px;',
+        badges:it.badges.map(b=>({label:b,style:this.badgeMeta(b)})),
+        onClick:()=>this.select(i),
+      };
+    });
+
+    const tabBase='padding:8px 22px;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s ease;';
+    const tabOn=tabBase+'background:#fff;color:#33302b;box-shadow:0 1px 3px rgba(0,0,0,.08);';
+    const tabOff=tabBase+'background:transparent;color:#9a8f82;';
+
+    const chips=[
+      '강남구에 사는 67세인데 노인일자리 어디서 신청해?',
+      '신청하려면 어떤 서류가 필요해?',
+      '가장 가까운 기관 알려줘',
+    ].map(c=>({ label:c, onClick:()=>this.send(c) }));
+
+    return {
+      messages, tasks, pins, instList, chips,
+      started:s.started, notStarted:!s.started,
+      isTyping:s.isTyping, input:s.input, toast:s.toast,
+      isMap:s.tab==='map', isList:s.tab==='list',
+      tabMapStyle:s.tab==='map'?tabOn:tabOff,
+      tabListStyle:s.tab==='list'?tabOn:tabOff,
+      showTasks:(this.props.showTaskPanel ?? true) && s.started,
+      showHint:(this.props.showHintBar ?? true) && s.started,
+      selected:{
+        num:s.selectedId+1, name:sel.name, phone:sel.phone, address:sel.address, hours:sel.hours,
+        business:sel.business, apply:sel.apply, docs:sel.docs,
+        badges:sel.badges.map(b=>({label:b,style:this.badgeMeta(b)})),
+      },
+      onInput:(e)=>this.setState({input:e.target.value}),
+      onKey:(e)=>{ if(e.key==='Enter'){ e.preventDefault(); this.send(); } },
+      onSend:()=>this.send(),
+      onTabMap:()=>this.setState({tab:'map'}),
+      onTabList:()=>this.setState({tab:'list'}),
+      onCall:()=>this.setToast('전화 연결: '+sel.phone),
+      onRoute:()=>this.setToast(sel.name+' 길찾기를 여는 중...'),
+      onSave:()=>this.setToast('상담 요약을 저장했어요.'),
+      onNew:()=>this.newChat(),
+      onOtherRegion:()=>this.otherRegion(),
+    };
+  }
+}
+</script>
+</body>
+</html>
