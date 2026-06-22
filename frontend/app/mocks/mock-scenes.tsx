@@ -217,25 +217,13 @@ function renderScene(slug: string) {
 
 function ChatRail({ withProgress = false }: { withProgress?: boolean }) {
   return (
-    <aside className="flex w-[310px] shrink-0 flex-col border-r border-[#efe7da] bg-[#fbf6ef]">
+    <aside className="flex w-[372px] shrink-0 flex-col border-r border-[#efe7da] bg-[#fbf6ef]">
       <div className="flex flex-1 flex-col gap-4 px-4 py-5">
         <ChatBubble role="assistant" text={"안녕하세요, 로디에요!\n궁금한 점을 편하게 물어보세요."} />
         {withProgress ? <ChatBubble role="user" text="강남구에서 신청 가능한 노인일자리 알려줘" /> : null}
       </div>
-      {withProgress ? (
-        <div className="mx-4 mb-3 rounded-[14px] border border-[#f0e7da] bg-white px-4 py-3.5 text-sm">
-          <div className="mb-3 font-extrabold text-[#5b5249]">작업 진행 상황</div>
-          {["지역 정보 확인", "수행기관 검색", "신청 조건 확인", "결과 정리"].map((task) => (
-            <div key={task} className="flex items-center gap-2 py-1">
-              <span className="text-xs text-[#bfae9b]">◇</span>
-              <span className="flex-1 text-[#5f574d]">{task}</span>
-              <span className="text-xs font-bold text-[#42a564]">완료</span>
-            </div>
-          ))}
-        </div>
-      ) : null}
       <div className="p-4 pt-0">
-        <div className="flex items-center gap-2 rounded-[14px] border border-[#ecd9c4] bg-white py-1.5 pl-4 pr-2">
+        <div className="flex items-center gap-2 rounded-[14px] border border-[#ecd9c4] bg-white py-2.5 pl-4 pr-2">
           <span className="flex-1 text-sm text-[#b1a597]">메시지를 입력하세요...</span>
           <span className="flex size-10 shrink-0 items-center justify-center rounded-[11px] bg-[#ef8b54] text-white">
             <Navigation className="size-4 rotate-45" />
@@ -261,7 +249,7 @@ function ChatBubble({ role, text }: { role: "assistant" | "user"; text: string }
       </span>
       <div
         className={cn(
-          "max-w-[230px] whitespace-pre-wrap rounded-[4px_14px_14px_14px] px-3.5 py-3 text-sm leading-relaxed",
+          "max-w-[276px] whitespace-pre-wrap rounded-[4px_14px_14px_14px] px-3.5 py-3 text-sm leading-relaxed",
           isUser ? "bg-[#f7e7d8] text-[#4a4038]" : "border border-[#eee3d6] bg-white text-[#403a33]",
         )}
       >
@@ -350,7 +338,7 @@ function DocumentReferencesScene() {
                   <FileText className="size-5" />
                 </span>
                 <div className="min-w-0">
-                  <h3 className="text-[28px] font-extrabold leading-tight text-[#2f2b26]">{selected.title}</h3>
+                  <h3 className="text-[30px] font-extrabold leading-tight text-[#2f2b26]">{selected.title}</h3>
                   <div className="mt-2 text-sm font-semibold text-[#9a8f82]">
                     {selected.source} · {selected.page}
                   </div>
@@ -366,13 +354,14 @@ function DocumentReferencesScene() {
               <span className="rounded-lg bg-[#d9efe0] px-2.5 py-1 text-xs font-semibold text-[#3f9a63]">관련도 {selected.match}%</span>
             </div>
 
-            <div className="mt-3 grid gap-6 lg:grid-cols-[1fr_1fr]">
-              <div className="rounded-[14px] bg-[#fbf6ef] p-5">
-                <InfoBlock label="문서 요약" value={selected.summary} />
+            <div className="mt-3 flex flex-col gap-3">
+              <div className="flex flex-col gap-2 rounded-[14px] bg-[#fbf6ef] p-5 text-lg leading-relaxed text-[#4d463d] sm:flex-row sm:items-start sm:gap-5">
+                <div className="shrink-0 text-base font-extrabold text-[#9a8f82] sm:w-32">문서 요약</div>
+                <p className="min-w-0 flex-1">{selected.summary}</p>
               </div>
-              <div className="rounded-[14px] border border-[#efe0cd] bg-[#fffaf3] p-5">
-                <div className="mb-2 text-xs font-extrabold text-[#9a8f82]">답변 근거 문장</div>
-                <p className="text-base leading-relaxed text-[#4d463d]">
+              <div className="flex flex-col gap-2 rounded-[14px] border border-[#efe0cd] bg-[#fffaf3] p-5 sm:flex-row sm:items-start sm:gap-5">
+                <div className="shrink-0 text-base font-extrabold text-[#9a8f82] sm:w-32">답변 근거 문장</div>
+                <p className="min-w-0 flex-1 text-[17px] leading-relaxed text-[#4d463d]">
                   거주지 기준 수행기관에서 상담을 먼저 받고, 사업 유형에 맞는 서류를 준비합니다.
                 </p>
               </div>
@@ -383,7 +372,7 @@ function DocumentReferencesScene() {
                 {selected.highlights.map((highlight, index) => (
                   <div key={highlight} className="rounded-[13px] border border-[#efe7da] bg-white p-4">
                     <div className="mb-2 text-xs font-bold text-[#ef8b54]">근거 {index + 1}</div>
-                    <p className="text-sm leading-relaxed text-[#4d463d]">{highlight}</p>
+                    <p className="text-[15px] leading-relaxed text-[#4d463d]">{highlight}</p>
                   </div>
                 ))}
               </div>
@@ -392,7 +381,7 @@ function DocumentReferencesScene() {
             <div className="flex-1" />
           </div>
 
-          <aside className="flex w-[236px] shrink-0 flex-col gap-2 overflow-y-auto rounded-2xl border border-[#eadfce] bg-white p-3">
+          <aside className="flex w-[260px] shrink-0 flex-col gap-2 overflow-y-auto rounded-2xl border border-[#eadfce] bg-white p-3">
             {documents.map((document, index) => (
               <div
                 key={document.title}
@@ -411,7 +400,7 @@ function DocumentReferencesScene() {
                     <FileText className="size-4" />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-extrabold leading-snug text-[#332f29]">{document.title}</span>
+                    <span className="block text-lg font-extrabold leading-snug text-[#332f29]">{document.title}</span>
                     <span className="mt-1 block text-xs font-semibold text-[#9a8f82]">
                       {document.source} · {document.page}
                     </span>
@@ -541,15 +530,6 @@ function InfoCard({ label, value }: { label: string; value: string }) {
     <div className="rounded-[13px] border border-[#efe0cd] bg-white px-4 py-3 text-left">
       <div className="text-xs font-extrabold text-[#9a8f82]">{label}</div>
       <div className="mt-2 text-base font-semibold text-[#403a33]">{value}</div>
-    </div>
-  )
-}
-
-function InfoBlock({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <div className="mb-1.5 text-xs font-extrabold text-[#9a8f82]">{label}</div>
-      <div>{value}</div>
     </div>
   )
 }
