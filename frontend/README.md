@@ -1,8 +1,9 @@
 # Frontend
 
 노인·고령층 법률·복지 상담 서비스의 Next.js 기반 프론트엔드입니다.
-채팅 화면은 Next.js App Router의 `POST /api/chat` route handler를 호출합니다.
-해당 route handler가 FastAPI backend의 `POST /chat/stream` SSE를 받아 AI SDK UI message stream으로 변환합니다.
+채팅 화면인 `/chat_page`는 Next.js App Router의 `POST /api/chat_page` route handler를 호출합니다.
+해당 route handler가 backend의 `POST /chat` 엔드포인트를 호출합니다.
+레거시 `/chat` 경로는 실제 backend 연동 채팅 화면인 `/chat_page`로 리다이렉트합니다.
 
 ## Prerequisites
 
@@ -45,7 +46,6 @@ bun run dev -- --webpack -H 127.0.0.1 -p 3001
 
 ```text
 http://127.0.0.1:3000
-http://127.0.0.1:3000/chat
 http://127.0.0.1:3000/chat_page
 ```
 
@@ -53,11 +53,12 @@ http://127.0.0.1:3000/chat_page
 
 ```bash
 curl -I http://127.0.0.1:3000
-curl -I http://127.0.0.1:3000/chat
 curl -I http://127.0.0.1:3000/chat_page
+curl -I http://127.0.0.1:3000/chat
 ```
 
-각 요청이 `HTTP/1.1 200 OK`를 반환하면 서버가 응답하고 있는 상태입니다.
+`/`와 `/chat_page` 요청이 `HTTP/1.1 200 OK`를 반환하면 서버가 응답하고 있는 상태입니다.
+`/chat`은 `/chat_page`로 리다이렉트되므로 `307 Temporary Redirect`를 반환합니다.
 
 ## 개발 명령
 
@@ -81,9 +82,9 @@ make lint
 
 | 변수 | 기본값 | 설명 |
 | --- | --- | --- |
-| `BACKEND_URL` | `http://127.0.0.1:8000` | Next.js route handler가 호출할 FastAPI backend base URL |
+| `BACKEND_URL` | `http://127.0.0.1:8000` | Next.js route handler가 호출할 backend base URL |
 
-브라우저는 FastAPI URL을 직접 알 필요가 없습니다. API key나 token 같은 secret은 `NEXT_PUBLIC_*` 값으로 두지 않습니다.
+브라우저는 backend URL을 직접 알 필요가 없습니다. API key나 token 같은 secret은 `NEXT_PUBLIC_*` 값으로 두지 않습니다.
 
 로컬에서만 쓰는 환경 파일은 Git에 올리지 않습니다.
 
