@@ -28,6 +28,18 @@ type Institution = {
   docs: string
 }
 
+type DocumentSource = {
+  title: string
+  organization: string
+  category: string
+  updatedAt: string
+  match: number
+  source: string
+  pages: string
+  summary: string
+  highlights: string[]
+}
+
 type Task = {
   label: string
   done: boolean
@@ -72,6 +84,54 @@ const institutions: Institution[] = [
     business: "시장형사업단(카페, 매장 등) 운영 및 일자리 연계",
     apply: "전화 예약 후 방문 상담",
     docs: "신분증, 통장사본",
+  },
+]
+
+const documentSources: DocumentSource[] = [
+  {
+    title: "노인일자리 및 사회활동 지원사업 운영안내",
+    organization: "보건복지부",
+    category: "사업 지침",
+    updatedAt: "최근 지침",
+    match: 94,
+    source: "공공 문서",
+    pages: "p. 12-18",
+    summary: "노인일자리 사업 유형, 참여 자격, 신청 흐름을 안내하는 운영 지침 문서입니다.",
+    highlights: [
+      "참여자는 거주지 관할 수행기관 또는 행정복지센터를 통해 상담과 신청을 진행할 수 있습니다.",
+      "사업 유형에 따라 공익활동, 사회서비스형, 시장형 등으로 나뉘며 모집 조건이 다를 수 있습니다.",
+      "신청 시 신분 확인 서류와 소득·거주 정보 확인이 필요할 수 있습니다.",
+    ],
+  },
+  {
+    title: "강남구 노인일자리 수행기관 모집 공고 예시",
+    organization: "지방자치단체",
+    category: "지역 공고",
+    updatedAt: "예시 자료",
+    match: 88,
+    source: "지역 공고",
+    pages: "p. 2-4",
+    summary: "지역별 수행기관, 접수 기간, 문의처를 확인하는 화면 예시로 사용할 수 있는 문서입니다.",
+    highlights: [
+      "기관별 모집 분야와 접수 가능 기간은 공고마다 다르므로 최신 공고 확인이 필요합니다.",
+      "방문 접수 전 전화 문의를 통해 준비 서류와 상담 가능 시간을 확인하는 것이 좋습니다.",
+      "거주지와 가까운 수행기관을 우선 확인하면 이동 부담을 줄일 수 있습니다.",
+    ],
+  },
+  {
+    title: "노인복지 관련 상담 FAQ",
+    organization: "공공 상담 자료",
+    category: "FAQ",
+    updatedAt: "예시 자료",
+    match: 81,
+    source: "상담 문서",
+    pages: "Q3-Q6",
+    summary: "노인일자리 신청 전 자주 묻는 질문과 답변을 모아 보여주는 문서 예시입니다.",
+    highlights: [
+      "나이, 거주지, 소득 상황에 따라 신청 가능한 사업이 달라질 수 있습니다.",
+      "동일 기간에 중복 참여가 제한되는 사업이 있을 수 있어 상담 단계에서 확인이 필요합니다.",
+      "온라인 확인이 어려운 경우 가까운 복지관이나 시니어클럽에 문의할 수 있습니다.",
+    ],
   },
 ]
 
@@ -129,12 +189,14 @@ export function ChatPageClient() {
   const [birthYear, setBirthYear] = useState("")
   const [residence, setResidence] = useState("")
   const [isBusy, setIsBusy] = useState(false)
-  const [tab, setTab] = useState<"map" | "list">("map")
+  const [tab, setTab] = useState<"map" | "list" | "documents">("map")
   const [selectedId, setSelectedId] = useState(0)
+  const [selectedDocumentId, setSelectedDocumentId] = useState(0)
   const [toast, setToast] = useState("")
   const messagesRef = useRef<HTMLDivElement>(null)
 
   const selected = institutions[selectedId]
+  const selectedDocument = documentSources[selectedDocumentId]
   const started = messages.some((message) => message.role === "user")
   const personalizedSuggestions = useMemo(() => {
     const place = residence.trim()
@@ -240,6 +302,7 @@ export function ChatPageClient() {
     setIsBusy(false)
     setTab("map")
     setSelectedId(0)
+    setSelectedDocumentId(0)
     setToast("새 상담을 시작했어요.")
   }
 
@@ -256,7 +319,19 @@ export function ChatPageClient() {
         <nav className="hidden items-center gap-7 text-sm font-medium text-[#7c736a] md:flex">
           <span>상담 주제</span>
           <span>이용 방법</span>
-          <span>근거 문서</span>
+          <button
+            type="button"
+            onClick={() => {
+              if (started) {
+                setTab("documents")
+                return
+              }
+              setToast("질문을 보내면 근거 문서를 확인할 수 있어요.")
+            }}
+            className="transition-colors hover:text-[#33302b]"
+          >
+            근거 문서
+          </button>
         </nav>
 
         <div className="flex-1" />
@@ -377,8 +452,14 @@ export function ChatPageClient() {
             <>
               <div className="flex min-h-0 flex-1">
                 <div className="flex min-w-0 flex-1 flex-col p-6 pb-4">
-                  <h1 className="text-2xl font-extrabold tracking-tight text-[#2f2b26]">강남구 노인일자리 신청 가능 기관</h1>
-                  <p className="mt-1.5 text-sm text-[#8c8276]">지도에서 기관을 선택하면 상세 정보를 확인할 수 있어요.</p>
+                  <h1 className="text-2xl font-extrabold tracking-tight text-[#2f2b26]">
+                    {tab === "documents" ? "상담 근거 문서" : "강남구 노인일자리 신청 가능 기관"}
+                  </h1>
+                  <p className="mt-1.5 text-sm text-[#8c8276]">
+                    {tab === "documents"
+                      ? "문서를 선택하면 오른쪽에서 핵심 근거와 요약을 확인할 수 있어요."
+                      : "지도에서 기관을 선택하면 상세 정보를 확인할 수 있어요."}
+                  </p>
 
               <div className="mt-5 flex w-max gap-1.5 rounded-xl bg-[#f1ebe1] p-1">
                 <button
@@ -402,6 +483,17 @@ export function ChatPageClient() {
                 >
                   <List className="size-4" />
                   목록
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTab("documents")}
+                  className={cn(
+                    "inline-flex items-center gap-2 rounded-[9px] px-5 py-2 text-sm font-semibold",
+                    tab === "documents" ? "bg-white text-[#33302b] shadow-sm" : "text-[#9a8f82]",
+                  )}
+                >
+                  <FileText className="size-4" />
+                  문서
                 </button>
               </div>
 
@@ -454,7 +546,7 @@ export function ChatPageClient() {
                     ))}
                   </div>
                 </div>
-              ) : (
+              ) : tab === "list" ? (
                 <div className="mt-3.5 flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto pr-1">
                   {institutions.map((institution, index) => {
                     const isSelected = index === selectedId
@@ -501,10 +593,122 @@ export function ChatPageClient() {
                     )
                   })}
                 </div>
+              ) : (
+                <div className="mt-3.5 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-1">
+                  {documentSources.map((document, index) => {
+                    const isSelected = index === selectedDocumentId
+                    return (
+                      <button
+                        key={document.title}
+                        type="button"
+                        onClick={() => setSelectedDocumentId(index)}
+                        className={cn(
+                          "rounded-[14px] border bg-white p-4 text-left transition",
+                          isSelected ? "border-[#f0b88e] shadow-[0_3px_12px_rgba(239,139,84,.14)]" : "border-[#efe7da]",
+                        )}
+                      >
+                        <div className="flex items-start gap-3">
+                          <span
+                            className={cn(
+                              "flex size-9 shrink-0 items-center justify-center rounded-[10px]",
+                              isSelected ? "bg-[#ef8b54] text-white" : "bg-[#f5eadc] text-[#d88951]",
+                            )}
+                          >
+                            <FileText className="size-4" />
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="rounded-[7px] bg-[#fbe3d2] px-2.5 py-1 text-xs font-bold text-[#cf7838]">
+                                {document.category}
+                              </span>
+                              <span className="text-xs font-semibold text-[#9a8f82]">{document.organization}</span>
+                            </div>
+                            <h2 className="mt-2 text-base font-extrabold text-[#332f29]">{document.title}</h2>
+                            <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-[#7c736a]">{document.summary}</p>
+                            <div className="mt-3 flex items-center gap-2 text-xs font-semibold text-[#9a8f82]">
+                              <span>{document.source}</span>
+                              <span>·</span>
+                              <span>{document.pages}</span>
+                              <span className="ml-auto rounded-[7px] bg-[#d9efe0] px-2 py-1 text-[#3f9a63]">
+                                관련도 {document.match}%
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
               )}
             </div>
 
                 <aside className="flex w-[312px] shrink-0 flex-col p-6 pl-0">
+                  {tab === "documents" ? (
+                    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto rounded-2xl border border-[#efe7da] bg-white p-5">
+                      <div className="flex items-start gap-3">
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-[#ef8b54] text-white">
+                          <FileText className="size-4" />
+                        </span>
+                        <div className="min-w-0">
+                          <h2 className="text-lg font-extrabold leading-snug text-[#2f2b26]">{selectedDocument.title}</h2>
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            <span className="rounded-lg bg-[#fbe3d2] px-2.5 py-1 text-xs font-semibold text-[#cf7838]">
+                              {selectedDocument.category}
+                            </span>
+                            <span className="rounded-lg bg-[#dbe7f3] px-2.5 py-1 text-xs font-semibold text-[#4a77ad]">
+                              {selectedDocument.organization}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="my-4 h-px bg-[#f0e8db]" />
+
+                      <div className="rounded-[13px] bg-[#fbf6ef] p-4">
+                        <div className="mb-2 text-xs font-extrabold text-[#9a8f82]">문서 요약</div>
+                        <p className="text-sm leading-relaxed text-[#4d463d]">{selectedDocument.summary}</p>
+                      </div>
+
+                      <div className="mt-4 flex flex-col gap-3">
+                        <div className="text-xs font-extrabold text-[#9a8f82]">핵심 근거</div>
+                        {selectedDocument.highlights.map((highlight, index) => (
+                          <div key={highlight} className="rounded-[12px] border border-[#efe0cd] bg-white px-3.5 py-3">
+                            <div className="mb-1.5 text-xs font-bold text-[#ef8b54]">근거 {index + 1}</div>
+                            <p className="text-sm leading-relaxed text-[#4d463d]">{highlight}</p>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
+                        <div className="rounded-[10px] bg-[#f7efe6] px-3 py-2">
+                          <div className="font-bold text-[#9a8f82]">범위</div>
+                          <div className="mt-1 text-[#4d463d]">{selectedDocument.pages}</div>
+                        </div>
+                        <div className="rounded-[10px] bg-[#f7efe6] px-3 py-2">
+                          <div className="font-bold text-[#9a8f82]">관련도</div>
+                          <div className="mt-1 text-[#4d463d]">{selectedDocument.match}%</div>
+                        </div>
+                      </div>
+
+                      <div className="flex-1" />
+                      <div className="mt-4 flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setToast(`${selectedDocument.title} 문서 예시를 열었어요.`)}
+                          className="flex h-11 flex-1 items-center justify-center rounded-[11px] bg-[#ef8b54] text-sm font-bold text-white shadow-[0_2px_8px_rgba(239,139,84,.3)]"
+                        >
+                          문서 열기
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setToast("근거 문장을 상담 요약에 추가했어요.")}
+                          className="flex h-11 flex-1 items-center justify-center rounded-[11px] border border-[#f0b88e] bg-white text-sm font-bold text-[#e07e43]"
+                        >
+                          근거 복사
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
                   <div className="flex min-h-0 flex-1 flex-col overflow-y-auto rounded-2xl border border-[#efe7da] bg-white p-5">
                     <div className="flex items-center gap-2.5">
                       <span className="flex size-7 items-center justify-center rounded-full bg-[#ef8b54] text-sm font-bold text-white">
@@ -562,6 +766,7 @@ export function ChatPageClient() {
                       </button>
                     </div>
                   </div>
+                  )}
                 </aside>
               </div>
 
@@ -579,6 +784,13 @@ export function ChatPageClient() {
                   className="h-10 rounded-[10px] border border-[#ead9c6] bg-white px-4 text-sm font-semibold text-[#6c6359]"
                 >
                   목록 보기
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTab("documents")}
+                  className="h-10 rounded-[10px] border border-[#ead9c6] bg-white px-4 text-sm font-semibold text-[#6c6359]"
+                >
+                  문서 보기
                 </button>
                 <button
                   type="button"
