@@ -3,9 +3,13 @@
 import Image from "next/image"
 import Link from "next/link"
 import type { FormEvent } from "react"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { ArrowRight, FileText, List, Map, Navigation, Phone, Plus, Save, Send } from "lucide-react"
 
+import { Button } from "@/components/ui/button"
+import { useBrowserSpeechDictation } from "@/components/voice/hooks/use-browser-speech-dictation"
+import { VoiceInputButton } from "@/components/voice/surfaces/voice-input-button/surface"
+import type { DictationTranscript } from "@/components/voice/types"
 import { cn } from "@/lib/utils"
 
 type ChatMessage = {
@@ -40,11 +44,6 @@ type DocumentSource = {
   summary: string
   highlights: string[]
   citation: string
-}
-
-type Task = {
-  label: string
-  done: boolean
 }
 
 const institutions: Institution[] = [
@@ -169,6 +168,15 @@ function badgeClassName(label: string) {
   return "bg-[#eee5d8] text-[#8a7d6c]"
 }
 
+function mergeSpeechTranscript(baseInput: string, transcript: string) {
+  const base = baseInput.trim()
+  const text = transcript.trim()
+
+  if (!base) return text
+  if (!text) return base
+  return `${base} ${text}`
+}
+
 export function ChatPageClient() {
   const [sessionId, setSessionId] = useState(createSessionId)
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -189,6 +197,13 @@ export function ChatPageClient() {
   const [selectedDocumentId, setSelectedDocumentId] = useState(0)
   const [toast, setToast] = useState("")
   const messagesRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const speechBaseInputRef = useRef("")
+  const handleSpeechTranscript = useCallback((transcript: DictationTranscript) => {
+    setInput(mergeSpeechTranscript(speechBaseInputRef.current, transcript.text))
+    window.requestAnimationFrame(() => inputRef.current?.focus())
+  }, [])
+  const dictation = useBrowserSpeechDictation({ onTranscriptChange: handleSpeechTranscript })
 
   const selected = institutions[selectedId]
   const selectedDocument = documentSources[selectedDocumentId]
@@ -203,16 +218,6 @@ export function ChatPageClient() {
       `${place || "우리 동네"}에서 가장 가까운 수행기관 알려줘`,
     ]
   }, [birthYear, residence])
-  const tasks: Task[] = useMemo(
-    () => [
-      { label: "지역 정보 확인", done: true },
-      { label: "수행기관 검색", done: true },
-      { label: "신청 조건 확인", done: true },
-      { label: "결과 정리", done: started && !isBusy },
-    ],
-    [isBusy, started],
-  )
-
   useEffect(() => {
     const element = messagesRef.current
     if (!element) return
@@ -229,6 +234,7 @@ export function ChatPageClient() {
     const text = (raw ?? input).trim()
     if (!text || isBusy) return
 
+    dictation.reset()
     setInput("")
     setIsBusy(true)
     setMessages((current) => [...current, createMessage("user", text)])
@@ -282,7 +288,19 @@ export function ChatPageClient() {
     void send()
   }
 
+  function toggleSpeechInput() {
+    if (dictation.status === "listening") {
+      dictation.stop()
+      return
+    }
+
+    speechBaseInputRef.current = input
+    dictation.start()
+    inputRef.current?.focus()
+  }
+
   function resetChat() {
+    dictation.reset()
     setSessionId(createSessionId())
     setMessages([
       createMessage(
@@ -358,7 +376,7 @@ export function ChatPageClient() {
       </header>
 
       <div className="flex min-h-0 flex-1">
-        <aside className="flex w-[330px] shrink-0 flex-col border-r border-[#efe7da] bg-[#fbf6ef]">
+        <aside className="flex w-[396px] shrink-0 flex-col border-r border-[#efe7da] bg-[#fbf6ef]">
           <div ref={messagesRef} className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4 pt-5">
             {messages.map((message) => {
               const isUser = message.role === "user"
@@ -379,7 +397,7 @@ export function ChatPageClient() {
                   <div className="min-w-0">
                     <div
                       className={cn(
-                        "max-w-[236px] whitespace-pre-wrap rounded-[4px_14px_14px_14px] px-3.5 py-3 text-sm leading-relaxed",
+                        "max-w-[284px] whitespace-pre-wrap rounded-[4px_14px_14px_14px] px-3.5 py-3 text-sm leading-relaxed",
                         isUser ? "bg-[#f7e7d8] text-[#4a4038]" : "border border-[#eee3d6] bg-white text-[#403a33]",
                       )}
                     >
@@ -407,43 +425,49 @@ export function ChatPageClient() {
             ) : null}
           </div>
 
-          {started ? (
-            <div className="mx-4 mb-3 rounded-[14px] border border-[#f0e7da] bg-white px-4 py-3.5">
-              <div className="mb-3 text-sm font-extrabold text-[#5b5249]">작업 진행 상황</div>
-              <div className="flex flex-col gap-2.5 text-sm">
-                {tasks.map((task) => (
-                  <div key={task.label} className="flex items-center gap-2">
-                    <span className="text-xs text-[#bfae9b]">◇</span>
-                    <span className="flex-1 text-[#5f574d]">{task.label}</span>
-                    <span className={cn("text-xs font-bold", task.done ? "text-[#42a564]" : "text-[#e88a3f]")}>
-                      {task.done ? "✓ 완료" : "◔ 진행 중"}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : null}
-
           <form
             className="p-4 pt-0"
             onSubmit={handleChatSubmit}
           >
-            <div className="flex items-center gap-2 rounded-[14px] border border-[#ecd9c4] bg-white py-1.5 pl-4 pr-2">
+            <div className="flex items-center gap-2 rounded-[14px] border border-[#ecd9c4] bg-white py-2.5 pl-4 pr-2">
               <input
+                ref={inputRef}
                 value={input}
-                onChange={(event) => setInput(event.target.value)}
+                onChange={(event) => {
+                  setInput(event.target.value)
+                  if (dictation.status !== "listening") {
+                    speechBaseInputRef.current = event.target.value
+                  }
+                }}
                 disabled={isBusy}
                 placeholder="메시지를 입력하세요..."
                 className="min-w-0 flex-1 bg-transparent text-sm text-[#4a423a] outline-none placeholder:text-[#b1a597]"
               />
-              <button
+              <VoiceInputButton
+                compact
+                status={dictation.status}
+                onClick={toggleSpeechInput}
+                className="shrink-0"
+              />
+              <Button
                 type="submit"
                 disabled={isBusy || !input.trim()}
-                className="flex size-10 shrink-0 items-center justify-center rounded-[11px] bg-[#ef8b54] text-white shadow-[0_2px_6px_rgba(239,139,84,.35)] disabled:opacity-50"
+                size="icon-lg"
+                variant="default"
+                className="size-10 shrink-0 rounded-[11px] bg-[#ef8b54] text-white shadow-[0_2px_6px_rgba(239,139,84,.35)] disabled:opacity-50"
                 aria-label="전송"
               >
                 <Send className="size-4" />
-              </button>
+              </Button>
+            </div>
+            <div className="mt-2 min-h-4 px-1 text-xs font-semibold">
+              {dictation.status === "listening" ? (
+                <span className="text-[#ef8b54]">듣는 중...</span>
+              ) : dictation.status === "requesting-permission" ? (
+                <span className="text-[#9a8f82]">마이크 확인 중...</span>
+              ) : dictation.errorMessage ? (
+                <span className="text-[#c15b45]">{dictation.errorMessage}</span>
+              ) : null}
             </div>
           </form>
         </aside>
@@ -527,7 +551,7 @@ export function ChatPageClient() {
                         }}
                       />
                     ) : (
-                    <div className="mt-3.5 grid min-h-0 flex-1 grid-cols-1 gap-3 overflow-y-auto pr-1 xl:grid-cols-2">
+                    <div className="mt-3.5 grid min-h-0 flex-1 auto-rows-max grid-cols-1 content-start items-start gap-3 overflow-y-auto pr-1 xl:grid-cols-2">
                       {documentSources.map((document, index) => {
                         const isSelected = index === selectedDocumentId
                         return (
@@ -539,7 +563,7 @@ export function ChatPageClient() {
                               setShowDocumentDetail(true)
                             }}
                             className={cn(
-                              "flex min-h-[178px] flex-col rounded-[14px] border bg-white p-4 text-left transition",
+                              "flex min-h-[210px] flex-col rounded-[14px] border bg-white px-4 py-3.5 text-left transition",
                               isSelected ? "border-[#f0b88e] shadow-[0_3px_12px_rgba(239,139,84,.14)]" : "border-[#efe7da]",
                             )}
                           >
@@ -553,7 +577,7 @@ export function ChatPageClient() {
                                 <FileText className="size-4" />
                               </span>
                               <div className="min-w-0 flex-1">
-                                <div className="text-base font-extrabold leading-snug text-[#332f29]">{document.title}</div>
+                                <div className="text-xl font-extrabold leading-snug text-[#332f29]">{document.title}</div>
                                 <div className="mt-1 text-xs font-semibold text-[#9a8f82]">
                                   {document.source} · {document.page}
                                 </div>
@@ -563,7 +587,7 @@ export function ChatPageClient() {
                               </span>
                             </div>
 
-                            <div className="mt-3 flex flex-wrap gap-1.5">
+                            <div className="mt-2.5 flex flex-wrap gap-1.5">
                               {document.tags.map((tag) => (
                                 <span key={tag} className="rounded-lg bg-[#f4ecdf] px-2.5 py-1 text-xs font-semibold text-[#7c7064]">
                                   {tag}
@@ -571,7 +595,7 @@ export function ChatPageClient() {
                               ))}
                             </div>
 
-                            <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-[#5f574d]">{document.summary}</p>
+                            <p className="mt-2.5 line-clamp-3 text-lg leading-relaxed text-[#5f574d]">{document.summary}</p>
                           </button>
                         )
                       })}
@@ -741,40 +765,6 @@ export function ChatPageClient() {
                 ) : null}
               </div>
 
-              <div className="mx-6 mb-5 flex shrink-0 items-center gap-3 rounded-[14px] border border-[#f0e3d1] bg-[#f6eee3] px-5 py-3.5">
-                <span className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#fbe6d4] ring-1 ring-[#f4d6bd]">
-                  <Image src="/images/mascot.png" alt="" width={36} height={36} className="size-9 object-cover" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-bold text-[#4d453c]">더 자세한 신청 조건이나 다른 기관도 궁금하신가요?</div>
-                  <div className="mt-1 text-xs text-[#9a8f82]">필요하면 목록 보기 또는 추가 검색을 도와드릴게요.</div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setTab("list")
-                    setShowDocuments(false)
-                    setShowDocumentDetail(false)
-                  }}
-                  className="h-10 rounded-[10px] border border-[#ead9c6] bg-white px-4 text-sm font-semibold text-[#6c6359]"
-                >
-                  목록 보기
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowDocuments(false)
-                    setShowDocumentDetail(false)
-                    setMessages((current) => [
-                      ...current,
-                      createMessage("assistant", "어느 지역의 기관을 찾아드릴까요?\n예) “서초구 노인일자리 알려줘” 처럼 입력해 주세요."),
-                    ])
-                  }}
-                  className="h-10 rounded-[10px] border border-[#ead9c6] bg-white px-4 text-sm font-semibold text-[#6c6359]"
-                >
-                  다른 지역 검색
-                </button>
-              </div>
             </>
           ) : isProfileStep ? (
             <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-10 py-8 text-center">
@@ -875,7 +865,7 @@ function DocumentDetailPanel({
                 <FileText className="size-5" />
               </span>
               <div className="min-w-0">
-                <h2 className="text-[28px] font-extrabold leading-tight text-[#2f2b26]">{document.title}</h2>
+                <h2 className="text-[30px] font-extrabold leading-tight text-[#2f2b26]">{document.title}</h2>
                 <div className="mt-2 text-sm font-semibold text-[#9a8f82]">
                   {document.source} · {document.updated}
                 </div>
@@ -904,14 +894,15 @@ function DocumentDetailPanel({
           </button>
         </div>
 
-        <div className="mt-3 grid gap-6 lg:grid-cols-[1fr_1fr]">
-          <div className="rounded-[14px] bg-[#fbf6ef] p-5">
-            <InfoBlock label="문서 요약" value={document.summary} />
+        <div className="mt-3 flex flex-col gap-3">
+          <div className="flex flex-col gap-2 rounded-[14px] bg-[#fbf6ef] p-5 text-lg leading-relaxed text-[#4d463d] sm:flex-row sm:items-start sm:gap-5">
+            <div className="shrink-0 text-base font-extrabold text-[#9a8f82] sm:w-32">문서 요약</div>
+            <p className="min-w-0 flex-1">{document.summary}</p>
           </div>
 
-          <div className="rounded-[14px] border border-[#efe0cd] bg-[#fffaf3] p-5">
-            <div className="mb-2 text-xs font-extrabold text-[#9a8f82]">답변 근거 문장</div>
-            <p className="text-base leading-relaxed text-[#4d463d]">{document.citation}</p>
+          <div className="flex flex-col gap-2 rounded-[14px] border border-[#efe0cd] bg-[#fffaf3] p-5 sm:flex-row sm:items-start sm:gap-5">
+            <div className="shrink-0 text-base font-extrabold text-[#9a8f82] sm:w-32">답변 근거 문장</div>
+            <p className="min-w-0 flex-1 text-[17px] leading-relaxed text-[#4d463d]">{document.citation}</p>
           </div>
         </div>
 
@@ -920,7 +911,7 @@ function DocumentDetailPanel({
             {document.highlights.map((highlight, index) => (
               <div key={highlight} className="rounded-[13px] border border-[#efe7da] bg-white p-4">
                 <div className="mb-2 text-xs font-bold text-[#ef8b54]">근거 {index + 1}</div>
-                <p className="text-sm leading-relaxed text-[#4d463d]">{highlight}</p>
+                <p className="text-[15px] leading-relaxed text-[#4d463d]">{highlight}</p>
               </div>
             ))}
           </div>
@@ -937,7 +928,7 @@ function DocumentDetailPanel({
         <div className="flex-1" />
       </div>
 
-      <aside className="flex w-[236px] shrink-0 flex-col gap-2 overflow-y-auto rounded-2xl border border-[#eadfce] bg-white p-3">
+      <aside className="flex w-[260px] shrink-0 flex-col gap-2 overflow-y-auto rounded-2xl border border-[#eadfce] bg-white p-3">
         {documents.map((item, index) => {
           const isSelected = index === selectedDocumentId
 
@@ -961,7 +952,7 @@ function DocumentDetailPanel({
                   <FileText className="size-4" />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-extrabold leading-snug text-[#332f29]">{item.title}</span>
+                  <span className="block text-base font-extrabold leading-snug text-[#332f29]">{item.title}</span>
                   <span className="mt-1 block text-xs font-semibold text-[#9a8f82]">
                     {item.source} · {item.page}
                   </span>
