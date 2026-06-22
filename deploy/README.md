@@ -1,6 +1,6 @@
 # Deploy
 
-루트 통합 Docker Compose와 Makefile 실행 파일을 관리합니다. 이 디렉토리는 로컬/서버에서 전체 서비스를 한 번에 띄우는 진입점입니다.
+통합 실행 Makefile과 Docker Compose 설정을 관리합니다. 현재 기본 개발 흐름은 frontend와 backend를 로컬에서 빠르게 띄우는 것이며, Docker Compose 전체 stack은 명시적으로 필요할 때 사용하는 보조 흐름입니다.
 
 ## Layout
 
@@ -10,9 +10,9 @@ deploy/
 └── makefile/    # 통합 실행 Makefile
 ```
 
-## Services
+## Compose Services
 
-`deploy/docker/docker-compose.yml`은 기본 실행 시 아래 서비스를 같은 Docker network인 `deploy_default`에 올립니다.
+`deploy/docker/docker-compose.yml`은 compose 실행 시 아래 서비스를 같은 Docker network인 `deploy_default`에 올립니다.
 
 - `frontend`: Next.js 최종 프론트엔드
 - `backend`: Main Agent Django Channels service
@@ -27,23 +27,55 @@ deploy/
 
 ## Make
 
-Make가 설치되어 있으면 raw `docker compose` 명령보다 Makefile target을 우선 사용합니다.
+Make가 설치되어 있으면 raw `bun`, `uv`, `docker compose` 명령보다 Makefile target을 우선 사용합니다. 통합 Makefile의 기본 help는 local dev target을 먼저 보여줍니다.
 
 ```bash
 cd deploy/makefile
-make up          # 전체 현재 scope 서비스 시작
-make up-legacy   # legacy streamlit_3rd까지 포함해 시작
-make ps          # 컨테이너 상태 확인
-make logs        # 로그 확인
-make down        # 중지
-make clean       # 중지 + volume 제거
+make dev              # frontend + backend local dev 동시 실행
+make fe               # frontend local dev만 실행
+make be               # backend local dev만 실행
+
+make compose-up       # Docker Compose 전체 현재 scope 서비스 시작
+make compose-up-legacy  # legacy streamlit_3rd까지 포함해 시작
+make compose-ps       # 컨테이너 상태 확인
+make compose-logs     # 로그 확인
+make compose-down     # 중지
+make compose-clean    # 중지 + volume 제거
 ```
 
 이 로컬 환경에서는 `GNU Make 3.81`이 확인되었습니다. Make가 없는 macOS 환경에서는 Xcode Command Line Tools(`xcode-select --install`) 또는 Homebrew(`brew install make`)로 설치합니다. Linux는 배포판 패키지 매니저(`sudo apt install make`, `sudo dnf install make` 등)를 사용합니다.
 
-## Env Files
+## Local Dev
 
-`deploy/docker/.env.schema`가 통합 deploy env field의 기준입니다. 실제 환경 변수 파일은 `deploy/docker/` 아래에 생성되며 `.gitignore` 대상입니다.
+통합 local dev target은 서비스별 Makefile을 호출합니다. RAG, Memgraph, Redis, legacy `_3rd` 서비스는 자동으로 띄우지 않습니다. Backend secret 주입과 env 검증은 `backend/Makefile`의 Infisical + Varlock target을 그대로 사용합니다.
+
+```bash
+cd deploy/makefile
+make fe   # frontend/Makefile dev
+make be   # backend/Makefile dev
+make dev  # fe + be 병렬 실행
+```
+
+기본 local dev 접속 정보:
+
+| service | URL |
+| --- | --- |
+| Frontend | `http://127.0.0.1:3000` |
+| Backend | `http://127.0.0.1:8000` |
+
+포트를 바꿔야 하면 통합 Makefile 변수로 지정합니다.
+
+```bash
+make fe FRONTEND_PORT=3001
+make be BACKEND_PORT=8100
+make dev FRONTEND_PORT=3001 BACKEND_PORT=8100
+```
+
+`make dev`는 먼저 `backend/Makefile`의 `env-check`를 호출해 Infisical/Varlock 접근을 확인한 뒤 frontend와 backend를 병렬로 실행합니다. 두 서비스 로그가 같은 터미널에 함께 출력되므로, 로그를 분리해서 보고 싶으면 `make fe`와 `make be`를 터미널 두 개에서 각각 실행합니다.
+
+## Compose Env Files
+
+`deploy/docker/.env.schema`가 통합 deploy env field의 기준입니다. 실제 환경 변수 파일은 `deploy/docker/` 아래에 생성되며 `.gitignore` 대상입니다. 이 env 준비 흐름은 Docker Compose stack을 실행할 때 필요합니다.
 
 ```bash
 cd deploy/makefile
@@ -66,11 +98,11 @@ Varlock은 `deploy/docker/.env.schema`, `backend/.env.schema`, `rag/be/.env.sche
 
 통합 Docker 실행은 host의 `backend/.venv` 또는 `rag/be/.venv`를 사용하지 않습니다. 각 Python image는 Docker build 중 lock file 기준으로 컨테이너 내부 `/app/.venv`를 만들며, host `.venv/`는 `.dockerignore` 대상입니다.
 
-## Run
+## Compose Run
 
 ```bash
 cd deploy/makefile
-make up
+make compose-up
 ```
 
 기본 host 포트:
@@ -96,13 +128,22 @@ rag-be -> bolt://memgraph:7687
 rag-be -> redis://redis:6379/0
 ```
 
-Legacy profile을 켠 경우에만 `streamlit -> http://backend:8000` 연결이 추가됩니다.
+Legacy profile을 켠 경우에만 `streamlit -> http://backend:8000` 연결이 추가됩니다. 기존 호환용으로 `make up`, `make down`, `make ps`, `make logs` 같은 alias가 남아 있지만 새 문서와 기본 help에서는 명시적인 `compose-*` target을 사용합니다.
 
 ## Check
 
+Local dev 상태 확인:
+
+```bash
+curl -s http://127.0.0.1:3000/ | head
+curl -s http://127.0.0.1:8000/health
+```
+
+Compose stack 상태 확인:
+
 ```bash
 cd deploy/makefile
-make ps
+make compose-ps
 curl -s http://127.0.0.1:8100/health
 curl -s http://127.0.0.1:8110/health
 curl -s http://127.0.0.1:5174/ | head

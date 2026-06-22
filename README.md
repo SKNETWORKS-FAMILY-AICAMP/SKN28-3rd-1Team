@@ -236,7 +236,7 @@ SKN28-3rd-1Team/
 | `rag/be/README.md` | RAG Backend API, MCP endpoint, 환경 변수 |
 | `rag/fe/README.md` | RAG 운영 UI 실행 방법 |
 | `streamlit_3rd/README.md` | legacy Streamlit 상담 UI 구조와 backend 연결 방법 |
-| `deploy/README.md` | 통합 Docker Compose, Makefile 실행, 포트 정보 |
+| `deploy/README.md` | local dev 통합 Makefile, Docker Compose, 포트 정보 |
 | `docs/README.md` | agent guideline, 온보딩, 도구 설정 등 팀 문서 |
 | `docs/llm_env_naming_convention.md` | LLM agent/provider/model env naming과 Infisical 동기화 기준 |
 | `rag/related/rag-red-team/README.md` | Neo4j red-team graph 실험과 MCP 실행 방법 |
@@ -254,15 +254,45 @@ SKN28-3rd-1Team/
 
 ## 10. 🚀 실행 방법
 
-### 1) 통합 Docker Compose 실행
+### 1) Frontend + Backend local dev 실행
 
-`rag/related/rag-red-team`과 `streamlit_3rd`를 제외하고, Frontend, Backend,
-RAG Backend, RAG Frontend, Memgraph, Memgraph Lab, Redis를 같은 `deploy_default`
-Docker network에서 함께 실행한다.
+현재 기본 개발 흐름은 frontend와 backend를 로컬에서 띄우는 것이다. 통합 Makefile은 서비스별 Makefile을 호출하므로 raw `bun`/`uv` 명령을 중복해서 실행하지 않는다. Backend secret 주입과 env 검증도 `backend/Makefile`의 Infisical + Varlock 흐름을 그대로 사용한다.
 
 ```bash
 cd deploy/makefile
-make up
+make dev
+```
+
+기본 접속 정보:
+
+```text
+Frontend:    http://127.0.0.1:3000
+Backend API: http://127.0.0.1:8000
+```
+
+개별 실행이 필요하면 아래 target을 사용한다.
+
+```bash
+cd deploy/makefile
+make fe   # frontend local dev
+make be   # backend local dev
+```
+
+`make dev`, `make fe`, `make be`는 RAG, Memgraph, Redis, legacy `streamlit_3rd` 서비스를 자동으로 띄우지 않는다. `make dev`는 frontend/backend 병렬 실행 전에 backend env-check를 먼저 수행한다. 포트를 바꿔야 하면 `FRONTEND_PORT` 또는 `BACKEND_PORT`를 지정한다.
+
+```bash
+make dev FRONTEND_PORT=3001 BACKEND_PORT=8100
+```
+
+### 2) 통합 Docker Compose 실행
+
+`rag/related/rag-red-team`과 `streamlit_3rd`를 제외하고, Frontend, Backend,
+RAG Backend, RAG Frontend, Memgraph, Memgraph Lab, Redis를 같은 `deploy_default`
+Docker network에서 함께 실행해야 할 때만 명시적인 compose target을 사용한다.
+
+```bash
+cd deploy/makefile
+make compose-up
 ```
 
 기본 접속 정보:
@@ -285,7 +315,7 @@ rag-be -> bolt://memgraph:7687
 rag-be -> redis://redis:6379/0
 ```
 
-Legacy Streamlit UI까지 실행해야 할 때만 `cd deploy/makefile && make up-legacy`를 사용한다.
+Legacy Streamlit UI까지 실행해야 할 때만 `cd deploy/makefile && make compose-up-legacy`를 사용한다.
 
 `/chat`은 실제 LLM provider 호출이므로 `deploy/docker/.env_backend`에
 선택한 provider의 `LLM_PROVIDER_*_API_KEY`가 유효해야 한다.
@@ -296,7 +326,7 @@ Makefile target이 있는 서비스는 `make`를 우선 사용한다. Python 서
 venv는 `backend/.venv`와 `rag/be/.venv`이며, repository root Python이나
 `streamlit_3rd/.venv`를 current scope 작업에 사용하지 않는다.
 
-### 2) Backend Agent 실행
+### 3) Backend Agent 실행
 
 ```bash
 cd backend
@@ -318,7 +348,7 @@ curl -s -X POST http://127.0.0.1:8000/chat \
   | python -m json.tool
 ```
 
-### 3) Legacy Streamlit 상담 UI 실행
+### 4) Legacy Streamlit 상담 UI 실행
 
 ```bash
 cd streamlit_3rd
@@ -334,7 +364,7 @@ STREAMLIT_BACKEND_BASE_URL="http://127.0.0.1:8000"
 STREAMLIT_CHAT_BACKEND_MOCK=false
 ```
 
-### 4) RAG Infra 실행
+### 5) RAG Infra 실행
 
 ```bash
 cd rag
@@ -348,7 +378,7 @@ Memgraph Bolt: bolt://127.0.0.1:7687
 Memgraph Lab:  http://127.0.0.1:3000
 ```
 
-### 5) RAG Backend 실행
+### 6) RAG Backend 실행
 
 ```bash
 cd rag
@@ -367,7 +397,7 @@ GET  /api/review/edge-candidates
 MCP  /mcp
 ```
 
-### 6) RAG Frontend 실행
+### 7) RAG Frontend 실행
 
 ```bash
 cd rag
@@ -380,7 +410,7 @@ make fe-start
 http://127.0.0.1:5173
 ```
 
-### 7) RAG Red Team Neo4j 실험
+### 8) RAG Red Team Neo4j 실험
 
 ```bash
 cd rag/related/rag-red-team
