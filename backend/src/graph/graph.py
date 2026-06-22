@@ -9,6 +9,11 @@ from agents.screen_control_agent import create_screen_control_agent
 from agents.speech_text_agent import create_speech_text_agent
 from graph.state import ChatTurnState
 from logger import get_logger
+from memory import get_checkpointer
+from nodes.agent_wrappers import (
+    create_speech_text_agent_node,
+    create_window_control_agent_node,
+)
 from nodes.speech_synthesis_node import SpeechSynthesisNode, SpeechSynthesisRequest
 
 logger = get_logger(__name__)
@@ -20,15 +25,19 @@ def build_chat_turn_graph(
     speech_text_agent: Any,
     speech_synthesis_node: SpeechSynthesisNode,
     window_changing_agent: Any,
+    checkpointer: Any | None = None,
 ) -> Any:
     graph = StateGraph(ChatTurnState)
 
     graph.add_node("main_agent", main_agent)
     graph.add_node("main_agent_result", _main_agent_result_node)
-    graph.add_node("speech_text_agent", speech_text_agent)
+    graph.add_node("speech_text_agent", create_speech_text_agent_node(speech_text_agent))
     graph.add_node("speech_text_result", _speech_text_result_node)
     graph.add_node("speech_synthesis_node", _speech_synthesis_node(speech_synthesis_node))
-    graph.add_node("window_changing_agent", window_changing_agent)
+    graph.add_node(
+        "window_changing_agent",
+        create_window_control_agent_node(window_changing_agent),
+    )
 
     graph.add_edge(START, "main_agent")
     graph.add_edge("main_agent", "main_agent_result")
@@ -39,7 +48,10 @@ def build_chat_turn_graph(
     graph.add_edge("speech_synthesis_node", END)
     graph.add_edge("window_changing_agent", END)
 
-    return graph.compile(name="chat-turn-graph")
+    compile_kwargs: dict[str, Any] = {"name": "chat-turn-graph"}
+    if checkpointer is not None:
+        compile_kwargs["checkpointer"] = checkpointer
+    return graph.compile(**compile_kwargs)
 
 
 async def create_chat_turn_graph() -> Any:
@@ -48,6 +60,7 @@ async def create_chat_turn_graph() -> Any:
         speech_text_agent=await create_speech_text_agent(),
         speech_synthesis_node=SpeechSynthesisNode(),
         window_changing_agent=await create_screen_control_agent(),
+        checkpointer=get_checkpointer(),
     )
 
 
@@ -71,7 +84,9 @@ def _main_agent_result_node(state: ChatTurnState) -> dict[str, Any]:
 
 
 def _speech_text_result_node(state: ChatTurnState) -> dict[str, Any]:
-    script = _final_message_text(state) or str(state.get("final_response") or "").strip()
+    script = str(state.get("final_response_script") or "").strip()
+    if not script:
+        script = _final_message_text(state) or str(state.get("final_response") or "").strip()
     if not script:
         script = "답변을 생성하지 못했습니다. 잠시 후 다시 시도해 주세요."
 
