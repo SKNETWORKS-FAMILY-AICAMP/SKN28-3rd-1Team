@@ -1,14 +1,22 @@
 from .elevenlabs import ElevenLabsSettings
 from .facade import Settings, get_settings, settings
-from .llm import LlmAgentModelSettings, LlmProviderSettings, LlmSettings
+from .llm import (
+    LlmAgentName,
+    LlmAgentSettings,
+    LlmProviderSettings,
+    LlmRequestSettings,
+    LlmSettings,
+)
 from .metadata import MetadataSettings
 from .rag import RagToolSettings
 from .runtime import RuntimeSettings
 
 __all__ = [
     "ElevenLabsSettings",
-    "LlmAgentModelSettings",
+    "LlmAgentName",
+    "LlmAgentSettings",
     "LlmProviderSettings",
+    "LlmRequestSettings",
     "LlmSettings",
     "MetadataSettings",
     "RagToolSettings",

@@ -128,4 +128,4 @@ asyncio.run(main())
 PY
 ```
 
-`/chat`은 실제 LLM 호출이므로 `deploy/docker/.env_backend`의 `OPENROUTER_API_KEY`가 유효해야 합니다. API key가 없거나 만료되면 backend는 MCP tools를 로드한 뒤 OpenRouter에서 401을 반환합니다.
+`/chat`은 실제 LLM 호출이므로 `deploy/docker/.env_backend`의 선택 provider용 `LLM_PROVIDER_*_API_KEY`가 유효해야 합니다. API key가 없거나 만료되면 backend는 MCP tools를 로드한 뒤 provider 호출에서 인증 오류를 반환합니다.

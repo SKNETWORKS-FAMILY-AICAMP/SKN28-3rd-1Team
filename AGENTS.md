@@ -48,6 +48,7 @@ Use these skills when relevant:
 - `git-commit`: diff analysis, staging guidance, and commit message generation.
 - `git-workflow`: branch, commit, and pull request decisions.
 - `github-issues`: GitHub issue creation, updates, labels, metadata, dependencies, and workflows.
+- `env-var-governance`: environment variable, `.env.schema`, Infisical, Varlock, and LLM provider/agent/model naming workflow. Use this before env var or secret-management changes.
 - `figma-use`: Figma MCP write-to-canvas and Plugin API workflows.
 - `infisical-setup`: Infisical CLI, Docker, CI/CD, Kubernetes, SDK, and machine identity setup guidance.
 - `infisical-api`: Infisical REST API, secret operations, and machine identity auth guidance.
@@ -67,6 +68,7 @@ Skill adapter directories for specific tools or agents are local-only unless the
 ## Infisical Workflow
 
 - Environment variables and secrets are managed through Infisical. Do not commit secrets or generated secret value files.
+- For environment-variable, `.env.schema`, Infisical, Varlock, or LLM provider/model naming work, read `.agents/skills/env-var-governance/SKILL.md` and follow `docs/llm_env_naming_convention.md` when LLM settings are involved.
 - Infisical Secret Manager scope follows active codebase projects, not deploy or Docker directory structure. Use it for actual secrets and for environment-specific runtime config that the active service reads. Do not create or fill Infisical values for `deploy/docker` or compose-only binding values unless the user explicitly asks.
 - Use Infisical CLI for project runtime injection and migration automation after the target codebase project is identified.
 - Use the Infisical MCP server for agent-time project, environment, folder, member, and secret CRUD management.

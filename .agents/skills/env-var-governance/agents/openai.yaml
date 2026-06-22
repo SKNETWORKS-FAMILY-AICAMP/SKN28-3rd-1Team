@@ -1,0 +1,4 @@
+interface:
+  display_name: "Env Var Governance"
+  short_description: "Repo env var, Infisical, and .env.schema naming workflow."
+  default_prompt: "Use this skill for env var, Infisical, Varlock, or .env.schema changes in this repository."

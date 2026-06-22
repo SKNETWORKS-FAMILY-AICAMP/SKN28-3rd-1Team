@@ -96,7 +96,7 @@ backend/
 2. Frontend가 `POST /chat` 또는 `POST /chat/stream`으로 `message`를 보낸다.
 3. `src/django_backend/urls.py`가 `/chat` JSON 요청과 `/chat/stream` SSE 요청을 처리하고 `ChatGraphRunner`에 전달한다.
 4. `src/agents/main_agent/`가 `create_agent()`와 `InMemorySaver` checkpointer로 Agent를 만든다.
-5. Agent는 `get_chat_llm()`, `get_tools(agent_name="main_agent")`, agent-local prompt를 조합한다.
+5. Agent는 역할별 LLM getter(`get_main()`, `get_sanitize()`, `get_window()`), `get_tools(agent_name="main_agent")`, agent-local prompt를 조합한다.
 6. `src/llm/`가 agent별 model 설정과 선택 provider API key로 `ChatOpenRouter` 또는 `ChatCerebras`를 생성한다.
 7. `src/tools/`가 RAG MCP server에서 read-only MCP tools를 비동기로 로딩하고 캐시한다.
 8. 일반 요청에서는 Graph stream의 `final` event를 `answer` 문자열로 변환해 반환한다.
@@ -331,27 +331,24 @@ make env-check
 
 | 변수 | 기본값 | 설명 |
 | --- | --- | --- |
-| `OPENROUTER_API_KEY` | 빈 값 | `LLM_CHAT_PROVIDER=openrouter`일 때 필요한 OpenRouter API 키 |
-| `CEREBRAS_API_KEY` | 빈 값 | `LLM_CHAT_PROVIDER=cerebras` 또는 speech text provider가 Cerebras일 때 필요한 API 키 |
-| `LLM_CHAT_PROVIDER` | `cerebras` | main chat LLM provider. `openrouter` 또는 `cerebras` |
-| `LLM_CHAT_MODEL` | `gpt-oss-120b` | main agent가 사용할 모델 |
-| `LLM_CHAT_TEMPERATURE` | `0.2` | main agent LLM temperature |
-| `LLM_CHAT_TIMEOUT_MS` | `60000` | main agent LLM timeout |
-| `LLM_CHAT_MAX_RETRIES` | `2` | main agent LLM 재시도 횟수 |
-| `LLM_CHAT_MAX_TOKENS` | 빈 값 | main agent 응답 max token. 비워두면 제한 없음 |
-| `LLM_CHAT_REASONING_EFFORT` | 빈 값 | 비워두면 main agent provider 요청에서 reasoning 옵션을 생략 |
-| `LLM_SPEECH_TEXT_PROVIDER` | 빈 값 | 비워두면 `LLM_CHAT_PROVIDER`를 따르고, 별도 speech text provider를 지정할 수 있음 |
-| `LLM_SPEECH_TEXT_MODEL` | `gpt-oss-120b` | speech text agent가 사용할 모델 |
-| `LLM_SPEECH_TEXT_TEMPERATURE` | `0.0` | speech text agent LLM temperature |
-| `LLM_SPEECH_TEXT_TIMEOUT_MS` | `60000` | speech text agent LLM timeout |
-| `LLM_SPEECH_TEXT_MAX_RETRIES` | `2` | speech text agent LLM 재시도 횟수 |
-| `LLM_SPEECH_TEXT_MAX_TOKENS` | 빈 값 | speech text agent 응답 max token. 비워두면 제한 없음 |
-| `LLM_SPEECH_TEXT_REASONING_EFFORT` | 빈 값 | 비워두면 speech text provider 요청에서 reasoning 옵션을 생략 |
-| `LLM_OPENROUTER_PROVIDER_ORDER` | `["cerebras"]` | 우선 시도할 OpenRouter provider 순서 |
-| `LLM_OPENROUTER_ALLOW_FALLBACKS` | `true` | primary provider 실패 시 OpenRouter fallback 허용 여부 |
-| `LLM_OPENROUTER_BASE_URL` | `https://openrouter.ai/api/v1` | OpenRouter API base URL |
-| `LLM_OPENROUTER_REQUIRE_PARAMETERS` | `false` | provider가 요청 parameter를 지원해야 하는지 여부 |
-| `LLM_CEREBRAS_BASE_URL` | 빈 값 | 비워두면 Cerebras SDK 기본 endpoint 사용 |
+| `LLM_PROVIDER_OPENAI_API_KEY` | 빈 값 | `LLM_AGENT_*_PROVIDER=openai`일 때 필요한 OpenAI API 키 |
+| `LLM_PROVIDER_OPENROUTER_API_KEY` | 빈 값 | `LLM_AGENT_*_PROVIDER=openrouter`일 때 필요한 OpenRouter API 키 |
+| `LLM_PROVIDER_CEREBRAS_API_KEY` | 빈 값 | `LLM_AGENT_*_PROVIDER=cerebras`일 때 필요한 Cerebras API 키 |
+| `LLM_AGENT_MAIN_PROVIDER` | `cerebras` | main agent provider. `openai`, `openrouter`, `cerebras` |
+| `LLM_AGENT_MAIN_MODEL` | `gpt-oss-120b` | main agent가 사용할 모델 |
+| `LLM_AGENT_SANITIZE_PROVIDER` | `openrouter` | speech text sanitization agent provider |
+| `LLM_AGENT_SANITIZE_MODEL` | `openai/gpt-oss-20b` | speech text sanitization agent가 사용할 모델 |
+| `LLM_AGENT_WINDOW_PROVIDER` | `cerebras` | screen control/window-changing agent provider |
+| `LLM_AGENT_WINDOW_MODEL` | `gpt-oss-120b` | screen control/window-changing agent가 사용할 모델 |
+| `LLM_REQUEST_TIMEOUT_MS` | `60000` | 모든 LLM 요청 timeout |
+| `LLM_REQUEST_MAX_RETRIES` | `2` | 모든 LLM 요청 재시도 횟수 |
+| `LLM_RESPONSE_MAX_TOKENS` | 빈 값 | 모든 LLM 응답 max token. 비워두면 제한 없음 |
+| `LLM_PROVIDER_OPENAI_BASE_URL` | 빈 값 | 비워두면 OpenAI SDK 기본 endpoint 사용 |
+| `LLM_PROVIDER_OPENROUTER_PROVIDER_ORDER` | `["groq"]` | OpenRouter에서 우선 시도할 provider 순서 |
+| `LLM_PROVIDER_OPENROUTER_ALLOW_FALLBACKS` | `true` | primary provider 실패 시 OpenRouter fallback 허용 여부 |
+| `LLM_PROVIDER_OPENROUTER_BASE_URL` | `https://openrouter.ai/api/v1` | OpenRouter API base URL |
+| `LLM_PROVIDER_OPENROUTER_REQUIRE_PARAMETERS` | `false` | provider가 요청 parameter를 지원해야 하는지 여부 |
+| `LLM_PROVIDER_CEREBRAS_BASE_URL` | 빈 값 | 비워두면 Cerebras SDK 기본 endpoint 사용 |
 | `RUNTIME_HOST` | `127.0.0.1` | backend bind host |
 | `RUNTIME_PORT` | `8000` | backend 서버 포트 |
 | `RUNTIME_CORS_ORIGINS` | `["http://localhost:8501","http://127.0.0.1:8501","http://localhost:5173","http://127.0.0.1:5173","http://localhost:3000","http://127.0.0.1:3000"]` | 허용할 frontend origin |
@@ -387,11 +384,11 @@ RAG 없이 Qwen3.7 Max를 한 번 확인하려면 backend compose만 사용해�
 ```bash
 cd backend
 BACKEND_HOST_PORT=8002 \
-LLM_CHAT_MODEL='qwen/qwen3.7-max' \
-LLM_OPENROUTER_PROVIDER_ORDER='["alibaba"]' \
-LLM_OPENROUTER_ALLOW_FALLBACKS=false \
+LLM_AGENT_MAIN_PROVIDER=openrouter \
+LLM_AGENT_MAIN_MODEL='qwen/qwen3.7-max' \
+LLM_PROVIDER_OPENROUTER_PROVIDER_ORDER='["alibaba"]' \
+LLM_PROVIDER_OPENROUTER_ALLOW_FALLBACKS=false \
 RAG_TOOLS_ENABLED=false \
-LLM_CHAT_REASONING_EFFORT='' \
 docker compose up -d --build backend
 
 curl -s http://127.0.0.1:8002/health
@@ -522,7 +519,7 @@ PYTHONPATH=src uv run python scripts/manual_chat.py
 
 | 증상 | 확인할 것 |
 | --- | --- |
-| `/chat`이 500을 반환 | `LLM_CHAT_PROVIDER`와 선택 provider API key 설정 여부 |
+| `/chat`이 500을 반환 | `LLM_AGENT_MAIN_PROVIDER`와 선택 provider의 `LLM_PROVIDER_*_API_KEY` 설정 여부 |
 | `/chat/stream` SSE 연결이 실패 | 최신 backend 코드로 실행 중인지, 서버를 재시작했는지 확인 |
 | `/chat/stream`이 한 번에만 출력됨 | 질문이 너무 짧은지 확인하고, curl `-N`으로 실제 SSE event를 확인 |
 | `/health` 연결 실패 | Daphne이 켜져 있는지, 포트가 `8000`인지 확인 |
