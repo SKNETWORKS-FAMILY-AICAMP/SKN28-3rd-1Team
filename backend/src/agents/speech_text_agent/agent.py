@@ -6,7 +6,7 @@ from typing import Any
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.runnables import RunnableConfig
 
-from llm import get_speech_text_llm, speech_text_llm_configured
+from llm import get_sanitize
 from logger import get_logger
 from utils import render_prompt
 
@@ -22,11 +22,9 @@ class SpeechTextAgent:
         *,
         system_prompt: str | None = None,
         model: BaseChatModel | None = None,
-        configured: bool | None = None,
     ) -> None:
         self.system_prompt = system_prompt or render_prompt(_PROMPT_TEMPLATE)
-        self.configured = speech_text_llm_configured() if configured is None else configured
-        self.model = model if model is not None else get_speech_text_llm() if self.configured else None
+        self.model = model if model is not None else get_sanitize()
 
 
 async def create_speech_text_agent() -> SpeechTextAgent:
@@ -36,8 +34,7 @@ async def create_speech_text_agent() -> SpeechTextAgent:
 
     _SPEECH_TEXT_AGENT = SpeechTextAgent()
     logger.info(
-        "created speech text agent configured=%s model=%s",
-        _SPEECH_TEXT_AGENT.configured,
+        "created speech text agent model=%s",
         getattr(_SPEECH_TEXT_AGENT.model, "model_name", None)
         or getattr(_SPEECH_TEXT_AGENT.model, "model", None),
     )
@@ -58,7 +55,7 @@ async def create_final_response_script(
     if not final_response:
         return "답변을 생성하지 못했습니다. 잠시 후 다시 시도해 주세요."
 
-    if agent.configured and agent.model is not None:
+    if agent.model is not None:
         try:
             response = await agent.model.ainvoke(
                 [
