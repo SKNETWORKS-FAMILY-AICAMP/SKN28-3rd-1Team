@@ -22,5 +22,11 @@ async def create_speech_text_agent() -> Any:
         system_prompt=render_prompt(_SYSTEM_PROMPT_TEMPLATE),
         state_schema=ChatTurnState,
     )
-    logger.debug("created speech text agent")
+    logger.debug(
+        "created speech text agent",
+        extra={
+            "event": "agent.created",
+            "agent": "speech_text_agent",
+        },
+    )
     return agent

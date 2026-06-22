@@ -14,6 +14,8 @@ logger = get_logger(__name__)
 
 _TEXT_STREAM_NODES = {"main_agent"}
 _TOOL_STREAM_NODES = {"main_agent", "window_changing_agent"}
+_INTERNAL_STREAM_NODES = {"speech_text_agent"}
+_REASONING_BLOCK_TYPES = {"reasoning", "reasoning-delta"}
 
 
 class ChatGraphRunner:
@@ -32,9 +34,14 @@ class ChatGraphRunner:
         thread_id = self._thread_context.activate(session_id)
         if thread_id is None:
             logger.info(
-                "chat graph invocation ignored session_id=%s turn_id=%s reason=missing_conversation_id",
-                session_id,
-                turn_id,
+                "chat graph invocation ignored",
+                extra={
+                    "event": "chat.invocation.ignored",
+                    "conversation_id": session_id,
+                    "turn_id": turn_id,
+                    "reason": "missing_conversation_id",
+                    "message_chars": len(message),
+                },
             )
             return
 
@@ -46,11 +53,14 @@ class ChatGraphRunner:
             metadata=metadata,
         )
 
-        logger.info(
-            "chat graph invocation started conversation_id=%s turn_id=%s message_chars=%d",
-            thread_id,
-            turn_id,
-            len(message),
+        logger.debug(
+            "chat graph invocation started",
+            extra={
+                "event": "chat.invocation.started",
+                "conversation_id": thread_id,
+                "turn_id": turn_id,
+                "message_chars": len(message),
+            },
         )
         started_tool_calls: set[str] = set()
         async for event in graph.astream(
@@ -60,14 +70,22 @@ class ChatGraphRunner:
             subgraphs=True,
             version="v2",
         ):
-            backend_event = _backend_event(event, started_tool_calls=started_tool_calls)
+            backend_event = _backend_event(
+                event,
+                started_tool_calls=started_tool_calls,
+                conversation_id=thread_id,
+                turn_id=turn_id,
+            )
             if backend_event is not None:
                 yield backend_event
 
-        logger.info(
-            "chat graph invocation completed conversation_id=%s turn_id=%s",
-            thread_id,
-            turn_id,
+        logger.debug(
+            "chat graph invocation completed",
+            extra={
+                "event": "chat.invocation.completed",
+                "conversation_id": thread_id,
+                "turn_id": turn_id,
+            },
         )
 
     async def run_once(
@@ -164,6 +182,8 @@ def _backend_event(
     event: Any,
     *,
     started_tool_calls: set[str] | None = None,
+    conversation_id: str | None = None,
+    turn_id: str | None = None,
 ) -> dict[str, Any] | None:
     if isinstance(event, dict) and event.get("type") == "custom":
         data = event.get("data")
@@ -174,6 +194,8 @@ def _backend_event(
         return _message_stream_event(
             event,
             started_tool_calls=started_tool_calls if started_tool_calls is not None else set(),
+            conversation_id=conversation_id,
+            turn_id=turn_id,
         )
 
     if isinstance(event, dict):
@@ -185,6 +207,8 @@ def _message_stream_event(
     event: dict[str, Any],
     *,
     started_tool_calls: set[str],
+    conversation_id: str | None,
+    turn_id: str | None,
 ) -> dict[str, Any] | None:
     data = event.get("data")
     if not isinstance(data, tuple) or len(data) != 2:
@@ -197,12 +221,77 @@ def _message_stream_event(
         if tool_event is not None:
             return tool_event
 
+    reasoning = _message_reasoning_text(message)
+    if reasoning:
+        if node_name in _INTERNAL_STREAM_NODES:
+            backend_event = {
+                "type": "internal_delta",
+                "agent": node_name,
+                "kind": "thinking",
+                "content": reasoning,
+            }
+            _log_internal_stream_event(
+                backend_event,
+                conversation_id=conversation_id,
+                turn_id=turn_id,
+            )
+            return backend_event
+
+        backend_event = {
+            "type": "thinking_delta",
+            "agent": node_name or None,
+            "content": reasoning,
+        }
+        _log_internal_stream_event(
+            backend_event,
+            conversation_id=conversation_id,
+            turn_id=turn_id,
+        )
+        return backend_event
+
     if node_name in _TEXT_STREAM_NODES:
         text = _message_text(message)
         if text:
             return {"type": "delta", "content": text}
 
+    if node_name in _INTERNAL_STREAM_NODES:
+        text = _message_text(message)
+        if text:
+            backend_event = {
+                "type": "internal_delta",
+                "agent": node_name,
+                "kind": "text",
+                "content": text,
+            }
+            _log_internal_stream_event(
+                backend_event,
+                conversation_id=conversation_id,
+                turn_id=turn_id,
+            )
+            return backend_event
+
     return None
+
+
+def _log_internal_stream_event(
+    event: dict[str, Any],
+    *,
+    conversation_id: str | None,
+    turn_id: str | None,
+) -> None:
+    content = event.get("content")
+    logger.debug(
+        "agent internal stream token",
+        extra={
+            "event": "agent.internal_stream_token",
+            "conversation_id": conversation_id,
+            "turn_id": turn_id,
+            "agent": event.get("agent"),
+            "stream_event_type": event.get("type"),
+            "stream_kind": event.get("kind") or "thinking",
+            "token_chars": len(content) if isinstance(content, str) else 0,
+        },
+    )
 
 
 def _stream_node(namespace: object, metadata: object) -> str:
@@ -278,7 +367,11 @@ def _tool_call_chunks(message: Any) -> list[dict[str, Any]]:
     if isinstance(tool_calls, list):
         return [tool_call for tool_call in tool_calls if isinstance(tool_call, dict)]
 
-    return []
+    return [
+        block
+        for block in _message_content_blocks(message)
+        if isinstance(block, dict) and block.get("type") in {"tool_call", "tool_call_chunk"}
+    ]
 
 
 def _message_text(message: Any) -> str:
@@ -295,6 +388,39 @@ def _message_text(message: Any) -> str:
             for block in content
             if isinstance(block, dict) and block.get("type") == "text"
         )
+    return ""
+
+
+def _message_reasoning_text(message: Any) -> str:
+    reasoning = getattr(message, "reasoning", None)
+    if isinstance(reasoning, str):
+        return reasoning
+    if isinstance(reasoning, list):
+        return "".join(str(token) for token in reasoning if token)
+
+    return "".join(
+        _reasoning_block_text(block)
+        for block in _message_content_blocks(message)
+        if isinstance(block, dict) and block.get("type") in _REASONING_BLOCK_TYPES
+    )
+
+
+def _message_content_blocks(message: Any) -> list[Any]:
+    content_blocks = getattr(message, "content_blocks", None)
+    if isinstance(content_blocks, list):
+        return content_blocks
+
+    content = getattr(message, "content", None)
+    if isinstance(content, list):
+        return content
+    return []
+
+
+def _reasoning_block_text(block: dict[str, Any]) -> str:
+    for key in ("reasoning", "text", "content", "summary"):
+        value = block.get(key)
+        if isinstance(value, str):
+            return value
     return ""
 
 

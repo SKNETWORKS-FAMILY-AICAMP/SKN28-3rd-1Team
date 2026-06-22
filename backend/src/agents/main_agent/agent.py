@@ -25,5 +25,11 @@ async def create_main_agent() -> Any:
         state_schema=ChatTurnState,
         checkpointer=get_checkpointer(),
     )
-    logger.debug("created main agent")
+    logger.debug(
+        "created main agent",
+        extra={
+            "event": "agent.created",
+            "agent": "main_agent",
+        },
+    )
     return agent

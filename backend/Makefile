@@ -40,7 +40,7 @@ sync:
 	uv sync
 
 start: sync env-check
-	$(INFISICAL) run --projectId $(INFISICAL_PROJECT_ID) --env $(INFISICAL_ENV) --path $(INFISICAL_PATH) -- sh -c 'APP_ENV=$(APP_ENV) PYTHONPATH=$(PYTHONPATH) $(VARLOCK) run --inject vars --path $(VARLOCK_PATH) -- uv run daphne -b $(HOST) -p $(PORT) app:application'
+	$(INFISICAL) run --projectId $(INFISICAL_PROJECT_ID) --env $(INFISICAL_ENV) --path $(INFISICAL_PATH) -- sh -c 'APP_ENV=$(APP_ENV) PYTHONPATH=$(PYTHONPATH) $(VARLOCK) run --inject vars --path $(VARLOCK_PATH) -- uv run daphne -b $(HOST) -p $(PORT) -v 0 --access-log /dev/null app:application'
 
 dev: start
 

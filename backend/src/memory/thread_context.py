@@ -40,12 +40,25 @@ class ChatThreadContextStore:
 
     def activate(self, conversation_id: str | None) -> str | None:
         if conversation_id is None:
-            logger.info("chat thread context ignored: conversation_id is missing")
+            logger.info(
+                "chat thread context ignored",
+                extra={
+                    "event": "thread_context.ignored",
+                    "reason": "missing_conversation_id",
+                },
+            )
             return None
 
         normalized = conversation_id.strip()
         if not normalized:
-            logger.info("chat thread context ignored: conversation_id is empty")
+            logger.info(
+                "chat thread context ignored",
+                extra={
+                    "event": "thread_context.ignored",
+                    "conversation_id": conversation_id,
+                    "reason": "empty_conversation_id",
+                },
+            )
             return None
 
         now = self._clock()
@@ -71,13 +84,22 @@ class ChatThreadContextStore:
         delete_thread = getattr(self._checkpointer, "delete_thread", None)
         if not callable(delete_thread):
             logger.warning(
-                "chat thread context expired but checkpointer cannot delete thread conversation_id=%s",
-                conversation_id,
+                "chat thread context expired but checkpointer cannot delete thread",
+                extra={
+                    "event": "thread_context.delete_failed",
+                    "conversation_id": conversation_id,
+                },
             )
             return
 
         delete_thread(conversation_id)
-        logger.info("chat thread context expired conversation_id=%s", conversation_id)
+        logger.debug(
+            "chat thread context expired",
+            extra={
+                "event": "thread_context.expired",
+                "conversation_id": conversation_id,
+            },
+        )
 
 
 @lru_cache

@@ -23,7 +23,15 @@ def get_sanitize() -> BaseChatModel | None:
         # callers do not need to know provider/config details.
         return create_agent_llm("sanitize")
     except RuntimeError as error:
-        logger.warning("sanitize LLM unavailable; speech text sanitization disabled: %s", error)
+        logger.warning(
+            "sanitize LLM unavailable; speech text sanitization disabled",
+            extra={
+                "event": "llm.unavailable",
+                "agent": "sanitize",
+                "error_type": type(error).__name__,
+                "reason": str(error),
+            },
+        )
         return None
 
 
