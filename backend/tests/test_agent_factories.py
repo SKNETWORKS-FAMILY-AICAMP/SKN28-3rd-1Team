@@ -13,7 +13,6 @@ class AgentFactoryTest(unittest.IsolatedAsyncioTestCase):
         with (
             patch.object(main_agent, "get_main", return_value=object()),
             patch.object(main_agent, "get_tools", new=AsyncMock(return_value=[])),
-            patch.object(main_agent, "get_checkpointer", return_value=object()),
             patch.object(main_agent, "create_agent", side_effect=["main-1", "main-2"]) as create_agent,
         ):
             first = await main_agent.create_main_agent()

@@ -16,6 +16,8 @@ _SYSTEM_PROMPT_TEMPLATE = Path(__file__).with_name("speech_text_prompt.j2")
 async def create_speech_text_agent() -> Any:
     from graph.state import ChatTurnState
 
+    # This raw agent is a per-turn worker. Parent graphs must mount it through
+    # nodes.agent_wrappers so its messages do not enter chat memory.
     agent = create_agent(
         model=get_sanitize(),
         tools=[],
