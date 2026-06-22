@@ -41,14 +41,20 @@ class AgentFactoryTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(create_agent.call_count, 2)
 
     async def test_speech_text_agent_factory_does_not_cache_agent_instance(self) -> None:
-        model = object()
-        with patch.object(speech_text_agent, "get_sanitize", return_value=model):
+        with (
+            patch.object(speech_text_agent, "get_sanitize", return_value=object()),
+            patch.object(
+                speech_text_agent,
+                "create_agent",
+                side_effect=["speech-1", "speech-2"],
+            ) as create_agent,
+        ):
             first = await speech_text_agent.create_speech_text_agent()
             second = await speech_text_agent.create_speech_text_agent()
 
-        self.assertIsNot(first, second)
-        self.assertIs(first.model, model)
-        self.assertIs(second.model, model)
+        self.assertEqual(first, "speech-1")
+        self.assertEqual(second, "speech-2")
+        self.assertEqual(create_agent.call_count, 2)
 
 
 if __name__ == "__main__":

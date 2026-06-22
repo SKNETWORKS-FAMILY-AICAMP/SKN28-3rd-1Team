@@ -23,5 +23,5 @@ async def create_screen_control_agent() -> Any:
         system_prompt=render_prompt(_SYSTEM_PROMPT_TEMPLATE),
         state_schema=ChatTurnState,
     )
-    logger.info("created screen control agent")
+    logger.debug("created screen control agent")
     return agent
