@@ -1,0 +1,29 @@
+:root,
+.theme-white {
+  color-scheme: light;
+  --radius: 0.5rem;
+  --background: #ffffff;
+  --foreground: #1f2933;
+  --card: #ffffff;
+  --card-foreground: #1f2933;
+  --popover: #ffffff;
+  --popover-foreground: #1f2933;
+  --primary: #2f6f68;
+  --primary-foreground: #ffffff;
+  --secondary: #f4f1ea;
+  --secondary-foreground: #28333d;
+  --muted: #f7f5f0;
+  --muted-foreground: #66707a;
+  --accent: #eef4ff;
+  --accent-foreground: #243244;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --border: #e6e1d8;
+  --input: #e6e1d8;
+  --ring: #2f6f68;
+  --chart-1: #2f6f68;
+  --chart-2: #4f7fb8;
+  --chart-3: #d48a3a;
+  --chart-4: #8a6fb0;
+  --chart-5: #bc5c5c;
+}
