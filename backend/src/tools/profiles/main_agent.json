@@ -1,8 +1,9 @@
 {
   "name": "main_agent",
-  "description": "Main agent receives the full RAG MCP tool set.",
+  "description": "Main agent receives RAG MCP tools and external API MCP tools.",
   "sources": {
     "rag_mcp": true,
+    "external_mcp": true,
     "local": false
   }
 }

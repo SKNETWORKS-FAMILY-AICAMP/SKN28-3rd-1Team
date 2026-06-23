@@ -1,11 +1,11 @@
 [project]
-name = "maps-mcp"
+name = "external-mcp"
 version = "0.1.0"
-description = "Naver and TMAP FastMCP provider tools for SKN28 3rd 1Team"
+description = "External API MCP service for SKN28 3rd 1Team"
 readme = "README.md"
 requires-python = ">=3.13,<3.14"
 dependencies = [
-    "fastapi>=0.136.3",
+    "httpx>=0.28.1",
     "mcp>=1.27.1",
     "pydantic>=2.13.4",
     "pydantic-settings>=2.14.1",
@@ -14,8 +14,3 @@ dependencies = [
 
 [tool.uv]
 package = false
-
-[dependency-groups]
-dev = [
-    "pytest>=9.0.3",
-]
