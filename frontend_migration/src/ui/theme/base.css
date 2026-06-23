@@ -5,15 +5,16 @@ body {
 
 html {
   background: var(--background);
+  scroll-behavior: smooth;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(
-    --font-geist-sans,
-    "Geist",
-    "Geist Fallback",
+    --font-noto-kr,
+    "Noto Sans KR",
+    "Noto Sans KR Fallback",
     ui-sans-serif,
     system-ui,
     sans-serif
@@ -22,4 +23,5 @@ body {
 
 * {
   border-color: var(--border);
+  outline-color: color-mix(in oklab, var(--ring) 50%, transparent);
 }
