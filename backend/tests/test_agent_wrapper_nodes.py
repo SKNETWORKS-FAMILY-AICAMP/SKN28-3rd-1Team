@@ -7,8 +7,8 @@ from langchain_core.messages import AIMessage
 
 from graph.state import ChatTurnState
 from nodes.agent_wrappers import (
+    create_screen_control_agent_node,
     create_speech_text_agent_node,
-    create_window_control_agent_node,
 )
 
 
@@ -42,9 +42,9 @@ class AgentWrapperNodeTest(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn("session_id", result)
         self.assertNotIn("turn_id", result)
 
-    async def test_window_wrapper_does_not_return_parent_state_keys(self) -> None:
+    async def test_screen_control_wrapper_does_not_return_parent_state_keys(self) -> None:
         agent = FakeAgent()
-        node = create_window_control_agent_node(agent)
+        node = create_screen_control_agent_node(agent)
         state: ChatTurnState = {
             "session_id": "conversation-1",
             "turn_id": "turn-1",

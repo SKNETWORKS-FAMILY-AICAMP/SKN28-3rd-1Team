@@ -9,7 +9,7 @@ parent chat-turn graph but must not write their full agent state back into
 - `main_agent` owns conversation memory and may update parent `messages`.
 - `speech_text_agent` is a per-turn worker that converts `final_response` into
   `final_response_script`.
-- `window_changing_agent` is a per-turn worker that may call UI-control tools
+- `screen_control_agent` is a per-turn worker that may call UI-control tools
   from the current turn context.
 
 The downstream worker agents are wrapped before being mounted in the parent

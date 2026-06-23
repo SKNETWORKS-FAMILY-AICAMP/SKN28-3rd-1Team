@@ -9,11 +9,12 @@ import { cn } from "@/lib/utils"
 type VoiceInputButtonProps = {
   status: DictationStatus
   onClick?: () => void
+  ariaKeyShortcuts?: string
   compact?: boolean
   className?: string
 }
 
-export function VoiceInputButton({ status, onClick, compact = false, className }: VoiceInputButtonProps) {
+export function VoiceInputButton({ status, onClick, ariaKeyShortcuts, compact = false, className }: VoiceInputButtonProps) {
   const buttonState = getVoiceInputButtonState(status)
   const active = buttonState.tone === "active"
   const busy = buttonState.tone === "busy"
@@ -23,6 +24,7 @@ export function VoiceInputButton({ status, onClick, compact = false, className }
     return (
       <Button
         aria-label={buttonState.ariaLabel}
+        aria-keyshortcuts={ariaKeyShortcuts}
         aria-pressed={active}
         className={cn(
           "size-10 rounded-[11px] border",
@@ -46,6 +48,7 @@ export function VoiceInputButton({ status, onClick, compact = false, className }
   return (
     <Button
       aria-label={buttonState.ariaLabel}
+      aria-keyshortcuts={ariaKeyShortcuts}
       aria-pressed={active}
       className={cn(
         "h-9 rounded-full px-3 text-sm transition-colors",

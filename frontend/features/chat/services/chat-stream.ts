@@ -18,6 +18,7 @@ type ParsedSseBlock = {
 type BackendChatStreamOptions = {
   sessionId?: string
   message: string
+  metadata?: Record<string, unknown>
   signal?: AbortSignal
 }
 
@@ -25,9 +26,12 @@ function parseSseBlock(block: string): ParsedSseBlock | null {
   let event = "message"
   const dataLines: string[] = []
 
-  for (const line of block.split("\n")) {
+  for (const rawLine of block.split("\n")) {
+    const line = rawLine.endsWith("\r") ? rawLine.slice(0, -1) : rawLine
     if (line.startsWith("event:")) event = line.slice(6).trim()
-    else if (line.startsWith("data:")) dataLines.push(line.slice(5).trim())
+    else if (line.startsWith("data:")) {
+      dataLines.push(line.startsWith("data: ") ? line.slice(6) : line.slice(5))
+    }
   }
 
   if (dataLines.length === 0) return null
@@ -102,14 +106,44 @@ function isHttpUrl(value: string) {
   return value.startsWith("http://") || value.startsWith("https://")
 }
 
+function getSourceAgent(data: Record<string, unknown>) {
+  if (typeof data.source_agent === "string") return data.source_agent
+  if (typeof data.node === "string") return data.node
+  return null
+}
+
 function getToolCallPayload(data: Record<string, unknown>) {
-  const toolCall = data.tool_call && typeof data.tool_call === "object" ? (data.tool_call as Record<string, unknown>) : data
+  const toolCall =
+    data.tool_call && typeof data.tool_call === "object" ? (data.tool_call as Record<string, unknown>) : data
 
   return {
+    event: "agent.tool_call.delta",
     id: typeof toolCall.id === "string" ? toolCall.id : null,
     name: typeof toolCall.name === "string" ? toolCall.name : null,
     status: typeof toolCall.status === "string" ? toolCall.status : null,
+    sourceAgent: getSourceAgent(data),
   }
+}
+
+function getEventText(data: Record<string, unknown>) {
+  return String(data.text ?? data.content ?? "")
+}
+
+function enqueueAgentTrace(
+  controller: ReadableStreamDefaultController<LegalChatMessageChunk>,
+  event: string,
+  data: Record<string, unknown>,
+) {
+  controller.enqueue({
+    type: "data-agentTrace",
+    data: {
+      type: event,
+      sourceAgent: getSourceAgent(data),
+      node: typeof data.node === "string" ? data.node : null,
+      text: getEventText(data) || undefined,
+      toolCall: data.tool_call && typeof data.tool_call === "object" ? getToolCallPayload(data) : undefined,
+    },
+  })
 }
 
 function createBackendUiMessageStream(responseBody: ReadableStream<Uint8Array>) {
@@ -126,6 +160,7 @@ function createBackendUiMessageStream(responseBody: ReadableStream<Uint8Array>) 
       let finalAnswer = ""
       let finishReason: "stop" | "error" = "stop"
       let shouldStop = false
+      let audioChunkCount = 0
 
       const startText = () => {
         if (textStarted) return
@@ -149,38 +184,87 @@ function createBackendUiMessageStream(responseBody: ReadableStream<Uint8Array>) 
       const handleParsedBlock = (parsed: ParsedSseBlock) => {
         const { event, data } = parsed
 
+        if (event === "agent.text.delta") {
+          const text = getEventText(data)
+          if (data.source_agent === "main_agent") emitText(text)
+          else enqueueAgentTrace(controller, event, data)
+          return
+        }
+
         if (event === "delta") {
           emitText(String(data.content ?? ""))
           return
         }
 
-        if (event === "tool_call") {
-          controller.enqueue({
-            type: "data-toolCall",
-            data: getToolCallPayload(data),
-            transient: true,
+        if (event === "agent.reasoning.delta") {
+          enqueueAgentTrace(controller, event, data)
+          return
+        }
+
+        if (event === "thinking_delta") {
+          enqueueAgentTrace(controller, "agent.reasoning.delta", {
+            ...data,
+            source_agent: data.agent,
+            text: data.content,
           })
           return
         }
 
-        if (event === "final") {
-          finalAnswer = String(data.answer ?? "")
+        if (event === "speech_text.delta") {
+          enqueueAgentTrace(controller, event, data)
+          return
+        }
+
+        if (event === "internal_delta") {
+          enqueueAgentTrace(controller, data.kind === "thinking" ? "agent.reasoning.delta" : "speech_text.delta", {
+            ...data,
+            source_agent: data.agent,
+            text: data.content,
+          })
+          return
+        }
+
+        if (event === "agent.tool_call.delta" || event === "tool_call") {
+          const toolCall = getToolCallPayload(data)
+          controller.enqueue({
+            type: "data-toolCall",
+            ...(toolCall.id ? { id: toolCall.id } : {}),
+            data: toolCall,
+          })
+          return
+        }
+
+        if (event === "agent.text.final" || event === "final") {
+          finalAnswer = String(data.answer ?? data.text ?? "")
           sources.splice(0, sources.length, ...toChatSources(data.sources))
           return
         }
 
-        if (event === "speech_text") {
+        if (event === "speech_text.final" || event === "speech_text") {
           controller.enqueue({
             type: "data-speechText",
-            data: { text: String(data.text ?? "") },
-            transient: true,
+            data: {
+              text: String(data.text ?? ""),
+              sourceAgent: getSourceAgent(data),
+            },
           })
+          enqueueAgentTrace(controller, "speech_text.final", data)
           return
         }
 
-        if (event === "audio") {
+        if (event === "tts.audio.chunk" || event === "audio") {
           const audioBase64 = String(data.audio_base64 ?? "")
           if (audioBase64) {
+            audioChunkCount += 1
+            controller.enqueue({
+              type: "data-audioStatus",
+              id: "tts-audio",
+              data: {
+                chunks: audioChunkCount,
+                completed: false,
+                sourceAgent: getSourceAgent(data),
+              },
+            })
             controller.enqueue({
               type: "data-audio",
               data: { audioBase64 },
@@ -190,12 +274,32 @@ function createBackendUiMessageStream(responseBody: ReadableStream<Uint8Array>) 
           return
         }
 
-        if (event === "audio_done") {
+        if (event === "tts.completed" || event === "audio_done") {
+          const completedChunks = Number(data.chunks ?? audioChunkCount)
+          controller.enqueue({
+            type: "data-audioStatus",
+            id: "tts-audio",
+            data: {
+              chunks: completedChunks,
+              completed: true,
+              sourceAgent: getSourceAgent(data),
+            },
+          })
           controller.enqueue({
             type: "data-audioDone",
-            data: { chunks: Number(data.chunks ?? 0) },
+            data: { chunks: completedChunks },
             transient: true,
           })
+          return
+        }
+
+        // LangGraph lifecycle noise is intentionally dropped at the BFF boundary.
+        if (
+          event === "node.updated" ||
+          event === "task.started" ||
+          event === "task.completed" ||
+          event === "task.failed"
+        ) {
           return
         }
 
@@ -207,7 +311,7 @@ function createBackendUiMessageStream(responseBody: ReadableStream<Uint8Array>) 
       }
 
       const processBuffer = () => {
-        const blocks = buffer.split("\n\n")
+        const blocks = buffer.split(/\r?\n\r?\n/)
         buffer = blocks.pop() ?? ""
 
         for (const block of blocks) {
@@ -290,7 +394,7 @@ function createBackendUiMessageStream(responseBody: ReadableStream<Uint8Array>) 
   })
 }
 
-export async function createBackendChatStream({ sessionId, message, signal }: BackendChatStreamOptions) {
+export async function createBackendChatStream({ sessionId, message, metadata, signal }: BackendChatStreamOptions) {
   if (!message) {
     return createAssistantTextStream("질문 내용을 찾지 못했어요. 다시 입력해 주세요.", "error")
   }
@@ -299,7 +403,7 @@ export async function createBackendChatStream({ sessionId, message, signal }: Ba
     const response = await fetch(`${BACKEND_URL}/chat/stream`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "text/event-stream" },
-      body: JSON.stringify({ session_id: sessionId, message }),
+      body: JSON.stringify({ session_id: sessionId, message, metadata: metadata ?? {} }),
       signal,
     })
 

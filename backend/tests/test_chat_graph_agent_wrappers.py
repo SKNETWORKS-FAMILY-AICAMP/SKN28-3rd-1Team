@@ -50,7 +50,7 @@ class ChatGraphAgentWrapperTest(unittest.IsolatedAsyncioTestCase):
             main_agent=main_agent,
             speech_text_agent=speech_agent,
             speech_synthesis_node=FakeSpeechSynthesisNode(),
-            window_changing_agent=window_agent,
+            screen_control_agent=window_agent,
             checkpointer=InMemorySaver(),
         )
         config = {"configurable": {"thread_id": "conversation-1"}}

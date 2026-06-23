@@ -10,6 +10,17 @@ export const maxDuration = 60
 type ChatRouteRequest = {
   id?: string
   messages?: LegalChatMessage[]
+  profile?: {
+    birthYear?: string
+    location?: string
+  }
+}
+
+const INTERNAL_STREAM_METADATA = {
+  client: "chat_page",
+  streamReasoningTokens: true,
+  streamScreenControlAgent: true,
+  streamSpeechAgent: true,
 }
 
 function writeAssistantText(writer: UIMessageStreamWriter<LegalChatMessage>, text: string, finishReason: "stop" | "error") {
@@ -20,6 +31,19 @@ function writeAssistantText(writer: UIMessageStreamWriter<LegalChatMessage>, tex
   writer.write({ type: "text-delta", id: textPartId, delta: text })
   writer.write({ type: "text-end", id: textPartId })
   writer.write({ type: "finish", finishReason })
+}
+
+function createBackendMessage(message: string, profile?: ChatRouteRequest["profile"]) {
+  const birthYear = typeof profile?.birthYear === "string" ? profile.birthYear.trim() : ""
+  const location = typeof profile?.location === "string" ? profile.location.trim() : ""
+  const profileLines = [
+    birthYear ? `태어난 년도: ${birthYear}` : "",
+    location ? `사는 곳: ${location}` : "",
+  ].filter(Boolean)
+
+  if (profileLines.length === 0) return message
+
+  return `상담자 정보:\n${profileLines.join("\n")}\n\n질문:\n${message}`
 }
 
 export async function POST(request: Request) {
@@ -44,7 +68,8 @@ export async function POST(request: Request) {
 
       const backendStream = await createBackendChatStream({
         sessionId: body.id,
-        message,
+        message: createBackendMessage(message, body.profile),
+        metadata: INTERNAL_STREAM_METADATA,
         signal: request.signal,
       })
 

@@ -12,8 +12,8 @@ from utils import application_state, user_input_state
 
 logger = get_logger(__name__)
 
-_AGENT_TEXT_STREAM_NODES = {"main_agent", "window_changing_agent"}
-_TOOL_STREAM_NODES = {"main_agent", "window_changing_agent"}
+_AGENT_TEXT_STREAM_NODES = {"main_agent", "screen_control_agent"}
+_TOOL_STREAM_NODES = {"main_agent", "screen_control_agent"}
 _SPEECH_TEXT_STREAM_NODES = {"speech_text_agent"}
 _REASONING_BLOCK_TYPES = {"reasoning", "reasoning-delta"}
 
