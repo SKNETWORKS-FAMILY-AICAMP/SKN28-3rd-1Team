@@ -12,8 +12,15 @@ class LlmSettingsTest(unittest.TestCase):
         env = {
             "LLM_AGENT_MAIN_PROVIDER": "openrouter",
             "LLM_AGENT_MAIN_MODEL": "openai/gpt-4.1-mini",
+            "LLM_AGENT_MAIN_REASONING_EFFORT": "medium",
+            "LLM_AGENT_MAIN_REASONING_FORMAT": "raw",
+            "LLM_AGENT_MAIN_CLEAR_THINKING": "true",
             "LLM_AGENT_SANITIZE_PROVIDER": "cerebras",
+            "LLM_AGENT_SANITIZE_REASONING_EFFORT": "",
             "LLM_AGENT_WINDOW_MODEL": "gpt-oss-120b",
+            "LLM_AGENT_WINDOW_REASONING_EFFORT": "high",
+            "LLM_AGENT_WINDOW_REASONING_FORMAT": "",
+            "LLM_AGENT_WINDOW_CLEAR_THINKING": "",
         }
 
         with patch.dict(os.environ, env, clear=True):
@@ -25,6 +32,15 @@ class LlmSettingsTest(unittest.TestCase):
         self.assertEqual(llm_settings.agent_model("sanitize"), "openai/gpt-4.1-mini")
         self.assertEqual(llm_settings.agent_provider("window"), "openrouter")
         self.assertEqual(llm_settings.agent_model("window"), "gpt-oss-120b")
+        self.assertEqual(llm_settings.agent_reasoning_effort("main"), "medium")
+        self.assertIsNone(llm_settings.agent_reasoning_effort("sanitize"))
+        self.assertEqual(llm_settings.agent_reasoning_effort("window"), "high")
+        self.assertEqual(llm_settings.agent_reasoning_format("main"), "raw")
+        self.assertTrue(llm_settings.agent_clear_thinking("main"))
+        self.assertIsNone(llm_settings.agent_reasoning_format("sanitize"))
+        self.assertIsNone(llm_settings.agent_reasoning_format("window"))
+        self.assertIsNone(llm_settings.agent_clear_thinking("sanitize"))
+        self.assertIsNone(llm_settings.agent_clear_thinking("window"))
 
     def test_request_and_provider_settings_use_new_namespaces(self) -> None:
         env = {

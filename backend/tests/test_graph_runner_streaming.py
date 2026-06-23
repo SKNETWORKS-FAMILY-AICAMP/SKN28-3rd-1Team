@@ -15,10 +15,12 @@ class FakeMessage:
         content: Any = None,
         text: str | None = None,
         content_blocks: list[dict[str, Any]] | None = None,
+        additional_kwargs: dict[str, Any] | None = None,
     ) -> None:
         self.content = content
         self.text = text
         self.content_blocks = content_blocks
+        self.additional_kwargs = additional_kwargs or {}
 
 
 class FakeGraph:
@@ -70,6 +72,34 @@ class ChatGraphRunnerStreamingTest(unittest.IsolatedAsyncioTestCase):
             ],
         )
 
+    async def test_screen_control_agent_text_streams_as_agent_text_delta(self) -> None:
+        runner = ChatGraphRunner(thread_context=ChatThreadContextStore())
+        runner._graph = FakeGraph(
+            [
+                message_event(
+                    "screen_control_agent",
+                    FakeMessage(content=[{"type": "text", "text": "screen token"}]),
+                )
+            ]
+        )
+
+        events = [
+            event
+            async for event in runner.run_stream("hello", session_id="conversation-1")
+        ]
+
+        self.assertEqual(
+            events,
+            [
+                {
+                    "type": "agent.text.delta",
+                    "source_agent": "screen_control_agent",
+                    "node": "screen_control_agent",
+                    "text": "screen token",
+                }
+            ],
+        )
+
     async def test_speech_text_agent_text_streams_as_speech_text_delta_and_debug_log(self) -> None:
         runner = ChatGraphRunner(thread_context=ChatThreadContextStore())
         runner._graph = FakeGraph(
@@ -112,7 +142,48 @@ class ChatGraphRunnerStreamingTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(extra["token_chars"], len("simplified token"))
         self.assertNotIn("simplified token", str(internal_logs[0]))
 
-    async def test_reasoning_block_streams_as_agent_reasoning_delta_and_debug_log(self) -> None:
+    async def test_speech_text_agent_reasoning_streams_as_agent_reasoning_delta(self) -> None:
+        runner = ChatGraphRunner(thread_context=ChatThreadContextStore())
+        runner._graph = FakeGraph(
+            [
+                message_event(
+                    "speech_text_agent",
+                    FakeMessage(additional_kwargs={"reasoning": "speech reasoning token"}),
+                )
+            ]
+        )
+
+        with patch("graph.runner.logger.debug") as debug:
+            events = [
+                event
+                async for event in runner.run_stream("hello", session_id="conversation-1")
+            ]
+
+        self.assertEqual(
+            events,
+            [
+                {
+                    "type": "agent.reasoning.delta",
+                    "source_agent": "speech_text_agent",
+                    "node": "speech_text_agent",
+                    "text": "speech reasoning token",
+                }
+            ],
+        )
+        internal_logs = [
+            call
+            for call in debug.call_args_list
+            if call.kwargs.get("extra", {}).get("event") == "agent.internal_stream_token"
+        ]
+        self.assertEqual(len(internal_logs), 1)
+        extra = internal_logs[0].kwargs["extra"]
+        self.assertEqual(extra["agent"], "speech_text_agent")
+        self.assertEqual(extra["stream_event_type"], "agent.reasoning.delta")
+        self.assertEqual(extra["stream_kind"], "reasoning")
+        self.assertEqual(extra["token_chars"], len("speech reasoning token"))
+        self.assertNotIn("speech reasoning token", str(internal_logs[0]))
+
+    async def test_main_agent_reasoning_block_is_dropped(self) -> None:
         runner = ChatGraphRunner(thread_context=ChatThreadContextStore())
         runner._graph = FakeGraph(
             [
@@ -136,29 +207,35 @@ class ChatGraphRunnerStreamingTest(unittest.IsolatedAsyncioTestCase):
                 async for event in runner.run_stream("hello", session_id="conversation-1")
             ]
 
-        self.assertEqual(
-            events,
-            [
-                {
-                    "type": "agent.reasoning.delta",
-                    "source_agent": "main_agent",
-                    "node": "main_agent",
-                    "text": "visible reasoning token",
-                }
-            ],
-        )
+        self.assertEqual(events, [])
         internal_logs = [
             call
             for call in debug.call_args_list
             if call.kwargs.get("extra", {}).get("event") == "agent.internal_stream_token"
         ]
-        self.assertEqual(len(internal_logs), 1)
-        extra = internal_logs[0].kwargs["extra"]
-        self.assertEqual(extra["agent"], "main_agent")
-        self.assertEqual(extra["stream_event_type"], "agent.reasoning.delta")
-        self.assertEqual(extra["stream_kind"], "reasoning")
-        self.assertEqual(extra["token_chars"], len("visible reasoning token"))
-        self.assertNotIn("visible reasoning token", str(internal_logs[0]))
+        self.assertEqual(internal_logs, [])
+
+    async def test_main_agent_additional_kwargs_reasoning_is_dropped(self) -> None:
+        runner = ChatGraphRunner(thread_context=ChatThreadContextStore())
+        runner._graph = FakeGraph(
+            [
+                message_event(
+                    "main_agent",
+                    FakeMessage(additional_kwargs={"reasoning": "cerebras reasoning token"}),
+                ),
+                message_event(
+                    "main_agent",
+                    FakeMessage(additional_kwargs={"reasoning_content": "openrouter reasoning token"}),
+                ),
+            ]
+        )
+
+        events = [
+            event
+            async for event in runner.run_stream("hello", session_id="conversation-1")
+        ]
+
+        self.assertEqual(events, [])
 
     async def test_updates_stream_as_node_lifecycle_event(self) -> None:
         runner = ChatGraphRunner(thread_context=ChatThreadContextStore())

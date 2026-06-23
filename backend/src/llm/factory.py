@@ -17,6 +17,9 @@ def create_agent_llm(agent: LlmAgentName) -> BaseChatModel:
     model = llm_settings.agent_model(agent)
     request = llm_settings.request
     provider_settings = llm_settings.providers
+    reasoning_effort = llm_settings.agent_reasoning_effort(agent)
+    reasoning_format = llm_settings.agent_reasoning_format(agent)
+    clear_thinking = llm_settings.agent_clear_thinking(agent)
 
     logger.debug(
         "creating LLM",
@@ -25,6 +28,9 @@ def create_agent_llm(agent: LlmAgentName) -> BaseChatModel:
             "agent": agent,
             "provider": provider,
             "model": model,
+            "reasoning_effort": reasoning_effort,
+            "reasoning_format": reasoning_format,
+            "clear_thinking": clear_thinking,
         },
     )
     if provider == "openai":
@@ -42,6 +48,7 @@ def create_agent_llm(agent: LlmAgentName) -> BaseChatModel:
             timeout_ms=request.timeout_ms,
             max_retries=request.max_retries,
             max_tokens=request.max_tokens,
+            reasoning_effort=reasoning_effort,
         )
     if provider == "cerebras":
         return create_chat_cerebras(
@@ -50,6 +57,9 @@ def create_agent_llm(agent: LlmAgentName) -> BaseChatModel:
             timeout_ms=request.timeout_ms,
             max_retries=request.max_retries,
             max_tokens=request.max_tokens,
+            reasoning_effort=reasoning_effort,
+            reasoning_format=reasoning_format,
+            clear_thinking=clear_thinking,
         )
 
     raise RuntimeError(f"Unsupported LLM provider: {provider}")

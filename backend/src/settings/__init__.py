@@ -5,6 +5,8 @@ from .llm import (
     LlmAgentSettings,
     LlmProviderSettings,
     LlmRequestSettings,
+    LlmReasoningEffort,
+    LlmReasoningFormat,
     LlmSettings,
 )
 from .metadata import MetadataSettings
@@ -17,6 +19,8 @@ __all__ = [
     "LlmAgentSettings",
     "LlmProviderSettings",
     "LlmRequestSettings",
+    "LlmReasoningEffort",
+    "LlmReasoningFormat",
     "LlmSettings",
     "MetadataSettings",
     "RagToolSettings",

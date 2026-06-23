@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from langchain_openrouter import ChatOpenRouter
 
@@ -19,6 +19,7 @@ def create_chat_openrouter(
     timeout_ms: int,
     max_retries: int,
     max_tokens: int | None,
+    reasoning_effort: Literal["low", "medium", "high"] | None = None,
 ) -> ChatOpenRouter:
     if not openrouter_configured(provider_settings):
         raise RuntimeError("LLM_PROVIDER_OPENROUTER_API_KEY is not set.")
@@ -37,6 +38,8 @@ def create_chat_openrouter(
         kwargs["base_url"] = provider_settings.openrouter_base_url
     if max_tokens is not None:
         kwargs["max_tokens"] = max_tokens
+    if reasoning_effort is not None:
+        kwargs["reasoning"] = {"effort": reasoning_effort}
 
     return ChatOpenRouter(**kwargs)
 

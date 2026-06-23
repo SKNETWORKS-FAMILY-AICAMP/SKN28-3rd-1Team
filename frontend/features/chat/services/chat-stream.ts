@@ -80,10 +80,22 @@ function toErrorText(error: unknown) {
   return "오류"
 }
 
+function createTimestamp() {
+  return new Date().toISOString()
+}
+
+function enqueueMessageTimestamp(controller: ReadableStreamDefaultController<LegalChatMessageChunk>) {
+  controller.enqueue({
+    type: "data-messageTimestamp",
+    data: { timestamp: createTimestamp() },
+  })
+}
+
 function createAssistantTextStream(text: string, finishReason: "stop" | "error" = "stop") {
   return new ReadableStream<LegalChatMessageChunk>({
     start(controller) {
       controller.enqueue({ type: "start" })
+      enqueueMessageTimestamp(controller)
       controller.enqueue({ type: "text-start", id: TEXT_PART_ID })
       controller.enqueue({ type: "text-delta", id: TEXT_PART_ID, delta: text })
       controller.enqueue({ type: "text-end", id: TEXT_PART_ID })
@@ -115,6 +127,7 @@ function getSourceAgent(data: Record<string, unknown>) {
 function getToolCallPayload(data: Record<string, unknown>) {
   const toolCall =
     data.tool_call && typeof data.tool_call === "object" ? (data.tool_call as Record<string, unknown>) : data
+  const timestamp = typeof data.timestamp === "string" ? data.timestamp : createTimestamp()
 
   return {
     event: "agent.tool_call.delta",
@@ -122,6 +135,7 @@ function getToolCallPayload(data: Record<string, unknown>) {
     name: typeof toolCall.name === "string" ? toolCall.name : null,
     status: typeof toolCall.status === "string" ? toolCall.status : null,
     sourceAgent: getSourceAgent(data),
+    timestamp,
   }
 }
 
@@ -129,11 +143,18 @@ function getEventText(data: Record<string, unknown>) {
   return String(data.text ?? data.content ?? "")
 }
 
+function isSpeechTextAgent(data: Record<string, unknown>) {
+  const sourceAgent = getSourceAgent(data)
+  return sourceAgent === "speech_text_agent" || data.agent === "speech_text_agent"
+}
+
 function enqueueAgentTrace(
   controller: ReadableStreamDefaultController<LegalChatMessageChunk>,
   event: string,
   data: Record<string, unknown>,
 ) {
+  const timestamp = typeof data.timestamp === "string" ? data.timestamp : createTimestamp()
+
   controller.enqueue({
     type: "data-agentTrace",
     data: {
@@ -141,7 +162,9 @@ function enqueueAgentTrace(
       sourceAgent: getSourceAgent(data),
       node: typeof data.node === "string" ? data.node : null,
       text: getEventText(data) || undefined,
-      toolCall: data.tool_call && typeof data.tool_call === "object" ? getToolCallPayload(data) : undefined,
+      timestamp,
+      toolCall:
+        data.tool_call && typeof data.tool_call === "object" ? getToolCallPayload({ ...data, timestamp }) : undefined,
     },
   })
 }
@@ -156,11 +179,30 @@ function createBackendUiMessageStream(responseBody: ReadableStream<Uint8Array>) 
       const sources: ChatSource[] = []
       let buffer = ""
       let textStarted = false
-      let hasText = false
-      let finalAnswer = ""
       let finishReason: "stop" | "error" = "stop"
       let shouldStop = false
       let audioChunkCount = 0
+      let audioSourceAgent: string | null = null
+
+      const interruptAudio = (reason: string) => {
+        if (audioChunkCount === 0) return
+        controller.enqueue({
+          type: "data-audioStatus",
+          id: "tts-audio",
+          data: {
+            chunks: audioChunkCount,
+            completed: true,
+            interrupted: true,
+            reason,
+            sourceAgent: audioSourceAgent,
+          },
+        })
+        controller.enqueue({
+          type: "data-audioInterrupted",
+          data: { reason },
+          transient: true,
+        })
+      }
 
       const startText = () => {
         if (textStarted) return
@@ -171,7 +213,6 @@ function createBackendUiMessageStream(responseBody: ReadableStream<Uint8Array>) 
       const emitText = (text: string) => {
         if (!text) return
         startText()
-        hasText = true
         controller.enqueue({ type: "text-delta", id: TEXT_PART_ID, delta: text })
       }
 
@@ -197,16 +238,28 @@ function createBackendUiMessageStream(responseBody: ReadableStream<Uint8Array>) 
         }
 
         if (event === "agent.reasoning.delta") {
-          enqueueAgentTrace(controller, event, data)
+          if (isSpeechTextAgent(data)) enqueueAgentTrace(controller, event, data)
           return
         }
 
         if (event === "thinking_delta") {
-          enqueueAgentTrace(controller, "agent.reasoning.delta", {
-            ...data,
-            source_agent: data.agent,
-            text: data.content,
-          })
+          if (isSpeechTextAgent(data)) {
+            enqueueAgentTrace(controller, "agent.reasoning.delta", {
+              ...data,
+              source_agent: data.agent,
+              text: data.content,
+            })
+          }
+          return
+        }
+
+        if (event === "speech_text.input") {
+          enqueueAgentTrace(controller, event, data)
+          return
+        }
+
+        if (event === "screen_control.input") {
+          enqueueAgentTrace(controller, event, data)
           return
         }
 
@@ -216,7 +269,17 @@ function createBackendUiMessageStream(responseBody: ReadableStream<Uint8Array>) 
         }
 
         if (event === "internal_delta") {
-          enqueueAgentTrace(controller, data.kind === "thinking" ? "agent.reasoning.delta" : "speech_text.delta", {
+          if (data.kind === "thinking") {
+            if (isSpeechTextAgent(data)) {
+              enqueueAgentTrace(controller, "agent.reasoning.delta", {
+                ...data,
+                source_agent: data.agent,
+                text: data.content,
+              })
+            }
+            return
+          }
+          enqueueAgentTrace(controller, "speech_text.delta", {
             ...data,
             source_agent: data.agent,
             text: data.content,
@@ -235,26 +298,33 @@ function createBackendUiMessageStream(responseBody: ReadableStream<Uint8Array>) 
         }
 
         if (event === "agent.text.final" || event === "final") {
-          finalAnswer = String(data.answer ?? data.text ?? "")
+          if (getSourceAgent(data) && getSourceAgent(data) !== "main_agent") {
+            enqueueAgentTrace(controller, "agent.text.final", data)
+            return
+          }
+
           sources.splice(0, sources.length, ...toChatSources(data.sources))
           return
         }
 
         if (event === "speech_text.final" || event === "speech_text") {
+          const timestamp = createTimestamp()
           controller.enqueue({
             type: "data-speechText",
             data: {
               text: String(data.text ?? ""),
               sourceAgent: getSourceAgent(data),
+              timestamp,
             },
           })
-          enqueueAgentTrace(controller, "speech_text.final", data)
+          enqueueAgentTrace(controller, "speech_text.final", { ...data, timestamp })
           return
         }
 
         if (event === "tts.audio.chunk" || event === "audio") {
           const audioBase64 = String(data.audio_base64 ?? "")
           if (audioBase64) {
+            audioSourceAgent = getSourceAgent(data)
             audioChunkCount += 1
             controller.enqueue({
               type: "data-audioStatus",
@@ -276,6 +346,7 @@ function createBackendUiMessageStream(responseBody: ReadableStream<Uint8Array>) 
 
         if (event === "tts.completed" || event === "audio_done") {
           const completedChunks = Number(data.chunks ?? audioChunkCount)
+          audioSourceAgent = getSourceAgent(data)
           controller.enqueue({
             type: "data-audioStatus",
             id: "tts-audio",
@@ -304,7 +375,9 @@ function createBackendUiMessageStream(responseBody: ReadableStream<Uint8Array>) 
         }
 
         if (event === "error") {
-          emitText(`서버 오류가 발생했어요. (${String(data.message ?? "stream error")})`)
+          const reason = String(data.message ?? "stream error")
+          interruptAudio(reason)
+          emitText(`서버 오류가 발생했어요. (${reason})`)
           finishReason = "error"
           shouldStop = true
         }
@@ -323,6 +396,7 @@ function createBackendUiMessageStream(responseBody: ReadableStream<Uint8Array>) 
 
       try {
         controller.enqueue({ type: "start" })
+        enqueueMessageTimestamp(controller)
 
         for (;;) {
           const { value, done } = await reader.read()
@@ -343,8 +417,6 @@ function createBackendUiMessageStream(responseBody: ReadableStream<Uint8Array>) 
           const parsed = parseSseBlock(remainingBlock)
           if (parsed) handleParsedBlock(parsed)
         }
-
-        if (!hasText && finalAnswer) emitText(finalAnswer)
 
         finishText()
 
@@ -373,8 +445,10 @@ function createBackendUiMessageStream(responseBody: ReadableStream<Uint8Array>) 
         if (textStarted) finishText()
 
         if (error instanceof DOMException && error.name === "AbortError") {
+          interruptAudio("cancelled")
           controller.enqueue({ type: "abort", reason: "cancelled" })
         } else {
+          interruptAudio(toErrorText(error))
           controller.enqueue({ type: "text-start", id: TEXT_PART_ID })
           controller.enqueue({
             type: "text-delta",

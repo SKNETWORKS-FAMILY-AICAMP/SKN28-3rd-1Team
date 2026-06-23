@@ -28,6 +28,7 @@ import { useBrowserSpeechDictation } from "@/components/voice/hooks/use-browser-
 import { VoiceInputButton } from "@/components/voice/surfaces/voice-input-button/surface"
 import type { DictationStatus, DictationTranscript } from "@/components/voice/types"
 import { useChatSession } from "@/features/chat/hooks/use-chat-session"
+import type { TtsPlaybackStatus } from "@/features/chat/services/tts-streaming-audio-player"
 import type { ChatMessageData, LegalChatMessage } from "@/features/chat/types"
 import { cn } from "@/lib/utils"
 
@@ -201,6 +202,7 @@ export function ChatPageClient() {
     status,
     error,
     isBusy,
+    ttsPlaybackStatus,
     reset,
   } = useChatSession()
   const [isProfileStep, setIsProfileStep] = useState(false)
@@ -216,6 +218,7 @@ export function ChatPageClient() {
   const messagesRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const speechBaseInputRef = useRef("")
+  const messageTimestampCacheRef = useRef(new Map<string, string>())
   const handleSpeechTranscript = useCallback((transcript: DictationTranscript) => {
     setInput(mergeSpeechTranscript(speechBaseInputRef.current, transcript.text))
     window.requestAnimationFrame(() => inputRef.current?.focus())
@@ -225,7 +228,8 @@ export function ChatPageClient() {
   const selected = institutions[selectedId]
   const selectedDocument = documentSources[selectedDocumentId]
   const started = messages.some((message) => message.role === "user")
-  const agentTraceLanes = useMemo(() => collectAgentTraceLanes(messages), [messages])
+  const messageTimestamps = useMemo(() => getMessageTimestampMap(messages, messageTimestampCacheRef.current), [messages])
+  const agentTraceLanes = useMemo(() => collectAgentTraceLanes(messages, ttsPlaybackStatus), [messages, ttsPlaybackStatus])
   const agentTraceItemCount = agentTraceLanes.reduce((count, lane) => count + lane.items.length, 0)
   const totalSidebarWidth = chatSidebarWidth + (isTraceExpanded ? traceDrawerWidth : 0)
   const chatSidebarStyle = {
@@ -460,7 +464,7 @@ export function ChatPageClient() {
               >
                 {messages.length === 0 ? <SidebarGreeting /> : null}
                 {messages.map((message) => (
-                  <SidebarChatMessage key={message.id} message={message} />
+                  <SidebarChatMessage key={message.id} message={message} timestamp={messageTimestamps.get(message.id)} />
                 ))}
 
                 {status === "submitted" && messages.at(-1)?.role === "user" ? <SidebarPendingMessage /> : null}
@@ -961,7 +965,47 @@ function getDataParts<TName extends keyof ChatMessageData & string>(
   }>
 }
 
-function SidebarChatMessage({ message }: { message: LegalChatMessage }) {
+function getMessageTimestampValue(message: LegalChatMessage) {
+  return getDataParts(message, "messageTimestamp").at(-1)?.data.timestamp
+}
+
+function getMessageTimestampMap(messages: LegalChatMessage[], cache: Map<string, string>) {
+  const activeIds = new Set(messages.map((message) => message.id))
+
+  for (const messageId of cache.keys()) {
+    if (!activeIds.has(messageId)) cache.delete(messageId)
+  }
+
+  for (const message of messages) {
+    const timestamp = getMessageTimestampValue(message)
+    if (timestamp) cache.set(message.id, timestamp)
+    else if (!cache.has(message.id)) cache.set(message.id, new Date().toISOString())
+  }
+
+  return new Map(cache)
+}
+
+function formatTimestamp(timestamp?: string) {
+  if (!timestamp) return null
+
+  const date = new Date(timestamp)
+  if (Number.isNaN(date.getTime())) return null
+
+  return new Intl.DateTimeFormat("ko-KR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(date)
+}
+
+function MessageTimestamp({ className, timestamp }: { className?: string; timestamp?: string }) {
+  const label = formatTimestamp(timestamp)
+  if (!label) return null
+
+  return <div className={cn("mt-1.5 text-right text-[10px] font-medium leading-none", className)}>{label}</div>
+}
+
+function SidebarChatMessage({ message, timestamp }: { message: LegalChatMessage; timestamp?: string }) {
   const isUser = message.role === "user"
   const textParts = message.parts.filter((part) => part.type === "text")
 
@@ -972,6 +1016,7 @@ function SidebarChatMessage({ message }: { message: LegalChatMessage }) {
         <div className="min-w-0">
           <div className="max-w-[calc(var(--chat-sidebar-width)-112px)] whitespace-pre-wrap rounded-[4px_14px_14px_14px] bg-[#f7e7d8] px-3.5 py-3 text-sm leading-relaxed text-[#4a4038]">
             {getMessageText(message)}
+            <MessageTimestamp timestamp={timestamp} className="text-[#a59889]" />
           </div>
         </div>
       </div>
@@ -989,6 +1034,7 @@ function SidebarChatMessage({ message }: { message: LegalChatMessage }) {
                 {part.text}
               </MessageResponse>
             ))}
+            <MessageTimestamp timestamp={timestamp} className="text-[#b2a79b]" />
           </div>
         ) : null}
       </div>
@@ -1002,6 +1048,7 @@ type AgentTraceItem = {
   id: string
   title: string
   text: string
+  timestamp?: string
   tone: AgentTraceTone
 }
 
@@ -1013,11 +1060,20 @@ type AgentTraceLane = {
 
 type AgentTraceGroup = {
   audioStatus?: ChatMessageData["audioStatus"]
+  audioTimestamp?: string
+  input: string
+  inputTimestamp?: string
   reasoning: string
+  reasoningTimestamp?: string
   speechDelta: string
   speechFinal: string
+  speechTimestamp?: string
   text: string
+  textFinal: string
+  textFinalTimestamp?: string
+  textTimestamp?: string
   tools: ChatMessageData["toolCall"][]
+  toolTimestamp?: string
 }
 
 const agentTraceLaneOrder = ["main_agent", "screen_control_agent", "speech_text_agent", "speech_synthesis_node"]
@@ -1031,10 +1087,12 @@ const agentTraceLaneLabels: Record<string, string> = {
 
 function createAgentTraceGroup(): AgentTraceGroup {
   return {
+    input: "",
     reasoning: "",
     speechDelta: "",
     speechFinal: "",
     text: "",
+    textFinal: "",
     tools: [],
   }
 }
@@ -1048,8 +1106,40 @@ function formatAgentLabel(agent: string) {
   return agentTraceLaneLabels[agent] ?? agent.replaceAll("_", " ")
 }
 
-function collectAgentTraceLanes(messages: LegalChatMessage[]): AgentTraceLane[] {
+function getLatestAudioStatusMessageId(messages: LegalChatMessage[]) {
+  for (let index = messages.length - 1; index >= 0; index--) {
+    if (getDataParts(messages[index], "audioStatus").length > 0) return messages[index].id
+  }
+
+  return null
+}
+
+function formatTtsPlaybackLabel(status?: TtsPlaybackStatus) {
+  if (!status || status.phase === "idle" || status.chunks === 0) return null
+
+  const modeLabel = status.mode === "blob" ? "blob fallback" : status.mode === "media-source" ? "media source" : null
+  const phaseLabel = (() => {
+    if (status.phase === "buffering") return status.streamCompleted ? "finalizing buffer" : "buffering"
+    if (status.phase === "playing") return "playing"
+    if (status.phase === "blocked") return "playback blocked"
+    if (status.phase === "completed") return "playback completed"
+    if (status.phase === "error") return "playback error"
+    return null
+  })()
+
+  if (!phaseLabel) return null
+  return modeLabel ? `${phaseLabel} (${modeLabel})` : phaseLabel
+}
+
+function formatAudioTraceText(audioStatus: ChatMessageData["audioStatus"], playbackStatus?: TtsPlaybackStatus) {
+  const streamLabel = audioStatus.interrupted ? "stream interrupted" : audioStatus.completed ? "stream completed" : "streaming"
+  const playbackLabel = formatTtsPlaybackLabel(playbackStatus)
+  return [`${audioStatus.chunks} chunks`, streamLabel, playbackLabel].filter(Boolean).join(" · ")
+}
+
+function collectAgentTraceLanes(messages: LegalChatMessage[], ttsPlaybackStatus?: TtsPlaybackStatus): AgentTraceLane[] {
   const laneItems = new Map<string, AgentTraceItem[]>()
+  const latestAudioStatusMessageId = getLatestAudioStatusMessageId(messages)
 
   function appendLaneItem(agent: string, item: AgentTraceItem) {
     laneItems.set(agent, [...(laneItems.get(agent) ?? []), item])
@@ -1058,6 +1148,7 @@ function collectAgentTraceLanes(messages: LegalChatMessage[]): AgentTraceLane[] 
   for (const message of messages) {
     if (message.role !== "assistant") continue
 
+    const messageTimestamp = getMessageTimestampValue(message)
     const groups = new Map<string, AgentTraceGroup>()
     const ensureGroup = (agent: string) => {
       const current = groups.get(agent)
@@ -1072,46 +1163,80 @@ function collectAgentTraceLanes(messages: LegalChatMessage[]): AgentTraceLane[] 
       const trace = part.data
       const fallbackAgent = trace.type.startsWith("speech_text.") ? "speech_text_agent" : "main_agent"
       const agent = normalizeAgentName(trace.sourceAgent ?? trace.node, fallbackAgent)
+      if (agent === "main_agent" && (trace.type === "agent.text.delta" || trace.type === "agent.text.final")) continue
+      if (trace.type === "agent.reasoning.delta" && agent !== "speech_text_agent") continue
+
       const group = ensureGroup(agent)
       const text = trace.text ?? ""
+      const timestamp = trace.timestamp ?? messageTimestamp
 
-      if (trace.type === "agent.reasoning.delta") {
-        group.reasoning += text
-      } else if (trace.type === "agent.text.delta") {
+      if (trace.type === "agent.text.delta") {
         group.text += text
+        group.textTimestamp = timestamp ?? group.textTimestamp
+      } else if (trace.type === "agent.text.final") {
+        group.textFinal = text || group.textFinal
+        group.textFinalTimestamp = timestamp ?? group.textFinalTimestamp
+      } else if (trace.type === "agent.reasoning.delta") {
+        group.reasoning += text
+        group.reasoningTimestamp = timestamp ?? group.reasoningTimestamp
+      } else if (trace.type === "speech_text.input" || trace.type === "screen_control.input") {
+        group.input = text || group.input
+        group.inputTimestamp = timestamp ?? group.inputTimestamp
       } else if (trace.type === "speech_text.delta") {
         group.speechDelta += text
+        group.speechTimestamp = timestamp ?? group.speechTimestamp
       } else if (trace.type === "speech_text.final") {
         group.speechFinal = text || group.speechFinal
+        group.speechTimestamp = timestamp ?? group.speechTimestamp
       }
     }
 
     for (const part of getDataParts(message, "speechText")) {
       const agent = normalizeAgentName(part.data.sourceAgent, "speech_text_agent")
-      ensureGroup(agent).speechFinal = part.data.text
+      const group = ensureGroup(agent)
+      group.speechFinal = part.data.text
+      group.speechTimestamp = part.data.timestamp ?? messageTimestamp ?? group.speechTimestamp
     }
 
     for (const part of getDataParts(message, "toolCall")) {
       const agent = normalizeAgentName(part.data.sourceAgent, "main_agent")
-      ensureGroup(agent).tools.push(part.data)
+
+      const group = ensureGroup(agent)
+      group.tools.push(part.data)
+      group.toolTimestamp = part.data.timestamp ?? messageTimestamp ?? group.toolTimestamp
     }
 
     const audioStatus = getDataParts(message, "audioStatus").at(-1)?.data
     if (audioStatus) {
       const agent = normalizeAgentName(audioStatus.sourceAgent, "speech_synthesis_node")
-      ensureGroup(agent).audioStatus = audioStatus
+      const group = ensureGroup(agent)
+      group.audioStatus = audioStatus
+      group.audioTimestamp = messageTimestamp ?? group.audioTimestamp
     }
 
     for (const [agent, group] of groups) {
+      const input = group.input.trim()
       const reasoning = group.reasoning.trim()
-      const text = group.text.trim()
+      const finalText = group.textFinal.trim()
+      const text = finalText || group.text.trim()
       const speechText = group.speechFinal.trim() || group.speechDelta.trim()
+
+      if (input) {
+        appendLaneItem(agent, {
+          id: `${message.id}-${agent}-input`,
+          title: agent === "screen_control_agent" ? "screen_control.input" : "speech_text.input",
+          text: input,
+          timestamp: group.inputTimestamp ?? messageTimestamp,
+          tone: "speech",
+        })
+      }
 
       if (reasoning) {
         appendLaneItem(agent, {
           id: `${message.id}-${agent}-reasoning`,
-          title: "reasoning",
+          title: "agent.reasoning.delta",
           text: reasoning,
+          timestamp: group.reasoningTimestamp ?? messageTimestamp,
           tone: "reasoning",
         })
       }
@@ -1119,8 +1244,9 @@ function collectAgentTraceLanes(messages: LegalChatMessage[]): AgentTraceLane[] 
       if (text) {
         appendLaneItem(agent, {
           id: `${message.id}-${agent}-text`,
-          title: agent === "screen_control_agent" ? "screen control stream" : "agent stream",
+          title: finalText ? "agent.text.final" : "agent.text.delta",
           text,
+          timestamp: group.textFinalTimestamp ?? group.textTimestamp ?? messageTimestamp,
           tone: "text",
         })
       }
@@ -1128,8 +1254,9 @@ function collectAgentTraceLanes(messages: LegalChatMessage[]): AgentTraceLane[] 
       if (speechText) {
         appendLaneItem(agent, {
           id: `${message.id}-${agent}-speech`,
-          title: group.speechFinal.trim() ? "speech final" : "speech stream",
+          title: group.speechFinal.trim() ? "speech_text.final" : "speech_text.delta",
           text: speechText,
+          timestamp: group.speechTimestamp ?? messageTimestamp,
           tone: "speech",
         })
       }
@@ -1137,10 +1264,11 @@ function collectAgentTraceLanes(messages: LegalChatMessage[]): AgentTraceLane[] 
       if (group.tools.length > 0) {
         appendLaneItem(agent, {
           id: `${message.id}-${agent}-tools`,
-          title: "tool call",
+          title: "agent.tool_call.delta",
           text: group.tools
             .map((toolCall) => `${toolCall.name ?? "unknown tool"} · ${toolCall.status ?? "streaming"}`)
             .join("\n"),
+          timestamp: group.toolTimestamp ?? messageTimestamp,
           tone: "tool",
         })
       }
@@ -1148,15 +1276,21 @@ function collectAgentTraceLanes(messages: LegalChatMessage[]): AgentTraceLane[] 
       if (group.audioStatus) {
         appendLaneItem(agent, {
           id: `${message.id}-${agent}-audio`,
-          title: "tts audio",
-          text: `${group.audioStatus.chunks} chunks · ${group.audioStatus.completed ? "completed" : "streaming"}`,
+          title: "tts.audio",
+          text: formatAudioTraceText(
+            group.audioStatus,
+            message.id === latestAudioStatusMessageId ? ttsPlaybackStatus : undefined,
+          ),
+          timestamp: group.audioTimestamp ?? messageTimestamp,
           tone: "audio",
         })
       }
     }
   }
 
-  const dynamicAgents = [...laneItems.keys()].filter((agent) => !agentTraceLaneOrder.includes(agent))
+  const dynamicAgents = [...laneItems.keys()].filter(
+    (agent) => !agentTraceLaneOrder.includes(agent),
+  )
   return [...agentTraceLaneOrder, ...dynamicAgents].map((agent) => ({
     id: agent,
     label: formatAgentLabel(agent),
@@ -1236,6 +1370,7 @@ function AgentTraceLaneSection({ lane }: { lane: AgentTraceLane }) {
               <MessageResponse className="max-h-36 overflow-y-auto whitespace-pre-wrap break-words text-xs leading-5">
                 {item.text}
               </MessageResponse>
+              <MessageTimestamp timestamp={item.timestamp} className="text-white/35" />
             </li>
           ))
         )}

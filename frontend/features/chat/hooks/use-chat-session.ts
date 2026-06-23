@@ -5,6 +5,11 @@ import type { DataUIPart } from "ai"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useCallback, useEffect, useRef, useState } from "react"
 
+import {
+  createInitialTtsPlaybackStatus,
+  TtsStreamingAudioPlayer,
+  type TtsPlaybackStatus,
+} from "@/features/chat/services/tts-streaming-audio-player"
 import type { ChatMessageData, LegalChatMessage } from "@/features/chat/types"
 
 const CONVERSATION_ID_QUERY_PARAM = "conversation_id"
@@ -28,13 +33,6 @@ function decodeBase64Bytes(value: string): Uint8Array {
   return bytes
 }
 
-function playAudioChunks(audioChunks: Uint8Array[]) {
-  if (audioChunks.length === 0) return
-
-  const blob = new Blob(audioChunks as BlobPart[], { type: "audio/mpeg" })
-  void new Audio(URL.createObjectURL(blob)).play().catch(() => {})
-}
-
 export function useChatSession() {
   const pathname = usePathname()
   const router = useRouter()
@@ -46,20 +44,44 @@ export function useChatSession() {
   const [input, setInput] = useState("")
   const [birthYear, setBirthYear] = useState("")
   const [location, setLocation] = useState("")
+  const [ttsPlaybackStatus, setTtsPlaybackStatus] = useState<TtsPlaybackStatus>(() => createInitialTtsPlaybackStatus())
   const startedRef = useRef(false)
-  const audioChunksRef = useRef<Uint8Array[]>([])
+  const ttsPlayerRef = useRef<TtsStreamingAudioPlayer | null>(null)
+
+  const disposeTtsPlayer = useCallback((reason = "dispose") => {
+    if (ttsPlayerRef.current) ttsPlayerRef.current.dispose(true, reason)
+    else setTtsPlaybackStatus(createInitialTtsPlaybackStatus())
+    ttsPlayerRef.current = null
+  }, [])
+
+  const getTtsPlayer = useCallback(() => {
+    if (ttsPlayerRef.current) return ttsPlayerRef.current
+
+    const player = new TtsStreamingAudioPlayer((nextStatus) => {
+      setTtsPlaybackStatus(nextStatus)
+      if (nextStatus.phase === "completed" || nextStatus.phase === "error") {
+        ttsPlayerRef.current = null
+      }
+    })
+    ttsPlayerRef.current = player
+    return player
+  }, [])
 
   const handleData = useCallback((dataPart: DataUIPart<ChatMessageData>) => {
     if (dataPart.type === "data-audio") {
-      audioChunksRef.current.push(decodeBase64Bytes(dataPart.data.audioBase64))
+      getTtsPlayer().append(decodeBase64Bytes(dataPart.data.audioBase64))
       return
     }
 
     if (dataPart.type === "data-audioDone") {
-      playAudioChunks(audioChunksRef.current)
-      audioChunksRef.current = []
+      ttsPlayerRef.current?.finalize()
+      return
     }
-  }, [])
+
+    if (dataPart.type === "data-audioInterrupted") {
+      disposeTtsPlayer(dataPart.data.reason)
+    }
+  }, [disposeTtsPlayer, getTtsPlayer])
 
   const { messages, setMessages, sendMessage, status, error, clearError } = useChat<LegalChatMessage>({
     id: conversationId,
@@ -73,6 +95,7 @@ export function useChatSession() {
       if (!text || isBusy) return
 
       clearError()
+      disposeTtsPlayer("new message")
       setInput("")
       const profile = {
         birthYear: birthYear.trim(),
@@ -87,19 +110,31 @@ export function useChatSession() {
 
       void sendMessage({ text }, body ? { body } : undefined)
     },
-    [birthYear, clearError, isBusy, location, sendMessage],
+    [birthYear, clearError, disposeTtsPlayer, isBusy, location, sendMessage],
   )
 
   const reset = useCallback(() => {
     clearError()
-    audioChunksRef.current = []
+    disposeTtsPlayer("reset")
     setMessages([])
     setInput("")
     setBirthYear("")
     setLocation("")
     setConversationId(createConversationId())
     startedRef.current = true
-  }, [clearError, setMessages])
+  }, [clearError, disposeTtsPlayer, setMessages])
+
+  useEffect(() => {
+    if (!error && status !== "error") return
+    disposeTtsPlayer(error?.message ?? "chat error")
+  }, [disposeTtsPlayer, error, status])
+
+  useEffect(() => {
+    return () => {
+      ttsPlayerRef.current?.dispose(false, "unmount")
+      ttsPlayerRef.current = null
+    }
+  }, [])
 
   useEffect(() => {
     const queryConversationId = searchParams.get(CONVERSATION_ID_QUERY_PARAM)?.trim()
@@ -137,6 +172,7 @@ export function useChatSession() {
     status,
     error,
     isBusy,
+    ttsPlaybackStatus,
     empty: messages.length === 0,
     reset,
   }

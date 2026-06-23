@@ -15,7 +15,7 @@ logger = get_logger(__name__)
 _AGENT_TEXT_STREAM_NODES = {"main_agent", "screen_control_agent"}
 _TOOL_STREAM_NODES = {"main_agent", "screen_control_agent"}
 _SPEECH_TEXT_STREAM_NODES = {"speech_text_agent"}
-_REASONING_BLOCK_TYPES = {"reasoning", "reasoning-delta"}
+_REASONING_BLOCK_TYPES = {"reasoning", "reasoning-delta", "reasoning_content"}
 
 
 class ChatGraphRunner:
@@ -154,22 +154,6 @@ def _message_stream_event(
         if tool_event is not None:
             return tool_event
 
-    reasoning = _message_reasoning_text(message)
-    if reasoning:
-        backend_event = {
-            "type": "agent.reasoning.delta",
-            "source_agent": node_name or None,
-            "node": node_name or None,
-            "text": reasoning,
-        }
-        _log_agent_stream_event(
-            backend_event,
-            conversation_id=conversation_id,
-            turn_id=turn_id,
-            stream_kind="reasoning",
-        )
-        return backend_event
-
     if node_name in _AGENT_TEXT_STREAM_NODES:
         text = _message_text(message)
         if text:
@@ -181,6 +165,22 @@ def _message_stream_event(
             }
 
     if node_name in _SPEECH_TEXT_STREAM_NODES:
+        reasoning = _message_reasoning_text(message)
+        if reasoning:
+            backend_event = {
+                "type": "agent.reasoning.delta",
+                "source_agent": node_name,
+                "node": node_name,
+                "text": reasoning,
+            }
+            _log_agent_stream_event(
+                backend_event,
+                conversation_id=conversation_id,
+                turn_id=turn_id,
+                stream_kind="reasoning",
+            )
+            return backend_event
+
         text = _message_text(message)
         if text:
             backend_event = {
@@ -380,20 +380,6 @@ def _message_text(message: Any) -> str:
     return ""
 
 
-def _message_reasoning_text(message: Any) -> str:
-    reasoning = getattr(message, "reasoning", None)
-    if isinstance(reasoning, str):
-        return reasoning
-    if isinstance(reasoning, list):
-        return "".join(str(token) for token in reasoning if token)
-
-    return "".join(
-        _reasoning_block_text(block)
-        for block in _message_content_blocks(message)
-        if isinstance(block, dict) and block.get("type") in _REASONING_BLOCK_TYPES
-    )
-
-
 def _message_content_blocks(message: Any) -> list[Any]:
     content_blocks = getattr(message, "content_blocks", None)
     if isinstance(content_blocks, list):
@@ -405,11 +391,41 @@ def _message_content_blocks(message: Any) -> list[Any]:
     return []
 
 
+def _message_reasoning_text(message: Any) -> str:
+    reasoning = getattr(message, "reasoning", None)
+    reasoning_text = _reasoning_value_text(reasoning)
+    if reasoning_text:
+        return reasoning_text
+
+    additional_kwargs = getattr(message, "additional_kwargs", None)
+    if isinstance(additional_kwargs, dict):
+        for key in ("reasoning", "reasoning_content", "reasoning_details"):
+            reasoning_text = _reasoning_value_text(additional_kwargs.get(key))
+            if reasoning_text:
+                return reasoning_text
+
+    return "".join(
+        _reasoning_block_text(block)
+        for block in _message_content_blocks(message)
+        if isinstance(block, dict) and block.get("type") in _REASONING_BLOCK_TYPES
+    )
+
+
 def _reasoning_block_text(block: dict[str, Any]) -> str:
-    for key in ("reasoning", "text", "content", "summary"):
-        value = block.get(key)
-        if isinstance(value, str):
-            return value
+    for key in ("reasoning", "reasoning_content", "text", "content", "summary"):
+        text = _reasoning_value_text(block.get(key))
+        if text:
+            return text
+    return ""
+
+
+def _reasoning_value_text(value: Any) -> str:
+    if isinstance(value, str):
+        return value
+    if isinstance(value, list):
+        return "".join(_reasoning_value_text(item) for item in value)
+    if isinstance(value, dict):
+        return _reasoning_block_text(value)
     return ""
 
 

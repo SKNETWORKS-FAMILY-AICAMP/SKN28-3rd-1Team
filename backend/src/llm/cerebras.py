@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from langchain_cerebras import ChatCerebras
 
@@ -19,6 +19,9 @@ def create_chat_cerebras(
     timeout_ms: int,
     max_retries: int,
     max_tokens: int | None,
+    reasoning_effort: Literal["low", "medium", "high"] | None = None,
+    reasoning_format: Literal["parsed", "raw", "hidden", "none"] | None = None,
+    clear_thinking: bool | None = None,
 ) -> ChatCerebras:
     if not cerebras_configured(provider_settings):
         raise RuntimeError("LLM_PROVIDER_CEREBRAS_API_KEY is not set.")
@@ -34,5 +37,14 @@ def create_chat_cerebras(
         kwargs["base_url"] = provider_settings.cerebras_base_url
     if max_tokens is not None:
         kwargs["max_tokens"] = max_tokens
+    if reasoning_effort is not None:
+        kwargs["reasoning_effort"] = reasoning_effort
+    extra_body: dict[str, Any] = {}
+    if reasoning_format is not None:
+        extra_body["reasoning_format"] = reasoning_format
+    if clear_thinking is not None:
+        extra_body["clear_thinking"] = clear_thinking
+    if extra_body:
+        kwargs["extra_body"] = extra_body
 
     return ChatCerebras(**kwargs)

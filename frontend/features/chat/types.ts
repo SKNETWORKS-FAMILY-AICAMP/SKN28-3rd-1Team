@@ -15,6 +15,7 @@ export type ChatMessageData = {
     sourceAgent?: string | null
     node?: string | null
     text?: string
+    timestamp?: string
     toolCall?: {
       id?: string | null
       name?: string | null
@@ -28,14 +29,23 @@ export type ChatMessageData = {
   audioDone: {
     chunks: number
   }
+  audioInterrupted: {
+    reason: string
+  }
   audioStatus: {
     chunks: number
     completed: boolean
+    interrupted?: boolean
+    reason?: string
     sourceAgent?: string | null
   }
   speechText: {
     text: string
     sourceAgent?: string | null
+    timestamp?: string
+  }
+  messageTimestamp: {
+    timestamp: string
   }
   toolCall: {
     event?: string
@@ -43,6 +53,7 @@ export type ChatMessageData = {
     name?: string | null
     status?: string | null
     sourceAgent?: string | null
+    timestamp?: string
   }
 }
 
