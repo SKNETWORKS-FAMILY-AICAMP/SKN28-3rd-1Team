@@ -1,0 +1,11 @@
+*.mp4
+.env
+.env.*
+!.env.example
+!.env.schema
+.venv/
+__pycache__/
+.pytest_cache/
+work/
+outputs/
+*.wav

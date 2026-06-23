@@ -221,6 +221,7 @@ SKN28-3rd-1Team/
 │   ├── outputs/             # 발표 자료 생성/검증 산출물
 │   ├── test-data/           # benchmark, LLM-as-a-judge 결과
 │   └── marking_criteria/    # 프로젝트 평가 기준 정리
+├── voice_characteristic_extracted/ # 영상 음성 전사와 대사 추출 스크립트
 ├── deploy/                  # 통합 배포 실행 설정
 │   ├── docker/              # Docker Compose와 deploy env 파일
 │   └── makefile/            # 통합 실행 Makefile
@@ -242,6 +243,7 @@ SKN28-3rd-1Team/
 | `deploy/README.md` | local dev 통합 Makefile, Docker Compose, 포트 정보 |
 | `docs/README.md` | agent guideline, 온보딩, 도구 설정 등 팀 문서 |
 | `docs/llm_env_naming_convention.md` | LLM agent/provider/model env naming과 Infisical 동기화 기준 |
+| `voice_characteristic_extracted/README.md` | 영상 음성 chunking, STT provider 설정, 1분 전사 테스트 방법 |
 | `rag/related/rag-red-team/README.md` | Neo4j red-team graph 실험과 MCP 실행 방법 |
 | `presentation/test-data/README.md` | 발표용 평가 데이터, benchmark, judge 결과 구조 |
 
