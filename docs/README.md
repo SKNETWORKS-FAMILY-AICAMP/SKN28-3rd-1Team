@@ -6,6 +6,9 @@
 
 - `agent_guidelines/`: 에이전트 작업 흐름과 브랜치/커밋/PR 기준
   - `agent_workspace_guidelines.md`: AGENTS.md의 공통 규칙을 확장한 작업 가이드
+- `backend_logging_policy.md`: backend logging level boundary, structured field 계약, 민감정보 logging 금지 기준
+- `chat_thread_policy.md`: backend chat thread ownership, TTL, missing conversation id 처리 기준
+- `issue_81_chat_page_ai_sdk_scope.md`: `/chat_page` sidebar chat의 AI SDK streaming/BFF 전환 작업 범위
 - `llm_env_naming_convention.md`: LLM/agent/provider 환경 변수 naming convention과 Infisical 동기화 기준
 - `requirement_list_ops.md`: 서버 계정별 Codex/MCP/secret/env bootstrap 요구사항
 - `additional_docs/`: 온보딩, 도구 설정, 협업 참고 문서

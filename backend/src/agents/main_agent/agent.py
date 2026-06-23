@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Any
 
 from langchain.agents import create_agent
-from langgraph.checkpoint.memory import InMemorySaver
 
 from llm import get_main
 from logger import get_logger
@@ -14,26 +13,23 @@ from utils import render_prompt
 logger = get_logger(__name__)
 _SYSTEM_PROMPT_TEMPLATE = Path(__file__).with_name("system_prompt.j2")
 
-_MAIN_AGENT: Any | None = None
-
 
 async def create_main_agent() -> Any:
-    global _MAIN_AGENT
-    if _MAIN_AGENT is not None:
-        return _MAIN_AGENT
-
     from graph.state import ChatTurnState
 
-    _MAIN_AGENT = create_agent(
+    # Conversation checkpointing belongs to the parent chat-turn graph. Keeping
+    # this child agent stateless prevents nested memory boundaries.
+    agent = create_agent(
         model=get_main(),
         tools=await get_tools(agent_name=MAIN_AGENT_PROFILE),
         system_prompt=render_prompt(_SYSTEM_PROMPT_TEMPLATE),
         state_schema=ChatTurnState,
-        checkpointer=InMemorySaver(),
     )
-    return _MAIN_AGENT
-
-
-def clear_main_agent_cache() -> None:
-    global _MAIN_AGENT
-    _MAIN_AGENT = None
+    logger.debug(
+        "created main agent",
+        extra={
+            "event": "agent.created",
+            "agent": "main_agent",
+        },
+    )
+    return agent

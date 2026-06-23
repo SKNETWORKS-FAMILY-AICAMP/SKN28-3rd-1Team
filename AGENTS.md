@@ -31,6 +31,7 @@ Directories with the `_3rd` postfix, such as `streamlit_3rd/`, are legacy/non-cu
 - Do not edit generated build output unless explicitly requested.
 - Maintain README files as Markdown documents.
 - Update the root `README.md` and the relevant directory README when structure, setup, or run commands change.
+- Before changing backend logging levels, structured logging fields, or masking behavior, read `docs/backend_logging_policy.md`.
 - Prefer Makefile targets for setup, run, check, and deploy workflows when a Makefile exists. Use raw `uv`, `bun`, or `docker compose` commands only when debugging the Makefile itself or when no target exists.
 - Do not commit secrets. Real `.env`, `.env.local`, and generated deploy env files stay local only.
 - Keep `.env.schema` files as the version-controlled environment-variable contract. During the Infisical transition, treat Infisical as the project-level secret manager for the active codebase, and use Infisical CLI/MCP to migrate and manage actual secrets.

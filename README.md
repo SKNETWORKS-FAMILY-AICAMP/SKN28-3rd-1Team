@@ -160,7 +160,7 @@
 | --- | --- |
 | Backend `/chat` API | Django Channels에서 사용자 메시지를 받아 Agent 답변을 반환합니다. |
 | LLM Provider 연동 | `LLM_AGENT_<AGENT>_PROVIDER` 설정으로 agent별 LLM provider와 model을 선택합니다. |
-| LangGraph Agent | `create_agent()`와 `InMemorySaver` 기반 session/thread 처리를 사용합니다. |
+| LangGraph Agent | `ChatThreadContextStore`와 `InMemorySaver` 기반 session/thread 처리를 사용합니다. |
 | LangSmith 검증 | LLM 호출 trace와 mock tool call trace를 확인했습니다. |
 | RAG Backend | 문서 ingest, 검색 API, read-only MCP endpoint 구조가 있습니다. |
 | RAG Frontend | 문서 목록, ingest job, review queue를 확인하는 운영 UI가 있습니다. |
@@ -201,6 +201,7 @@ SKN28-3rd-1Team/
 │   ├── src/api/             # /chat API
 │   ├── src/agents/          # Main Agent, LLM provider, tools
 │   ├── src/graph/           # chat turn stream runner
+│   ├── src/memory/          # conversation id, checkpointer, TTL boundary
 │   ├── src/nodes/           # speech/TTS node
 │   └── src/agents/*/*.j2    # agent별 prompt
 ├── rag/
@@ -211,6 +212,7 @@ SKN28-3rd-1Team/
 │   ├── RAG_PREPROCESSED_DATA/ # RAG 입력용 TOON 전처리 데이터
 │   ├── related/             # 루트에서 이동한 RAG 관련 실험/작업 공간
 │   └── docs/                # RAG 설계 문서
+├── maps_mcp/                # Naver Search / TMAP FastMCP provider tools
 ├── frontend/                # Next.js 기반 최종 프론트엔드
 ├── streamlit_3rd/           # legacy Streamlit 상담형 UI, 현재 scope 아님
 ├── docs/                    # 회의록, 온보딩, 개발 문서
@@ -235,6 +237,7 @@ SKN28-3rd-1Team/
 | `rag/README.md` | RAG 서브시스템 전체 구조 |
 | `rag/be/README.md` | RAG Backend API, MCP endpoint, 환경 변수 |
 | `rag/fe/README.md` | RAG 운영 UI 실행 방법 |
+| `maps_mcp/README.md` | Naver Search / TMAP MCP tool 서버와 환경 변수 |
 | `streamlit_3rd/README.md` | legacy Streamlit 상담 UI 구조와 backend 연결 방법 |
 | `deploy/README.md` | local dev 통합 Makefile, Docker Compose, 포트 정보 |
 | `docs/README.md` | agent guideline, 온보딩, 도구 설정 등 팀 문서 |
@@ -475,6 +478,7 @@ make fe-check
 | Shared | `.env.schema` | `APP_ENV` |
 | Frontend | `frontend/.env.schema` | Backend API base URL |
 | Backend | `backend/.env.schema` | LLM provider API key, CORS, RAG MCP URL |
+| Maps MCP | `maps_mcp/.env.schema` | Naver Search/TMAP API key, Maps MCP endpoint |
 | Deploy | `deploy/docker/.env.schema` | 통합 Docker Compose host 포트, public build args |
 | Streamlit legacy | 없음 | Backend API 주소, mock mode 여부 |
 | RAG Backend | `rag/be/.env.schema` | Memgraph 연결, MCP endpoint, 외부 API key |

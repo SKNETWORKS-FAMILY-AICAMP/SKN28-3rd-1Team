@@ -2,18 +2,34 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import type { FormEvent } from "react"
-import { useEffect, useMemo, useRef, useState } from "react"
-import { ArrowRight, FileText, List, Map, Navigation, Phone, Plus, Save, Send } from "lucide-react"
+import type { CSSProperties, FormEvent, PointerEvent as ReactPointerEvent } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import {
+  ArrowRight,
+  Brain,
+  FileText,
+  List,
+  Map as MapIcon,
+  Monitor,
+  Navigation,
+  PanelRightClose,
+  PanelRightOpen,
+  Phone,
+  Plus,
+  Save,
+  Send,
+  Volume2,
+  Wrench,
+} from "lucide-react"
 
+import { MessageResponse } from "@/components/ai-elements/message"
+import { Button } from "@/components/ui/button"
+import { useBrowserSpeechDictation } from "@/components/voice/hooks/use-browser-speech-dictation"
+import { VoiceInputButton } from "@/components/voice/surfaces/voice-input-button/surface"
+import type { DictationStatus, DictationTranscript } from "@/components/voice/types"
+import { useChatSession } from "@/features/chat/hooks/use-chat-session"
+import type { ChatMessageData, LegalChatMessage } from "@/features/chat/types"
 import { cn } from "@/lib/utils"
-
-type ChatMessage = {
-  id: string
-  role: "user" | "assistant"
-  text: string
-  time?: string
-}
 
 type Institution = {
   name: string
@@ -40,11 +56,6 @@ type DocumentSource = {
   summary: string
   highlights: string[]
   citation: string
-}
-
-type Task = {
-  label: string
-  done: boolean
 }
 
 const institutions: Institution[] = [
@@ -128,25 +139,15 @@ const documentSources: DocumentSource[] = [
   },
 ]
 
-function createSessionId() {
-  return `chat-page-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`
-}
+const CHAT_SIDEBAR_DEFAULT_WIDTH = 476
+const CHAT_SIDEBAR_MIN_WIDTH = 420
+const CHAT_SIDEBAR_MAX_WIDTH = 640
+const TRACE_DRAWER_DEFAULT_WIDTH = 320
+const TRACE_DRAWER_MIN_WIDTH = 260
+const TRACE_DRAWER_MAX_WIDTH = 460
 
-function createMessage(role: ChatMessage["role"], text: string): ChatMessage {
-  return {
-    id: `${role}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`,
-    role,
-    text,
-    time: role === "user" ? formatTime() : undefined,
-  }
-}
-
-function formatTime() {
-  return new Intl.DateTimeFormat("ko-KR", {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  }).format(new Date())
+function clampNumber(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max)
 }
 
 function tierColor(tier: Institution["tier"]) {
@@ -169,30 +170,68 @@ function badgeClassName(label: string) {
   return "bg-[#eee5d8] text-[#8a7d6c]"
 }
 
+function mergeSpeechTranscript(baseInput: string, transcript: string) {
+  const base = baseInput.trim()
+  const text = transcript.trim()
+
+  if (!base) return text
+  if (!text) return base
+  return `${base} ${text}`
+}
+
+function isSpeechShortcut(event: KeyboardEvent) {
+  const isMKey = event.key.toLowerCase() === "m" || event.code === "KeyM"
+  return isMKey && event.shiftKey && (event.ctrlKey || event.metaKey) && !event.altKey
+}
+
+function canToggleSpeechStatus(status: DictationStatus) {
+  return status !== "unsupported" && status !== "requesting-permission" && status !== "loading-model" && status !== "transcribing"
+}
+
 export function ChatPageClient() {
-  const [sessionId, setSessionId] = useState(createSessionId)
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    createMessage(
-      "assistant",
-      "안녕하세요, 로디에요!\n궁금한 점을 편하게 물어보세요.",
-    ),
-  ])
-  const [input, setInput] = useState("")
+  const {
+    messages,
+    input,
+    setInput,
+    birthYear,
+    setBirthYear,
+    location: residence,
+    setLocation: setResidence,
+    send,
+    status,
+    error,
+    isBusy,
+    reset,
+  } = useChatSession()
   const [isProfileStep, setIsProfileStep] = useState(false)
-  const [birthYear, setBirthYear] = useState("")
-  const [residence, setResidence] = useState("")
-  const [isBusy, setIsBusy] = useState(false)
   const [tab, setTab] = useState<"map" | "list">("map")
   const [selectedId, setSelectedId] = useState(0)
   const [showDocuments, setShowDocuments] = useState(false)
   const [showDocumentDetail, setShowDocumentDetail] = useState(false)
   const [selectedDocumentId, setSelectedDocumentId] = useState(0)
+  const [isTraceExpanded, setIsTraceExpanded] = useState(false)
+  const [chatSidebarWidth, setChatSidebarWidth] = useState(CHAT_SIDEBAR_DEFAULT_WIDTH)
+  const [traceDrawerWidth, setTraceDrawerWidth] = useState(TRACE_DRAWER_DEFAULT_WIDTH)
   const [toast, setToast] = useState("")
   const messagesRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const speechBaseInputRef = useRef("")
+  const handleSpeechTranscript = useCallback((transcript: DictationTranscript) => {
+    setInput(mergeSpeechTranscript(speechBaseInputRef.current, transcript.text))
+    window.requestAnimationFrame(() => inputRef.current?.focus())
+  }, [setInput])
+  const dictation = useBrowserSpeechDictation({ onTranscriptChange: handleSpeechTranscript })
 
   const selected = institutions[selectedId]
   const selectedDocument = documentSources[selectedDocumentId]
   const started = messages.some((message) => message.role === "user")
+  const agentTraceLanes = useMemo(() => collectAgentTraceLanes(messages), [messages])
+  const agentTraceItemCount = agentTraceLanes.reduce((count, lane) => count + lane.items.length, 0)
+  const totalSidebarWidth = chatSidebarWidth + (isTraceExpanded ? traceDrawerWidth : 0)
+  const chatSidebarStyle = {
+    "--chat-sidebar-width": `${chatSidebarWidth}px`,
+    width: chatSidebarWidth,
+  } as CSSProperties
   const personalizedSuggestions = useMemo(() => {
     const place = residence.trim()
     const year = birthYear.trim()
@@ -203,16 +242,6 @@ export function ChatPageClient() {
       `${place || "우리 동네"}에서 가장 가까운 수행기관 알려줘`,
     ]
   }, [birthYear, residence])
-  const tasks: Task[] = useMemo(
-    () => [
-      { label: "지역 정보 확인", done: true },
-      { label: "수행기관 검색", done: true },
-      { label: "신청 조건 확인", done: true },
-      { label: "결과 정리", done: started && !isBusy },
-    ],
-    [isBusy, started],
-  )
-
   useEffect(() => {
     const element = messagesRef.current
     if (!element) return
@@ -225,51 +254,79 @@ export function ChatPageClient() {
     return () => window.clearTimeout(timeoutId)
   }, [toast])
 
-  async function send(raw?: string) {
-    const text = (raw ?? input).trim()
-    if (!text || isBusy) return
+  const handleChatSidebarResizePointerDown = useCallback(
+    (event: ReactPointerEvent<HTMLButtonElement>) => {
+      event.preventDefault()
+      const startX = event.clientX
+      const startWidth = chatSidebarWidth
+      const previousCursor = document.body.style.cursor
+      const previousUserSelect = document.body.style.userSelect
 
-    setInput("")
-    setIsBusy(true)
-    setMessages((current) => [...current, createMessage("user", text)])
-
-    try {
-      const response = await fetch("/api/chat_page", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: sessionId, message: createBackendMessage(text) }),
-      })
-      const data = await response.json().catch(() => ({}))
-
-      if (!response.ok) {
-        throw new Error(String(data.detail ?? `backend ${response.status}`))
+      const handlePointerMove = (moveEvent: PointerEvent) => {
+        setChatSidebarWidth(
+          clampNumber(startWidth + moveEvent.clientX - startX, CHAT_SIDEBAR_MIN_WIDTH, CHAT_SIDEBAR_MAX_WIDTH),
+        )
       }
 
-      const answer = String(data.answer ?? "").trim()
-      setMessages((current) => [
-        ...current,
-        createMessage("assistant", answer || "답변을 받지 못했어요. 잠시 후 다시 시도해 주세요."),
-      ])
-    } catch {
-      setMessages((current) => [
-        ...current,
-        createMessage("assistant", "서버에 연결하지 못했어요. 잠시 후 다시 시도해 주세요."),
-      ])
-    } finally {
-      setIsBusy(false)
+      const handlePointerUp = () => {
+        document.body.style.cursor = previousCursor
+        document.body.style.userSelect = previousUserSelect
+        window.removeEventListener("pointermove", handlePointerMove)
+        window.removeEventListener("pointerup", handlePointerUp)
+        window.removeEventListener("pointercancel", handlePointerUp)
+      }
+
+      document.body.style.cursor = "col-resize"
+      document.body.style.userSelect = "none"
+      window.addEventListener("pointermove", handlePointerMove)
+      window.addEventListener("pointerup", handlePointerUp)
+      window.addEventListener("pointercancel", handlePointerUp)
+    },
+    [chatSidebarWidth],
+  )
+
+  const handleTraceDrawerResizePointerDown = useCallback(
+    (event: ReactPointerEvent<HTMLButtonElement>) => {
+      event.preventDefault()
+      const startX = event.clientX
+      const startWidth = traceDrawerWidth
+      const previousCursor = document.body.style.cursor
+      const previousUserSelect = document.body.style.userSelect
+
+      const handlePointerMove = (moveEvent: PointerEvent) => {
+        setTraceDrawerWidth(
+          clampNumber(startWidth + moveEvent.clientX - startX, TRACE_DRAWER_MIN_WIDTH, TRACE_DRAWER_MAX_WIDTH),
+        )
+      }
+
+      const handlePointerUp = () => {
+        document.body.style.cursor = previousCursor
+        document.body.style.userSelect = previousUserSelect
+        window.removeEventListener("pointermove", handlePointerMove)
+        window.removeEventListener("pointerup", handlePointerUp)
+        window.removeEventListener("pointercancel", handlePointerUp)
+      }
+
+      document.body.style.cursor = "col-resize"
+      document.body.style.userSelect = "none"
+      window.addEventListener("pointermove", handlePointerMove)
+      window.addEventListener("pointerup", handlePointerUp)
+      window.addEventListener("pointercancel", handlePointerUp)
+    },
+    [traceDrawerWidth],
+  )
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!isSpeechShortcut(event) || isBusy || !canToggleSpeechStatus(dictation.status)) return
+
+      event.preventDefault()
+      toggleSpeechInput()
     }
-  }
 
-  function createBackendMessage(text: string) {
-    const profile = [
-      birthYear.trim() ? `태어난 년도: ${birthYear.trim()}` : "",
-      residence.trim() ? `사는 곳: ${residence.trim()}` : "",
-    ].filter(Boolean)
-
-    if (profile.length === 0) return text
-
-    return `상담자 정보:\n${profile.join("\n")}\n\n질문:\n${text}`
-  }
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  })
 
   function handleChatSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -279,44 +336,48 @@ export function ChatPageClient() {
       return
     }
 
-    void send()
+    dictation.reset()
+    send(input)
+  }
+
+  function toggleSpeechInput() {
+    if (dictation.status === "listening") {
+      dictation.stop()
+      return
+    }
+
+    speechBaseInputRef.current = input
+    dictation.start()
+    inputRef.current?.focus()
   }
 
   function resetChat() {
-    setSessionId(createSessionId())
-    setMessages([
-      createMessage(
-        "assistant",
-        "안녕하세요, 로디에요!\n궁금한 점을 편하게 물어보세요.",
-      ),
-    ])
-    setInput("")
+    dictation.reset()
+    reset()
     setIsProfileStep(false)
-    setBirthYear("")
-    setResidence("")
-    setIsBusy(false)
     setTab("map")
     setSelectedId(0)
     setShowDocuments(false)
     setShowDocumentDetail(false)
     setSelectedDocumentId(0)
+    setIsTraceExpanded(false)
     setToast("새 상담을 시작했어요.")
   }
 
   return (
-    <main className="flex h-dvh min-h-[660px] flex-col overflow-hidden bg-[#ece7e0] text-[#3a342e]">
-      <header className="flex h-16 shrink-0 items-center gap-8 border-b border-[#efe7da] bg-white px-6">
+    <main className="flex h-dvh min-h-[660px] flex-col overflow-hidden bg-[#ece7e0] text-[#3a342e] dark:bg-background dark:text-foreground">
+      <header className="flex h-16 shrink-0 items-center gap-8 border-b border-[#efe7da] dark:border-border bg-white dark:bg-card px-6">
         <div className="flex items-center gap-2.5">
           <span className="flex size-10 items-center justify-center overflow-hidden rounded-full bg-[#fbe6d4] ring-1 ring-[#f4d6bd]">
             <Image src="/images/mascot.png" alt="로디" width={40} height={40} className="size-10 object-cover" />
           </span>
-          <span className="font-heading text-xl text-[#33302b]">로디</span>
+          <span className="font-heading text-xl text-[#33302b] dark:text-foreground">로디</span>
         </div>
 
-        <nav className="hidden items-center gap-7 text-sm font-medium text-[#7c736a] md:flex">
+        <nav className="hidden items-center gap-7 text-sm font-medium text-[#7c736a] dark:text-muted-foreground md:flex">
           <span>상담 주제</span>
           <span>이용 방법</span>
-          <Link href="/mocks" className="font-medium transition-colors hover:text-[#33302b]">
+          <Link href="/mocks" className="font-medium transition-colors hover:text-[#33302b] dark:hover:text-foreground">
             디자인
           </Link>
           <button
@@ -341,7 +402,7 @@ export function ChatPageClient() {
           <button
             type="button"
             onClick={() => setToast("상담 요약을 저장했어요.")}
-            className="hidden h-10 items-center gap-2 rounded-[10px] border border-[#ead9c6] bg-white px-4 text-sm font-semibold text-[#6c6359] sm:inline-flex"
+            className="hidden h-10 items-center gap-2 rounded-[10px] border border-[#ead9c6] dark:border-border bg-white dark:bg-card px-4 text-sm font-semibold text-[#6c6359] dark:text-muted-foreground sm:inline-flex"
           >
             <Save className="size-4 text-[#ef8b54]" />
             상담 요약 저장
@@ -349,7 +410,7 @@ export function ChatPageClient() {
           <button
             type="button"
             onClick={resetChat}
-            className="inline-flex h-10 items-center gap-2 rounded-[10px] border border-[#ead9c6] bg-white px-4 text-sm font-semibold text-[#6c6359]"
+            className="inline-flex h-10 items-center gap-2 rounded-[10px] border border-[#ead9c6] dark:border-border bg-white dark:bg-card px-4 text-sm font-semibold text-[#6c6359] dark:text-muted-foreground"
           >
             <Plus className="size-4 text-[#ef8b54]" />
             새 상담
@@ -358,94 +419,119 @@ export function ChatPageClient() {
       </header>
 
       <div className="flex min-h-0 flex-1">
-        <aside className="flex w-[330px] shrink-0 flex-col border-r border-[#efe7da] bg-[#fbf6ef]">
-          <div ref={messagesRef} className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4 pt-5">
-            {messages.map((message) => {
-              const isUser = message.role === "user"
-              return (
-                <div key={message.id} className="flex items-start gap-2">
-                  <div
-                    className={cn(
-                      "flex size-[30px] shrink-0 items-center justify-center overflow-hidden rounded-full",
-                      isUser ? "bg-[#e8ddce] text-xs font-bold text-[#8a7c69]" : "bg-[#fbe6d4] ring-1 ring-[#f4d6bd]",
-                    )}
-                  >
-                    {isUser ? (
-                      "나"
-                    ) : (
-                      <Image src="/images/mascot.png" alt="" width={30} height={30} className="size-[30px] object-cover" />
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <div
+        <aside
+          className="flex shrink-0 flex-col overflow-hidden border-r border-[#efe7da] dark:border-border bg-[#fbf6ef] dark:bg-sidebar transition-[width] duration-200"
+          style={{ width: totalSidebarWidth }}
+        >
+          <div className="flex min-h-0 flex-1">
+            <div className="relative flex shrink-0 flex-col" style={chatSidebarStyle}>
+              <div className="flex h-12 shrink-0 items-center justify-between border-b border-[#efe7da] dark:border-border px-4">
+                <span className="text-xs font-extrabold uppercase tracking-[0.08em] text-[#9a8f82]">상담</span>
+                <button
+                  type="button"
+                  onClick={() => setIsTraceExpanded((current) => !current)}
+                  className={cn(
+                     "inline-flex h-8 items-center gap-1.5 rounded-[9px] border px-2.5 text-xs font-bold transition",
+                     isTraceExpanded
+                       ? "border-[#ef8b54] bg-[#ef8b54] text-white"
+                       : "border-[#ead9c6] dark:border-border bg-white dark:bg-card text-[#6c6359] dark:text-muted-foreground hover:border-[#f0b88e]",
+                  )}
+                  aria-expanded={isTraceExpanded}
+                  aria-label={isTraceExpanded ? "에이전트 trace 닫기" : "에이전트 trace 열기"}
+                >
+                  {isTraceExpanded ? <PanelRightClose className="size-3.5" /> : <PanelRightOpen className="size-3.5" />}
+                  Trace
+                  {agentTraceItemCount > 0 ? (
+                    <span
                       className={cn(
-                        "max-w-[236px] whitespace-pre-wrap rounded-[4px_14px_14px_14px] px-3.5 py-3 text-sm leading-relaxed",
-                        isUser ? "bg-[#f7e7d8] text-[#4a4038]" : "border border-[#eee3d6] bg-white text-[#403a33]",
+                        "rounded-full px-1.5 py-0.5 text-[10px]",
+                        isTraceExpanded ? "bg-white/18 text-white" : "bg-[#f4ecdf] dark:bg-muted text-[#8a7c69] dark:text-muted-foreground",
                       )}
                     >
-                      {message.text}
-                    </div>
-                    {message.time ? (
-                      <div className="mt-1 text-right text-[11px] text-[#b1a597]">{message.time}</div>
-                    ) : null}
-                  </div>
-                </div>
-              )
-            })}
-
-            {isBusy ? (
-              <div className="flex items-start gap-2">
-                <div className="flex size-[30px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#fbe6d4] ring-1 ring-[#f4d6bd]">
-                  <Image src="/images/mascot.png" alt="" width={30} height={30} className="size-[30px] object-cover" />
-                </div>
-                <div className="flex gap-1 rounded-[4px_14px_14px_14px] border border-[#eee3d6] bg-white px-4 py-3.5">
-                  <span className="size-1.5 animate-pulse rounded-full bg-[#e6a878]" />
-                  <span className="size-1.5 animate-pulse rounded-full bg-[#e6a878] [animation-delay:150ms]" />
-                  <span className="size-1.5 animate-pulse rounded-full bg-[#e6a878] [animation-delay:300ms]" />
-                </div>
+                      {agentTraceItemCount}
+                    </span>
+                  ) : null}
+                </button>
               </div>
+
+              <div
+                ref={messagesRef}
+                className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4 pt-4 [scrollbar-color:#d8c7b7_transparent] [scrollbar-width:thin]"
+              >
+                {messages.length === 0 ? <SidebarGreeting /> : null}
+                {messages.map((message) => (
+                  <SidebarChatMessage key={message.id} message={message} />
+                ))}
+
+                {status === "submitted" && messages.at(-1)?.role === "user" ? <SidebarPendingMessage /> : null}
+              </div>
+
+              <form
+                className="p-4 pt-0"
+                onSubmit={handleChatSubmit}
+              >
+                <div className="flex items-center gap-2 rounded-[14px] border border-[#ecd9c4] dark:border-border bg-white dark:bg-card py-2.5 pl-4 pr-2">
+                  <input
+                    ref={inputRef}
+                    value={input}
+                    onChange={(event) => {
+                      setInput(event.target.value)
+                      if (dictation.status !== "listening") {
+                        speechBaseInputRef.current = event.target.value
+                      }
+                    }}
+                    disabled={isBusy}
+                    placeholder="메시지를 입력하세요..."
+                    className="min-w-0 flex-1 bg-transparent text-sm text-[#4a423a] dark:text-foreground outline-none placeholder:text-[#b1a597]"
+                  />
+                  <VoiceInputButton
+                    ariaKeyShortcuts="Control+Shift+M Meta+Shift+M"
+                    compact
+                    status={dictation.status}
+                    onClick={toggleSpeechInput}
+                    className="shrink-0"
+                  />
+                  <Button
+                    type="submit"
+                    disabled={isBusy || !input.trim()}
+                    size="icon-lg"
+                    variant="default"
+                    className="size-10 shrink-0 rounded-[11px] bg-[#ef8b54] text-white shadow-[0_2px_6px_rgba(239,139,84,.35)] disabled:opacity-50"
+                    aria-label="전송"
+                  >
+                    <Send className="size-4" />
+                  </Button>
+                </div>
+                <div className="mt-2 min-h-4 px-1 text-xs font-semibold">
+                  {dictation.status === "listening" ? (
+                    <span className="text-[#ef8b54]">듣는 중...</span>
+                  ) : dictation.status === "requesting-permission" ? (
+                    <span className="text-[#9a8f82]">마이크 확인 중...</span>
+                  ) : dictation.errorMessage ? (
+                    <span className="text-[#c15b45]">{dictation.errorMessage}</span>
+                  ) : error ? (
+                    <span className="text-[#c15b45]">{error.message}</span>
+                  ) : null}
+                </div>
+              </form>
+
+              <button
+                type="button"
+                aria-label="상담 사이드바 너비 조절"
+                className="absolute right-0 top-0 z-10 h-full w-2 translate-x-1/2 cursor-col-resize rounded-full transition hover:bg-[#ef8b54]/25 focus-visible:bg-[#ef8b54]/25 focus-visible:outline-none"
+                onPointerDown={handleChatSidebarResizePointerDown}
+              />
+            </div>
+
+            {isTraceExpanded ? (
+              <AgentTraceDrawer
+                lanes={agentTraceLanes}
+                onClose={() => setIsTraceExpanded(false)}
+                onResizePointerDown={handleTraceDrawerResizePointerDown}
+                width={traceDrawerWidth}
+              />
             ) : null}
           </div>
-
-          {started ? (
-            <div className="mx-4 mb-3 rounded-[14px] border border-[#f0e7da] bg-white px-4 py-3.5">
-              <div className="mb-3 text-sm font-extrabold text-[#5b5249]">작업 진행 상황</div>
-              <div className="flex flex-col gap-2.5 text-sm">
-                {tasks.map((task) => (
-                  <div key={task.label} className="flex items-center gap-2">
-                    <span className="text-xs text-[#bfae9b]">◇</span>
-                    <span className="flex-1 text-[#5f574d]">{task.label}</span>
-                    <span className={cn("text-xs font-bold", task.done ? "text-[#42a564]" : "text-[#e88a3f]")}>
-                      {task.done ? "✓ 완료" : "◔ 진행 중"}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : null}
-
-          <form
-            className="p-4 pt-0"
-            onSubmit={handleChatSubmit}
-          >
-            <div className="flex items-center gap-2 rounded-[14px] border border-[#ecd9c4] bg-white py-1.5 pl-4 pr-2">
-              <input
-                value={input}
-                onChange={(event) => setInput(event.target.value)}
-                disabled={isBusy}
-                placeholder="메시지를 입력하세요..."
-                className="min-w-0 flex-1 bg-transparent text-sm text-[#4a423a] outline-none placeholder:text-[#b1a597]"
-              />
-              <button
-                type="submit"
-                disabled={isBusy || !input.trim()}
-                className="flex size-10 shrink-0 items-center justify-center rounded-[11px] bg-[#ef8b54] text-white shadow-[0_2px_6px_rgba(239,139,84,.35)] disabled:opacity-50"
-                aria-label="전송"
-              >
-                <Send className="size-4" />
-              </button>
-            </div>
-          </form>
         </aside>
 
         <section className="flex min-w-0 flex-1 flex-col">
@@ -476,7 +562,7 @@ export function ChatPageClient() {
                           tab === "map" && !showDocuments ? "bg-white text-[#33302b] shadow-sm" : "text-[#9a8f82]",
                         )}
                       >
-                        <Map className="size-4" />
+                        <MapIcon className="size-4" />
                         지도
                       </button>
                       <button
@@ -527,7 +613,7 @@ export function ChatPageClient() {
                         }}
                       />
                     ) : (
-                    <div className="mt-3.5 grid min-h-0 flex-1 grid-cols-1 gap-3 overflow-y-auto pr-1 xl:grid-cols-2">
+                    <div className="mt-3.5 grid min-h-0 flex-1 auto-rows-max grid-cols-1 content-start items-start gap-3 overflow-y-auto pr-1 xl:grid-cols-2">
                       {documentSources.map((document, index) => {
                         const isSelected = index === selectedDocumentId
                         return (
@@ -539,7 +625,7 @@ export function ChatPageClient() {
                               setShowDocumentDetail(true)
                             }}
                             className={cn(
-                              "flex min-h-[178px] flex-col rounded-[14px] border bg-white p-4 text-left transition",
+                              "flex min-h-[210px] flex-col rounded-[14px] border bg-white px-4 py-3.5 text-left transition",
                               isSelected ? "border-[#f0b88e] shadow-[0_3px_12px_rgba(239,139,84,.14)]" : "border-[#efe7da]",
                             )}
                           >
@@ -553,7 +639,7 @@ export function ChatPageClient() {
                                 <FileText className="size-4" />
                               </span>
                               <div className="min-w-0 flex-1">
-                                <div className="text-base font-extrabold leading-snug text-[#332f29]">{document.title}</div>
+                                <div className="text-xl font-extrabold leading-snug text-[#332f29]">{document.title}</div>
                                 <div className="mt-1 text-xs font-semibold text-[#9a8f82]">
                                   {document.source} · {document.page}
                                 </div>
@@ -563,7 +649,7 @@ export function ChatPageClient() {
                               </span>
                             </div>
 
-                            <div className="mt-3 flex flex-wrap gap-1.5">
+                            <div className="mt-2.5 flex flex-wrap gap-1.5">
                               {document.tags.map((tag) => (
                                 <span key={tag} className="rounded-lg bg-[#f4ecdf] px-2.5 py-1 text-xs font-semibold text-[#7c7064]">
                                   {tag}
@@ -571,7 +657,7 @@ export function ChatPageClient() {
                               ))}
                             </div>
 
-                            <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-[#5f574d]">{document.summary}</p>
+                            <p className="mt-2.5 line-clamp-3 text-lg leading-relaxed text-[#5f574d]">{document.summary}</p>
                           </button>
                         )
                       })}
@@ -741,40 +827,6 @@ export function ChatPageClient() {
                 ) : null}
               </div>
 
-              <div className="mx-6 mb-5 flex shrink-0 items-center gap-3 rounded-[14px] border border-[#f0e3d1] bg-[#f6eee3] px-5 py-3.5">
-                <span className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#fbe6d4] ring-1 ring-[#f4d6bd]">
-                  <Image src="/images/mascot.png" alt="" width={36} height={36} className="size-9 object-cover" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-bold text-[#4d453c]">더 자세한 신청 조건이나 다른 기관도 궁금하신가요?</div>
-                  <div className="mt-1 text-xs text-[#9a8f82]">필요하면 목록 보기 또는 추가 검색을 도와드릴게요.</div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setTab("list")
-                    setShowDocuments(false)
-                    setShowDocumentDetail(false)
-                  }}
-                  className="h-10 rounded-[10px] border border-[#ead9c6] bg-white px-4 text-sm font-semibold text-[#6c6359]"
-                >
-                  목록 보기
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowDocuments(false)
-                    setShowDocumentDetail(false)
-                    setMessages((current) => [
-                      ...current,
-                      createMessage("assistant", "어느 지역의 기관을 찾아드릴까요?\n예) “서초구 노인일자리 알려줘” 처럼 입력해 주세요."),
-                    ])
-                  }}
-                  className="h-10 rounded-[10px] border border-[#ead9c6] bg-white px-4 text-sm font-semibold text-[#6c6359]"
-                >
-                  다른 지역 검색
-                </button>
-              </div>
             </>
           ) : isProfileStep ? (
             <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-10 py-8 text-center">
@@ -852,6 +904,369 @@ export function ChatPageClient() {
   )
 }
 
+function SidebarAvatar({ isUser = false }: { isUser?: boolean }) {
+  return (
+    <div
+      className={cn(
+        "flex size-[30px] shrink-0 items-center justify-center overflow-hidden rounded-full",
+        isUser ? "bg-[#e8ddce] text-xs font-bold text-[#8a7c69]" : "bg-[#fbe6d4] ring-1 ring-[#f4d6bd]",
+      )}
+    >
+      {isUser ? "나" : <Image src="/images/mascot.png" alt="" width={30} height={30} className="size-[30px] object-cover" />}
+    </div>
+  )
+}
+
+function SidebarGreeting() {
+  return (
+    <div className="flex items-start gap-2">
+      <SidebarAvatar />
+      <div className="max-w-[calc(var(--chat-sidebar-width)-112px)] rounded-[4px_14px_14px_14px] border border-[#eee3d6] bg-white px-3.5 py-3 text-sm leading-relaxed text-[#403a33]">
+        안녕하세요, 로디에요!
+        <br />
+        궁금한 점을 편하게 물어보세요.
+      </div>
+    </div>
+  )
+}
+
+function SidebarPendingMessage() {
+  return (
+    <div className="flex items-start gap-2">
+      <SidebarAvatar />
+      <div className="flex gap-1 rounded-[4px_14px_14px_14px] border border-[#eee3d6] bg-white px-4 py-3.5">
+        <span className="size-1.5 animate-pulse rounded-full bg-[#e6a878]" />
+        <span className="size-1.5 animate-pulse rounded-full bg-[#e6a878] [animation-delay:150ms]" />
+        <span className="size-1.5 animate-pulse rounded-full bg-[#e6a878] [animation-delay:300ms]" />
+      </div>
+    </div>
+  )
+}
+
+function getMessageText(message: LegalChatMessage) {
+  return message.parts
+    .filter((part) => part.type === "text")
+    .map((part) => part.text)
+    .join("")
+}
+
+function getDataParts<TName extends keyof ChatMessageData & string>(
+  message: LegalChatMessage,
+  name: TName,
+) {
+  return message.parts.filter((part) => part.type === `data-${name}`) as Array<{
+    type: `data-${TName}`
+    id?: string
+    data: ChatMessageData[TName]
+  }>
+}
+
+function SidebarChatMessage({ message }: { message: LegalChatMessage }) {
+  const isUser = message.role === "user"
+  const textParts = message.parts.filter((part) => part.type === "text")
+
+  if (isUser) {
+    return (
+      <div className="flex items-start gap-2">
+        <SidebarAvatar isUser />
+        <div className="min-w-0">
+          <div className="max-w-[calc(var(--chat-sidebar-width)-112px)] whitespace-pre-wrap rounded-[4px_14px_14px_14px] bg-[#f7e7d8] px-3.5 py-3 text-sm leading-relaxed text-[#4a4038]">
+            {getMessageText(message)}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex items-start gap-2">
+      <SidebarAvatar />
+      <div className="min-w-0 space-y-2">
+        {textParts.length > 0 ? (
+          <div className="max-w-[calc(var(--chat-sidebar-width)-112px)] rounded-[4px_14px_14px_14px] border border-[#eee3d6] bg-white px-3.5 py-3 text-sm leading-relaxed text-[#403a33]">
+            {textParts.map((part, index) => (
+              <MessageResponse key={`${message.id}-text-${index}`} className="whitespace-pre-wrap leading-relaxed">
+                {part.text}
+              </MessageResponse>
+            ))}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  )
+}
+
+type AgentTraceTone = "audio" | "reasoning" | "speech" | "text" | "tool"
+
+type AgentTraceItem = {
+  id: string
+  title: string
+  text: string
+  tone: AgentTraceTone
+}
+
+type AgentTraceLane = {
+  id: string
+  label: string
+  items: AgentTraceItem[]
+}
+
+type AgentTraceGroup = {
+  audioStatus?: ChatMessageData["audioStatus"]
+  reasoning: string
+  speechDelta: string
+  speechFinal: string
+  text: string
+  tools: ChatMessageData["toolCall"][]
+}
+
+const agentTraceLaneOrder = ["main_agent", "screen_control_agent", "speech_text_agent", "speech_synthesis_node"]
+
+const agentTraceLaneLabels: Record<string, string> = {
+  main_agent: "Main Agent",
+  speech_synthesis_node: "Speech Synthesis",
+  speech_text_agent: "Speech Agent",
+  screen_control_agent: "Screen Control Agent",
+}
+
+function createAgentTraceGroup(): AgentTraceGroup {
+  return {
+    reasoning: "",
+    speechDelta: "",
+    speechFinal: "",
+    text: "",
+    tools: [],
+  }
+}
+
+function normalizeAgentName(value: string | null | undefined, fallback: string) {
+  const trimmed = value?.trim()
+  return trimmed || fallback
+}
+
+function formatAgentLabel(agent: string) {
+  return agentTraceLaneLabels[agent] ?? agent.replaceAll("_", " ")
+}
+
+function collectAgentTraceLanes(messages: LegalChatMessage[]): AgentTraceLane[] {
+  const laneItems = new Map<string, AgentTraceItem[]>()
+
+  function appendLaneItem(agent: string, item: AgentTraceItem) {
+    laneItems.set(agent, [...(laneItems.get(agent) ?? []), item])
+  }
+
+  for (const message of messages) {
+    if (message.role !== "assistant") continue
+
+    const groups = new Map<string, AgentTraceGroup>()
+    const ensureGroup = (agent: string) => {
+      const current = groups.get(agent)
+      if (current) return current
+
+      const next = createAgentTraceGroup()
+      groups.set(agent, next)
+      return next
+    }
+
+    for (const part of getDataParts(message, "agentTrace")) {
+      const trace = part.data
+      const fallbackAgent = trace.type.startsWith("speech_text.") ? "speech_text_agent" : "main_agent"
+      const agent = normalizeAgentName(trace.sourceAgent ?? trace.node, fallbackAgent)
+      const group = ensureGroup(agent)
+      const text = trace.text ?? ""
+
+      if (trace.type === "agent.reasoning.delta") {
+        group.reasoning += text
+      } else if (trace.type === "agent.text.delta") {
+        group.text += text
+      } else if (trace.type === "speech_text.delta") {
+        group.speechDelta += text
+      } else if (trace.type === "speech_text.final") {
+        group.speechFinal = text || group.speechFinal
+      }
+    }
+
+    for (const part of getDataParts(message, "speechText")) {
+      const agent = normalizeAgentName(part.data.sourceAgent, "speech_text_agent")
+      ensureGroup(agent).speechFinal = part.data.text
+    }
+
+    for (const part of getDataParts(message, "toolCall")) {
+      const agent = normalizeAgentName(part.data.sourceAgent, "main_agent")
+      ensureGroup(agent).tools.push(part.data)
+    }
+
+    const audioStatus = getDataParts(message, "audioStatus").at(-1)?.data
+    if (audioStatus) {
+      const agent = normalizeAgentName(audioStatus.sourceAgent, "speech_synthesis_node")
+      ensureGroup(agent).audioStatus = audioStatus
+    }
+
+    for (const [agent, group] of groups) {
+      const reasoning = group.reasoning.trim()
+      const text = group.text.trim()
+      const speechText = group.speechFinal.trim() || group.speechDelta.trim()
+
+      if (reasoning) {
+        appendLaneItem(agent, {
+          id: `${message.id}-${agent}-reasoning`,
+          title: "reasoning",
+          text: reasoning,
+          tone: "reasoning",
+        })
+      }
+
+      if (text) {
+        appendLaneItem(agent, {
+          id: `${message.id}-${agent}-text`,
+          title: agent === "screen_control_agent" ? "screen control stream" : "agent stream",
+          text,
+          tone: "text",
+        })
+      }
+
+      if (speechText) {
+        appendLaneItem(agent, {
+          id: `${message.id}-${agent}-speech`,
+          title: group.speechFinal.trim() ? "speech final" : "speech stream",
+          text: speechText,
+          tone: "speech",
+        })
+      }
+
+      if (group.tools.length > 0) {
+        appendLaneItem(agent, {
+          id: `${message.id}-${agent}-tools`,
+          title: "tool call",
+          text: group.tools
+            .map((toolCall) => `${toolCall.name ?? "unknown tool"} · ${toolCall.status ?? "streaming"}`)
+            .join("\n"),
+          tone: "tool",
+        })
+      }
+
+      if (group.audioStatus) {
+        appendLaneItem(agent, {
+          id: `${message.id}-${agent}-audio`,
+          title: "tts audio",
+          text: `${group.audioStatus.chunks} chunks · ${group.audioStatus.completed ? "completed" : "streaming"}`,
+          tone: "audio",
+        })
+      }
+    }
+  }
+
+  const dynamicAgents = [...laneItems.keys()].filter((agent) => !agentTraceLaneOrder.includes(agent))
+  return [...agentTraceLaneOrder, ...dynamicAgents].map((agent) => ({
+    id: agent,
+    label: formatAgentLabel(agent),
+    items: (laneItems.get(agent) ?? []).slice(-12),
+  }))
+}
+
+function AgentTraceDrawer({
+  lanes,
+  onClose,
+  onResizePointerDown,
+  width,
+}: {
+  lanes: AgentTraceLane[]
+  onClose: () => void
+  onResizePointerDown: (event: ReactPointerEvent<HTMLButtonElement>) => void
+  width: number
+}) {
+  const hasItems = lanes.some((lane) => lane.items.length > 0)
+
+  return (
+    <section className="relative flex shrink-0 flex-col border-l border-[#2a241f] bg-[#171b18] text-white" style={{ width }}>
+      <div className="flex h-12 shrink-0 items-center justify-between border-b border-white/10 px-3">
+        <div className="flex items-center gap-2">
+          <Brain className="size-4 text-[#f0b88e]" />
+          <h2 className="text-sm font-bold">Agent Trace</h2>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="inline-flex size-8 items-center justify-center rounded-[8px] text-white/64 transition hover:bg-white/10 hover:text-white"
+          aria-label="에이전트 trace 닫기"
+        >
+          <PanelRightClose className="size-4" />
+        </button>
+      </div>
+
+      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-3 py-3 [scrollbar-color:#594a3e_transparent] [scrollbar-width:thin]">
+        {!hasItems ? (
+          <div className="rounded-[8px] border border-white/10 px-3 py-2.5 text-xs leading-5 text-white/45">
+            아직 수신된 internal stream이 없어요.
+          </div>
+        ) : null}
+        {lanes.map((lane) => (
+          <AgentTraceLaneSection key={lane.id} lane={lane} />
+        ))}
+      </div>
+
+      <button
+        type="button"
+        aria-label="에이전트 trace 너비 조절"
+        className="absolute right-0 top-0 z-10 h-full w-2 cursor-col-resize rounded-full transition hover:bg-[#f0b88e]/25 focus-visible:bg-[#f0b88e]/25 focus-visible:outline-none"
+        onPointerDown={onResizePointerDown}
+      />
+    </section>
+  )
+}
+
+function AgentTraceLaneSection({ lane }: { lane: AgentTraceLane }) {
+  return (
+    <section>
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-1.5">
+          <AgentTraceLaneIcon agent={lane.id} />
+          <h3 className="truncate text-[11px] font-extrabold uppercase tracking-[0.06em] text-white/52">{lane.label}</h3>
+        </div>
+        <span className="font-mono text-[10px] text-white/35">{lane.items.length}</span>
+      </div>
+
+      <ol className="space-y-2">
+        {lane.items.length === 0 ? (
+          <li className="rounded-[7px] border border-white/8 px-3 py-2 text-xs text-white/32">No stream</li>
+        ) : (
+          lane.items.map((item) => (
+            <li key={item.id} className={cn("rounded-[7px] border px-3 py-2 text-xs", agentTraceToneClassName(item.tone))}>
+              <div className="mb-1 font-bold uppercase tracking-[0.04em] opacity-70">{item.title}</div>
+              <MessageResponse className="max-h-36 overflow-y-auto whitespace-pre-wrap break-words text-xs leading-5">
+                {item.text}
+              </MessageResponse>
+            </li>
+          ))
+        )}
+      </ol>
+    </section>
+  )
+}
+
+function AgentTraceLaneIcon({ agent }: { agent: string }) {
+  if (agent === "screen_control_agent") return <Monitor className="size-3.5 shrink-0 text-[#9fc7ff]" />
+  if (agent === "speech_text_agent") return <Brain className="size-3.5 shrink-0 text-[#c8a8ff]" />
+  if (agent === "speech_synthesis_node") return <Volume2 className="size-3.5 shrink-0 text-[#ffd27c]" />
+  if (agent === "main_agent") return <Brain className="size-3.5 shrink-0 text-[#91d7ad]" />
+  return <Wrench className="size-3.5 shrink-0 text-white/45" />
+}
+
+function agentTraceToneClassName(tone: AgentTraceTone) {
+  switch (tone) {
+    case "audio":
+      return "border-[#ffd27c]/25 bg-[#ffd27c]/10 text-[#fff1cb]"
+    case "reasoning":
+      return "border-[#c8a8ff]/25 bg-[#c8a8ff]/10 text-[#eee2ff]"
+    case "speech":
+      return "border-[#9fc7ff]/25 bg-[#9fc7ff]/10 text-[#e6f0ff]"
+    case "text":
+      return "border-[#91d7ad]/25 bg-[#91d7ad]/10 text-[#dff8e9]"
+    case "tool":
+      return "border-[#f0b88e]/25 bg-[#f0b88e]/10 text-[#ffe3cf]"
+  }
+}
+
 function DocumentDetailPanel({
   document,
   documents,
@@ -875,7 +1290,7 @@ function DocumentDetailPanel({
                 <FileText className="size-5" />
               </span>
               <div className="min-w-0">
-                <h2 className="text-[28px] font-extrabold leading-tight text-[#2f2b26]">{document.title}</h2>
+                <h2 className="text-[30px] font-extrabold leading-tight text-[#2f2b26]">{document.title}</h2>
                 <div className="mt-2 text-sm font-semibold text-[#9a8f82]">
                   {document.source} · {document.updated}
                 </div>
@@ -904,14 +1319,15 @@ function DocumentDetailPanel({
           </button>
         </div>
 
-        <div className="mt-3 grid gap-6 lg:grid-cols-[1fr_1fr]">
-          <div className="rounded-[14px] bg-[#fbf6ef] p-5">
-            <InfoBlock label="문서 요약" value={document.summary} />
+        <div className="mt-3 flex flex-col gap-3">
+          <div className="flex flex-col gap-2 rounded-[14px] bg-[#fbf6ef] p-5 text-lg leading-relaxed text-[#4d463d] sm:flex-row sm:items-start sm:gap-5">
+            <div className="shrink-0 text-base font-extrabold text-[#9a8f82] sm:w-32">문서 요약</div>
+            <p className="min-w-0 flex-1">{document.summary}</p>
           </div>
 
-          <div className="rounded-[14px] border border-[#efe0cd] bg-[#fffaf3] p-5">
-            <div className="mb-2 text-xs font-extrabold text-[#9a8f82]">답변 근거 문장</div>
-            <p className="text-base leading-relaxed text-[#4d463d]">{document.citation}</p>
+          <div className="flex flex-col gap-2 rounded-[14px] border border-[#efe0cd] bg-[#fffaf3] p-5 sm:flex-row sm:items-start sm:gap-5">
+            <div className="shrink-0 text-base font-extrabold text-[#9a8f82] sm:w-32">답변 근거 문장</div>
+            <p className="min-w-0 flex-1 text-[17px] leading-relaxed text-[#4d463d]">{document.citation}</p>
           </div>
         </div>
 
@@ -920,7 +1336,7 @@ function DocumentDetailPanel({
             {document.highlights.map((highlight, index) => (
               <div key={highlight} className="rounded-[13px] border border-[#efe7da] bg-white p-4">
                 <div className="mb-2 text-xs font-bold text-[#ef8b54]">근거 {index + 1}</div>
-                <p className="text-sm leading-relaxed text-[#4d463d]">{highlight}</p>
+                <p className="text-[15px] leading-relaxed text-[#4d463d]">{highlight}</p>
               </div>
             ))}
           </div>
@@ -937,7 +1353,7 @@ function DocumentDetailPanel({
         <div className="flex-1" />
       </div>
 
-      <aside className="flex w-[236px] shrink-0 flex-col gap-2 overflow-y-auto rounded-2xl border border-[#eadfce] bg-white p-3">
+      <aside className="flex w-[260px] shrink-0 flex-col gap-2 overflow-y-auto rounded-2xl border border-[#eadfce] bg-white p-3">
         {documents.map((item, index) => {
           const isSelected = index === selectedDocumentId
 
@@ -961,7 +1377,7 @@ function DocumentDetailPanel({
                   <FileText className="size-4" />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-extrabold leading-snug text-[#332f29]">{item.title}</span>
+                  <span className="block text-base font-extrabold leading-snug text-[#332f29]">{item.title}</span>
                   <span className="mt-1 block text-xs font-semibold text-[#9a8f82]">
                     {item.source} · {item.page}
                   </span>

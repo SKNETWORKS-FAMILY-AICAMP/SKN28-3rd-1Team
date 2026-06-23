@@ -55,10 +55,14 @@ def _deduplicate_tool_names(tools: list[BaseTool]) -> list[BaseTool]:
             suffix += 1
             candidate = f"{base_name}_{suffix}"
 
-        logger.info(
-            "renaming duplicate tool name original=%s safe=%s",
-            base_name,
-            candidate,
+        logger.debug(
+            "renaming duplicate tool name",
+            extra={
+                "event": "tool_registry.tool_renamed",
+                "original_tool": base_name,
+                "safe_tool": candidate,
+                "reason": "duplicate_tool_name",
+            },
         )
         tool.name = candidate
         original_description = tool.description or ""
@@ -104,16 +108,19 @@ def _get_tool_profile(agent_name: str) -> ToolProfile:
     if profile.name != agent_name:
         raise ValueError(
             f"Tool profile name mismatch: expected={agent_name} actual={profile.name}"
-        )
+    )
 
     _PROFILE_CACHE[agent_name] = profile
-    logger.info(
-        "tool registry loaded profile=%s path=%s rag_mcp=%s external_mcp=%s local=%s",
-        profile.name,
-        profile_path,
-        profile.rag_mcp_enabled,
-        profile.external_mcp_enabled,
-        profile.local_enabled,
+    logger.debug(
+        "tool registry profile loaded",
+        extra={
+            "event": "tool_registry.profile_loaded",
+            "profile": profile.name,
+            "profile_path": str(profile_path),
+            "rag_mcp_enabled": profile.rag_mcp_enabled,
+            "external_mcp_enabled": profile.external_mcp_enabled,
+            "local_enabled": profile.local_enabled,
+        },
     )
     return profile
 
@@ -129,39 +136,99 @@ async def _load_tools(profile: ToolProfile) -> list[BaseTool]:
 
     if profile.rag_mcp_enabled:
         mcp_tools = await load_rag_mcp_tools()
-        logger.info(
-            "tool registry loaded source=rag_mcp profile=%s count=%s tools=%s",
-            profile.name,
-            len(mcp_tools),
-            _tool_names(mcp_tools),
+        logger.debug(
+            "tool registry source loaded",
+            extra={
+                "event": "tool_registry.source_loaded",
+                "source": "rag_mcp",
+                "profile": profile.name,
+                "tool_count": len(mcp_tools),
+            },
+        )
+        logger.debug(
+            "tool registry source tool names loaded",
+            extra={
+                "event": "tool_registry.source_tools_loaded",
+                "source": "rag_mcp",
+                "profile": profile.name,
+                "tools": _tool_names(mcp_tools),
+            },
         )
         tools.extend(mcp_tools)
     else:
-        logger.info("tool registry skipped source=rag_mcp profile=%s", profile.name)
+        logger.debug(
+            "tool registry source skipped",
+            extra={
+                "event": "tool_registry.source_skipped",
+                "source": "rag_mcp",
+                "profile": profile.name,
+                "reason": "disabled_by_profile",
+            },
+        )
 
     if profile.external_mcp_enabled:
         external_tools = await load_external_mcp_tools()
-        logger.info(
-            "tool registry loaded source=external_mcp profile=%s count=%s tools=%s",
-            profile.name,
-            len(external_tools),
-            _tool_names(external_tools),
+        logger.debug(
+            "tool registry source loaded",
+            extra={
+                "event": "tool_registry.source_loaded",
+                "source": "external_mcp",
+                "profile": profile.name,
+                "tool_count": len(external_tools),
+            },
+        )
+        logger.debug(
+            "tool registry source tool names loaded",
+            extra={
+                "event": "tool_registry.source_tools_loaded",
+                "source": "external_mcp",
+                "profile": profile.name,
+                "tools": _tool_names(external_tools),
+            },
         )
         tools.extend(external_tools)
     else:
-        logger.info("tool registry skipped source=external_mcp profile=%s", profile.name)
+        logger.debug(
+            "tool registry source skipped",
+            extra={
+                "event": "tool_registry.source_skipped",
+                "source": "external_mcp",
+                "profile": profile.name,
+                "reason": "disabled_by_profile",
+            },
+        )
 
     if profile.local_enabled:
         local_tools = get_local_tools()
-        logger.info(
-            "tool registry loaded source=local profile=%s count=%s tools=%s",
-            profile.name,
-            len(local_tools),
-            _tool_names(local_tools),
+        logger.debug(
+            "tool registry source loaded",
+            extra={
+                "event": "tool_registry.source_loaded",
+                "source": "local",
+                "profile": profile.name,
+                "tool_count": len(local_tools),
+            },
+        )
+        logger.debug(
+            "tool registry source tool names loaded",
+            extra={
+                "event": "tool_registry.source_tools_loaded",
+                "source": "local",
+                "profile": profile.name,
+                "tools": _tool_names(local_tools),
+            },
         )
         tools.extend(local_tools)
     else:
-        logger.info("tool registry skipped source=local profile=%s", profile.name)
+        logger.debug(
+            "tool registry source skipped",
+            extra={
+                "event": "tool_registry.source_skipped",
+                "source": "local",
+                "profile": profile.name,
+                "reason": "disabled_by_profile",
+            },
+        )
 
     return _deduplicate_tool_names(tools)
 
@@ -170,21 +237,43 @@ async def _load_tools(profile: ToolProfile) -> list[BaseTool]:
 async def get_tools(agent_name: str = MAIN_AGENT_PROFILE) -> list[BaseTool]:
     profile = _get_tool_profile(agent_name)
     if profile.name in _TOOLS_CACHE:
-        logger.debug("tool registry cache hit profile=%s", profile.name)
+        logger.debug(
+            "tool registry cache hit",
+            extra={
+                "event": "tool_registry.cache_hit",
+                "profile": profile.name,
+            },
+        )
         return _TOOLS_CACHE[profile.name]
 
     async with _tools_lock():
         if profile.name in _TOOLS_CACHE:
-            logger.debug("tool registry cache hit profile=%s", profile.name)
+            logger.debug(
+                "tool registry cache hit",
+                extra={
+                    "event": "tool_registry.cache_hit",
+                    "profile": profile.name,
+                },
+            )
             return _TOOLS_CACHE[profile.name]
 
         tools = await _load_tools(profile)
         _TOOLS_CACHE[profile.name] = tools
-        logger.info(
-            "tool registry registered profile=%s count=%s tools=%s",
-            profile.name,
-            len(tools),
-            _tool_names(tools),
+        logger.debug(
+            "tool registry registered",
+            extra={
+                "event": "tool_registry.registered",
+                "profile": profile.name,
+                "tool_count": len(tools),
+            },
+        )
+        logger.debug(
+            "tool registry registered tool names",
+            extra={
+                "event": "tool_registry.registered_tools",
+                "profile": profile.name,
+                "tools": _tool_names(tools),
+            },
         )
         return tools
 

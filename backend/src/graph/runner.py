@@ -7,17 +7,21 @@ from uuid import uuid4
 from graph.graph import create_chat_turn_graph
 from graph.state import ChatTurnState
 from logger import get_logger
+from memory import ChatThreadContextStore, get_chat_thread_context_store
 from utils import application_state, user_input_state
 
 logger = get_logger(__name__)
 
-_TEXT_STREAM_NODES = {"main_agent"}
-_TOOL_STREAM_NODES = {"main_agent", "window_changing_agent"}
+_AGENT_TEXT_STREAM_NODES = {"main_agent", "screen_control_agent"}
+_TOOL_STREAM_NODES = {"main_agent", "screen_control_agent"}
+_SPEECH_TEXT_STREAM_NODES = {"speech_text_agent"}
+_REASONING_BLOCK_TYPES = {"reasoning", "reasoning-delta"}
 
 
 class ChatGraphRunner:
-    def __init__(self) -> None:
+    def __init__(self, *, thread_context: ChatThreadContextStore | None = None) -> None:
         self._graph: Any | None = None
+        self._thread_context = thread_context or get_chat_thread_context_store()
 
     async def run_stream(
         self,
@@ -26,61 +30,63 @@ class ChatGraphRunner:
         session_id: str | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> AsyncIterator[dict[str, Any]]:
-        graph = await self._get_graph()
         turn_id = uuid4().hex
+        thread_id = self._thread_context.activate(session_id)
+        if thread_id is None:
+            logger.info(
+                "chat graph invocation ignored",
+                extra={
+                    "event": "chat.invocation.ignored",
+                    "conversation_id": session_id,
+                    "turn_id": turn_id,
+                    "reason": "missing_conversation_id",
+                    "message_chars": len(message),
+                },
+            )
+            return
+
+        graph = await self._get_graph()
         state = _initial_state(
             message,
-            session_id=session_id,
+            session_id=thread_id,
             turn_id=turn_id,
             metadata=metadata,
         )
 
-        logger.info(
-            "chat graph invocation started session_id=%s turn_id=%s message_chars=%d",
-            session_id,
-            turn_id,
-            len(message),
+        logger.debug(
+            "chat graph invocation started",
+            extra={
+                "event": "chat.invocation.started",
+                "conversation_id": thread_id,
+                "turn_id": turn_id,
+                "message_chars": len(message),
+            },
         )
         started_tool_calls: set[str] = set()
         async for event in graph.astream(
             state,
-            config={"configurable": {"thread_id": session_id or turn_id}},
-            stream_mode=["messages", "custom"],
+            config={"configurable": {"thread_id": thread_id}},
+            stream_mode=["messages", "custom", "updates", "tasks"],
             subgraphs=True,
             version="v2",
         ):
-            backend_event = _backend_event(event, started_tool_calls=started_tool_calls)
+            backend_event = _backend_event(
+                event,
+                started_tool_calls=started_tool_calls,
+                conversation_id=thread_id,
+                turn_id=turn_id,
+            )
             if backend_event is not None:
                 yield backend_event
 
-        logger.info(
-            "chat graph invocation completed session_id=%s turn_id=%s",
-            session_id,
-            turn_id,
+        logger.debug(
+            "chat graph invocation completed",
+            extra={
+                "event": "chat.invocation.completed",
+                "conversation_id": thread_id,
+                "turn_id": turn_id,
+            },
         )
-
-    async def run_once(
-        self,
-        message: str,
-        *,
-        session_id: str | None = None,
-        metadata: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
-        tool_calls: dict[str, dict[str, Any]] = {}
-        stream = self.run_stream(message, session_id=session_id, metadata=metadata)
-        try:
-            async for event in stream:
-                event_type = event.get("type")
-                if event_type == "tool_call":
-                    payload = event.get("tool_call")
-                    if isinstance(payload, dict):
-                        _record_tool_call(tool_calls, payload)
-                elif event_type == "final":
-                    return _final_payload(event, tool_calls=list(tool_calls.values()))
-        finally:
-            await stream.aclose()
-
-        return {"type": "final", "answer": "", "tool_calls": list(tool_calls.values()), "sources": []}
 
     async def _get_graph(self) -> Any:
         if self._graph is not None:
@@ -90,69 +96,17 @@ class ChatGraphRunner:
         return self._graph
 
 
-async def run_agent(
-    message: str,
-    *,
-    session_id: str | None = None,
-    metadata: dict[str, Any] | None = None,
-) -> dict[str, Any]:
-    return await ChatGraphRunner().run_once(
-        message,
-        session_id=session_id,
-        metadata=metadata,
-    )
-
-
-async def run_agent_stream(
-    message: str,
-    *,
-    session_id: str | None = None,
-    metadata: dict[str, Any] | None = None,
-) -> AsyncIterator[dict[str, Any]]:
-    async for event in ChatGraphRunner().run_stream(
-        message,
-        session_id=session_id,
-        metadata=metadata,
-    ):
-        yield event
-
-
 __all__ = [
     "ChatGraphRunner",
-    "run_agent",
-    "run_agent_stream",
 ]
-
-
-def _final_payload(
-    payload: dict[str, Any],
-    *,
-    tool_calls: list[dict[str, Any]],
-) -> dict[str, Any]:
-    final_payload = dict(payload)
-    final_payload.setdefault("tool_calls", tool_calls)
-    final_payload.setdefault("sources", [])
-    return final_payload
-
-
-def _record_tool_call(
-    tool_calls: dict[str, dict[str, Any]],
-    payload: dict[str, Any],
-) -> None:
-    tool_id = str(payload.get("id") or "")
-    tool_name = str(payload.get("name") or "tool")
-    key = tool_id or tool_name
-    tool_calls[key] = {
-        "name": tool_name,
-        "status": str(payload.get("status") or "completed"),
-        "id": tool_id or None,
-    }
 
 
 def _backend_event(
     event: Any,
     *,
     started_tool_calls: set[str] | None = None,
+    conversation_id: str | None = None,
+    turn_id: str | None = None,
 ) -> dict[str, Any] | None:
     if isinstance(event, dict) and event.get("type") == "custom":
         data = event.get("data")
@@ -163,7 +117,15 @@ def _backend_event(
         return _message_stream_event(
             event,
             started_tool_calls=started_tool_calls if started_tool_calls is not None else set(),
+            conversation_id=conversation_id,
+            turn_id=turn_id,
         )
+
+    if isinstance(event, dict) and event.get("type") == "updates":
+        return _node_update_event(event)
+
+    if isinstance(event, dict) and event.get("type") == "tasks":
+        return _task_lifecycle_event(event)
 
     if isinstance(event, dict):
         return None
@@ -174,6 +136,8 @@ def _message_stream_event(
     event: dict[str, Any],
     *,
     started_tool_calls: set[str],
+    conversation_id: str | None,
+    turn_id: str | None,
 ) -> dict[str, Any] | None:
     data = event.get("data")
     if not isinstance(data, tuple) or len(data) != 2:
@@ -182,16 +146,136 @@ def _message_stream_event(
     message, metadata = data
     node_name = _stream_node(event.get("ns"), metadata)
     if node_name in _TOOL_STREAM_NODES:
-        tool_event = _tool_call_event(message, started_tool_calls=started_tool_calls)
+        tool_event = _tool_call_event(
+            message,
+            source_agent=node_name,
+            started_tool_calls=started_tool_calls,
+        )
         if tool_event is not None:
             return tool_event
 
-    if node_name in _TEXT_STREAM_NODES:
+    reasoning = _message_reasoning_text(message)
+    if reasoning:
+        backend_event = {
+            "type": "agent.reasoning.delta",
+            "source_agent": node_name or None,
+            "node": node_name or None,
+            "text": reasoning,
+        }
+        _log_agent_stream_event(
+            backend_event,
+            conversation_id=conversation_id,
+            turn_id=turn_id,
+            stream_kind="reasoning",
+        )
+        return backend_event
+
+    if node_name in _AGENT_TEXT_STREAM_NODES:
         text = _message_text(message)
         if text:
-            return {"type": "delta", "content": text}
+            return {
+                "type": "agent.text.delta",
+                "source_agent": node_name,
+                "node": node_name,
+                "text": text,
+            }
+
+    if node_name in _SPEECH_TEXT_STREAM_NODES:
+        text = _message_text(message)
+        if text:
+            backend_event = {
+                "type": "speech_text.delta",
+                "source_agent": node_name,
+                "node": node_name,
+                "text": text,
+            }
+            _log_agent_stream_event(
+                backend_event,
+                conversation_id=conversation_id,
+                turn_id=turn_id,
+                stream_kind="text",
+            )
+            return backend_event
 
     return None
+
+
+def _node_update_event(event: dict[str, Any]) -> dict[str, Any] | None:
+    data = event.get("data")
+    if not isinstance(data, dict):
+        return None
+
+    nodes: list[dict[str, Any]] = []
+    for node_name, update in data.items():
+        if str(node_name).startswith("__"):
+            continue
+
+        update_keys = sorted(update.keys()) if isinstance(update, dict) else []
+        nodes.append({"node": str(node_name), "keys": update_keys})
+
+    if not nodes:
+        return None
+
+    return {
+        "type": "node.updated",
+        "source": "langgraph.updates",
+        "node": nodes[0]["node"] if len(nodes) == 1 else None,
+        "nodes": nodes,
+    }
+
+
+def _task_lifecycle_event(event: dict[str, Any]) -> dict[str, Any] | None:
+    data = event.get("data")
+    if not isinstance(data, dict):
+        return None
+
+    task_id = data.get("id")
+    node_name = data.get("name")
+    if not node_name:
+        return None
+
+    if "result" not in data and "error" not in data:
+        return {
+            "type": "task.started",
+            "source": "langgraph.tasks",
+            "task_id": str(task_id) if task_id else None,
+            "node": str(node_name),
+            "triggers": data.get("triggers") if isinstance(data.get("triggers"), list) else [],
+        }
+
+    error = data.get("error")
+    result = data.get("result")
+    return {
+        "type": "task.failed" if error else "task.completed",
+        "source": "langgraph.tasks",
+        "task_id": str(task_id) if task_id else None,
+        "node": str(node_name),
+        "error": str(error) if error else None,
+        "result_keys": sorted(result.keys()) if isinstance(result, dict) else [],
+        "interrupt_count": len(data.get("interrupts") or []),
+    }
+
+
+def _log_agent_stream_event(
+    event: dict[str, Any],
+    *,
+    conversation_id: str | None,
+    turn_id: str | None,
+    stream_kind: str,
+) -> None:
+    text = event.get("text")
+    logger.debug(
+        "agent internal stream token",
+        extra={
+            "event": "agent.internal_stream_token",
+            "conversation_id": conversation_id,
+            "turn_id": turn_id,
+            "agent": event.get("source_agent"),
+            "stream_event_type": event.get("type"),
+            "stream_kind": stream_kind,
+            "token_chars": len(text) if isinstance(text, str) else 0,
+        },
+    )
 
 
 def _stream_node(namespace: object, metadata: object) -> str:
@@ -214,9 +298,10 @@ def _stream_node(namespace: object, metadata: object) -> str:
 def _tool_call_event(
     message: Any,
     *,
+    source_agent: str,
     started_tool_calls: set[str],
 ) -> dict[str, Any] | None:
-    tool_message = _completed_tool_event(message)
+    tool_message = _completed_tool_event(message, source_agent=source_agent)
     if tool_message is not None:
         return tool_message
 
@@ -232,7 +317,9 @@ def _tool_call_event(
 
         started_tool_calls.add(tool_key)
         return {
-            "type": "tool_call",
+            "type": "agent.tool_call.delta",
+            "source_agent": source_agent,
+            "node": source_agent,
             "tool_call": {
                 "name": tool_name,
                 "status": "started",
@@ -243,13 +330,15 @@ def _tool_call_event(
     return None
 
 
-def _completed_tool_event(message: Any) -> dict[str, Any] | None:
+def _completed_tool_event(message: Any, *, source_agent: str) -> dict[str, Any] | None:
     if getattr(message, "type", None) != "tool":
         return None
 
     tool_id = getattr(message, "tool_call_id", None)
     return {
-        "type": "tool_call",
+        "type": "agent.tool_call.delta",
+        "source_agent": source_agent,
+        "node": source_agent,
         "tool_call": {
             "name": getattr(message, "name", None) or "tool",
             "status": "completed",
@@ -267,7 +356,11 @@ def _tool_call_chunks(message: Any) -> list[dict[str, Any]]:
     if isinstance(tool_calls, list):
         return [tool_call for tool_call in tool_calls if isinstance(tool_call, dict)]
 
-    return []
+    return [
+        block
+        for block in _message_content_blocks(message)
+        if isinstance(block, dict) and block.get("type") in {"tool_call", "tool_call_chunk"}
+    ]
 
 
 def _message_text(message: Any) -> str:
@@ -284,6 +377,39 @@ def _message_text(message: Any) -> str:
             for block in content
             if isinstance(block, dict) and block.get("type") == "text"
         )
+    return ""
+
+
+def _message_reasoning_text(message: Any) -> str:
+    reasoning = getattr(message, "reasoning", None)
+    if isinstance(reasoning, str):
+        return reasoning
+    if isinstance(reasoning, list):
+        return "".join(str(token) for token in reasoning if token)
+
+    return "".join(
+        _reasoning_block_text(block)
+        for block in _message_content_blocks(message)
+        if isinstance(block, dict) and block.get("type") in _REASONING_BLOCK_TYPES
+    )
+
+
+def _message_content_blocks(message: Any) -> list[Any]:
+    content_blocks = getattr(message, "content_blocks", None)
+    if isinstance(content_blocks, list):
+        return content_blocks
+
+    content = getattr(message, "content", None)
+    if isinstance(content, list):
+        return content
+    return []
+
+
+def _reasoning_block_text(block: dict[str, Any]) -> str:
+    for key in ("reasoning", "text", "content", "summary"):
+        value = block.get(key)
+        if isinstance(value, str):
+            return value
     return ""
 
 

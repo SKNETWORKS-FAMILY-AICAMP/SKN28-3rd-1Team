@@ -2,18 +2,18 @@
 
 Django ASGI 기반 Agent Orchestrator 서버이다.
 
-Frontend는 `POST /chat`으로 최종 JSON 응답을 받을 수 있고, `POST /chat/stream`의 SSE로 생성 중인 답변 조각, tool call, 음성 오디오 chunk를 받을 수 있다. Backend는 LangGraph를 실행한 뒤 자연어 답변을 `answer`로 반환한다. AI SDK 변환, 파일 업로드, RAG ingest, ASR 처리는 backend 책임에서 제외한다.
+Frontend/BFF는 `POST /chat/stream`의 SSE로 생성 중인 답변 조각, reasoning, tool call, 음성 텍스트, ElevenLabs 오디오 chunk, LangGraph node lifecycle event를 받을 수 있다. Backend는 LangGraph 실행 결과를 자체 SSE event 계약으로 반환한다. AI SDK 변환, 파일 업로드, RAG ingest, ASR 처리는 backend 책임에서 제외한다.
 
 ## ✨ 한눈에 보기
 
 | 구분 | 내용 |
 | --- | --- |
-| 🚪 API 입구 | `POST /chat`, `POST /chat/stream` SSE |
+| 🚪 API 입구 | `POST /chat/stream` SSE |
 | 🧠 LLM | `ChatOpenRouter` / `ChatCerebras` 직접 생성 |
 | 🧩 Agent | LangChain `create_agent()` + LangGraph checkpointer |
 | 🛠️ Tool | `tools/`에서 MCP/local tool 관리 |
 | 📚 RAG | FastMCP Tool Server에서 read-only MCP tools 로딩 |
-| 💬 응답 | 최종 JSON `answer` 또는 SSE `delta`/`tool_call`/`final`/`speech_text`/`audio`/`audio_done` event 반환 |
+| 💬 응답 | SSE `agent.text.*`/`agent.reasoning.*`/`agent.tool_call.*`/`speech_text.*`/`tts.*`/`node.updated`/`task.*` event 반환 |
 
 ## 🎯 현재 목표
 
@@ -21,12 +21,12 @@ Frontend는 `POST /chat`으로 최종 JSON 응답을 받을 수 있고, `POST /c
 
 ```text
 Frontend
-  -> 🚪 POST /chat 또는 POST /chat/stream
+  -> 🚪 POST /chat/stream
   -> ⚡  Django ASGI HTTP/SSE transport
   -> 🧠 Main Agent Orchestrator
   -> 🔗 ChatOpenRouter/ChatCerebras + LangChain tools
   -> 📚 MCP RAG tool server
-  -> 💬 answer 또는 backend SSE event stream
+  -> 💬 backend SSE event stream
 ```
 
 ## 🗂️ BACKEND 구조
@@ -36,16 +36,11 @@ backend/
 ├── README.md                         # 안내 문서
 ├── pyproject.toml                    # 의존성
 ├── .env.schema                       # Varlock 환경 변수 계약
-├── scripts/                          # 수동 테스트
-│   └── manual_chat.py                # /chat 테스트
 ├── src/                              # 앱 소스
 │   ├── app.py                        # Django ASGI 시작점
 │   ├── logger.py                     # 로그 설정
 │   ├── settings/                     # 도메인별 설정 로딩
-│   ├── django_backend/               # Django settings, urls, ASGI HTTP/SSE transport
-│   ├── api/                          # framework-neutral chat contract
-│   │   ├── __init__.py               # 패키지 파일
-│   │   └── chat.py                   # /chat request/response 모델과 변환 helper
+│   ├── django_backend/               # Django settings, urls, request schemas, ASGI HTTP/SSE transport
 │   ├── agents/                       # Agent 구성
 │   │   ├── __init__.py               # 패키지 파일
 │   │   ├── main_agent/               # agent.py, system prompt
@@ -57,6 +52,7 @@ backend/
 │   │   ├── from_mcp.py               # MCP tool loader
 │   │   └── local.py                  # local tool 확장 위치
 │   ├── utils/                        # 공통 utility
+│   ├── memory/                       # conversation id, checkpointer, TTL boundary
 │   ├── llm/                          # ChatOpenRouter/ChatCerebras 생성
 │   │   ├── openrouter.py             # ChatOpenRouter 생성
 │   │   └── cerebras.py               # ChatCerebras 생성
@@ -75,54 +71,55 @@ backend/
 | 파일 | 역할 |
 | --- | --- |
 | 🚀 `src/app.py` | Django ASGI `application` 진입점 |
-| 🌐 `src/django_backend/` | `/health`, `/chat`, `/chat/stream` HTTP/SSE transport |
-| 🚪 `src/api/chat.py` | `/chat` request/response 모델과 Agent 결과 변환 helper |
-| 🧠 `src/agents/main_agent/` | `create_agent()` 기반 Main Agent 생성/cache와 실행 함수 |
+| 🌐 `src/django_backend/` | `/health`, `/chat/stream` HTTP/SSE transport와 request schema |
+| 🧠 `src/agents/main_agent/` | `create_agent()` 기반 Main Agent factory |
 | 🗣️ `src/agents/speech_text_agent/` | state의 `final_response`를 정규화하고 `final_response_script`로 변환하는 LLM agent |
 | 🔄 `src/graph/` | chat turn 실행 경계, StateGraph 전환용 state, text stream 이후 speech/TTS event 연결 |
 | 🔊 `src/nodes/speech_synthesis_node/` | state의 `final_response_script`를 ElevenLabs SDK TTS stream으로 합성하는 deterministic node |
+| 🧠 `src/memory/` | `ChatThreadContextStore`가 LangGraph checkpointer와 20분 inactivity TTL을 관리 |
 | 🔑 `src/llm/` | agent별 model 설정과 provider 설정을 조합해 `ChatOpenRouter` 또는 `ChatCerebras` 생성 |
 | 🛠️ `src/tools/` | Agent에 붙일 LangChain MCP/local tool 목록 관리 |
 | 🧾 `src/utils/prompt_loader.py` | agent-local Jinja2 prompt 렌더링 |
 | 💬 `src/agents/main_agent/system_prompt.j2` | Main Agent system prompt |
 | 🔊 `src/agents/speech_text_agent/speech_text_prompt.j2` | Speech text Agent prompt |
 | ⚙️ `src/settings/` | `METADATA_`, `RUNTIME_`, `LLM_`, `ELEVENLABS_`, `RAG_` 설정 로딩 |
-| 🧪 `scripts/manual_chat.py` | 터미널에서 `/chat`을 직접 호출하는 수동 테스트 스크립트 |
-| ✅ `tests/test_backend_core.py` | health, `/chat`, `/chat/stream` 최소 동작 unittest |
+| ✅ `tests/` | health, `/chat/stream`, graph runner 최소 동작 unittest |
 
 ## 🔄 Runtime 흐름
 
 1. `src/app.py`가 Django ASGI `application`을 노출한다.
-2. Frontend가 `POST /chat` 또는 `POST /chat/stream`으로 `message`를 보낸다.
-3. `src/django_backend/urls.py`가 `/chat` JSON 요청과 `/chat/stream` SSE 요청을 처리하고 `ChatGraphRunner`에 전달한다.
-4. `src/agents/main_agent/`가 `create_agent()`와 `InMemorySaver` checkpointer로 Agent를 만든다.
+2. Frontend/BFF가 `POST /chat/stream`으로 `message`를 보낸다.
+3. `src/django_backend/urls.py`가 `/chat/stream` SSE 요청을 처리하고 `ChatGraphRunner`에 전달한다.
+4. `src/memory/`가 process-local `InMemorySaver` checkpointer를 만들고, `src/agents/main_agent/`는 이를 주입받아 Agent를 만든다.
 5. Agent는 역할별 LLM getter(`get_main()`, `get_sanitize()`, `get_window()`), `get_tools(agent_name="main_agent")`, agent-local prompt를 조합한다.
 6. `src/llm/`가 agent별 model 설정과 선택 provider API key로 `ChatOpenRouter` 또는 `ChatCerebras`를 생성한다.
 7. `src/tools/`가 RAG MCP server에서 read-only MCP tools를 비동기로 로딩하고 캐시한다.
-8. 일반 요청에서는 Graph stream의 `final` event를 `answer` 문자열로 변환해 반환한다.
-9. SSE 요청에서는 LangChain `astream_events()`에서 나온 text/tool event를 backend event로 매핑해 `delta`, `tool_call`, `final` event를 순차 전송한다.
-10. `speech_text_agent`가 state의 `final_response`를 읽고 structured output으로 `final_response_script`를 저장한다.
-11. `speech_synthesis_node`가 script만 읽어 ElevenLabs에 전달하고 `speech_text`, `audio`, `audio_done` event를 전송한다.
+8. LangGraph `astream(..., version="v2")`에서 나온 `messages`, `custom`, `updates`, `tasks`를 backend event로 매핑해 `agent.text.delta`, `agent.reasoning.delta`, `agent.tool_call.delta`, `agent.text.final`, `node.updated`, `task.*` event를 순차 전송한다.
+9. `speech_text_agent`가 state의 `final_response`를 읽고 structured output으로 `final_response_script`를 저장한다.
+10. `speech_synthesis_node`가 script만 읽어 ElevenLabs에 전달하고 `speech_text.final`, `tts.audio.chunk`, `tts.completed` event를 전송한다.
 
 ## 🖥️ Frontend 연결 위치
 
-Frontend는 RAG 서버나 LLM을 직접 호출하지 않고 backend의 `/chat` 또는 `/chat/stream`만 호출한다. AI SDK `UIMessage` 변환은 Next.js Route Handler/BFF에서 담당하고, backend는 자체 SSE event 계약만 유지한다.
+Frontend는 RAG 서버나 LLM을 직접 호출하지 않고 BFF를 통해 backend의 `/chat/stream`만 호출한다. AI SDK `UIMessage` 변환은 Next.js Route Handler/BFF에서 담당하고, backend는 자체 SSE event 계약만 유지한다.
 
 | 구분 | backend 파일 | frontend에서 할 일 |
 | --- | --- | --- |
-| endpoint | `src/django_backend/` | 최종 응답은 `POST /chat`, 스트리밍 응답은 `POST /chat/stream` SSE로 전송 |
+| endpoint | `src/django_backend/` | `POST /chat/stream` SSE만 제공 |
 | CORS | `src/settings/` | frontend 주소가 `RUNTIME_CORS_ORIGINS`에 포함되어 있는지 확인 |
 | 앱 등록 | `src/app.py` | 별도 작업 없음. `application` ASGI callable로 이미 등록됨 |
-| loading UI | frontend 코드 | `/chat`은 응답 대기 상태를 표시하고, `/chat/stream`은 `delta` event를 받을 때마다 답변을 단계적으로 표시 |
+| loading UI | frontend 코드 | `/chat/stream`은 `agent.text.delta` event를 받을 때마다 답변을 단계적으로 표시 |
 
-최종 JSON 응답을 받는 요청 예시는 다음과 같다.
+SSE 요청 예시는 다음과 같다.
 
 ```ts
-// frontend에서 backend /chat으로 사용자 메시지를 전송한다.
-async function sendChat(message: string) {
-  const response = await fetch("http://127.0.0.1:8000/chat", {
+// BFF에서 backend /chat/stream으로 사용자 메시지를 전송한다.
+async function sendChatStream(message: string) {
+  const response = await fetch("http://127.0.0.1:8000/chat/stream", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      Accept: "text/event-stream",
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify({
       message,
       session_id: "browser-session-id",
@@ -130,11 +127,11 @@ async function sendChat(message: string) {
     }),
   });
 
-  return response.json();
+  return response.body;
 }
 ```
 
-스트리밍 UI가 필요한 frontend는 `/chat/stream` SSE에 연결하고 `delta` event를 누적해서 표시한다. `/chat`은 기존 호환성을 위해 최종 JSON 응답 계약을 유지한다.
+스트리밍 UI가 필요한 frontend는 BFF가 변환한 stream을 통해 `agent.text.delta` event를 누적해서 표시한다.
 
 ## 📚 RAG/MCP 연결 위치
 
@@ -146,11 +143,11 @@ RAG는 별도 FastMCP Tool Server가 담당하고, backend는 MCP Client로 tool
 | 환경 변수 | Infisical / `.env` | 로컬은 `RAG_MCP_URL="http://127.0.0.1:8010/mcp"`, Docker network 내부는 `http://rag-be:8010/mcp` 사용 |
 | tool 연결 | `src/tools/` | `MultiServerMCPClient`로 MCP tools를 async 로딩하고 캐시 |
 | Agent 연결 | `src/agents/main_agent/` | `create_agent(..., tools=await get_tools(agent_name="main_agent"), ...)`에 MCP tools 전달 |
-| 응답 출처 | `src/api/chat.py` | 필요 시 `sources`, `tool_calls` 변환 helper를 확장 |
+| 응답 출처 | `src/graph/runner.py` | `agent.text.final.sources`, `agent.tool_call.delta` payload를 SSE event로 전달 |
 
 `langchain_mcp_adapters.client.MultiServerMCPClient.get_tools()`와 MCP tool
-호출은 async 경로를 사용한다. 그래서 `/chat`과 `/chat/stream`도 agent를
-`ainvoke()` / `astream()`으로 실행한다. MCP 원본 tool 이름은
+호출은 async 경로를 사용한다. 그래서 `/chat/stream`은 agent를
+`astream()`으로 실행한다. MCP 원본 tool 이름은
 `memgraph.read_query`처럼 점을 포함하므로, LangChain/OpenAI tool 이름은
 `memgraph_read_query`처럼 안전한 이름으로 치환한다. 실제 MCP call은 원본
 tool 이름으로 전달된다.
@@ -204,39 +201,13 @@ Daphne 실행은 `RUNTIME_HOST`와 `RUNTIME_PORT`를 사용한다. `RUNTIME_RELO
 
 ## 💬 Chat API
 
-### POST `/chat`
-
-요청:
-
-```json
-{
-  "session_id": "optional-session-id",
-  "message": "노인일자리 신청 방법 알려줘",
-  "metadata": {
-    "source": "frontend"
-  }
-}
-```
-
-응답:
-
-```json
-{
-  "answer": "신청 방법은 지역과 사업 유형에 따라 달라질 수 있어요...",
-  "tool_calls": [],
-  "sources": []
-}
-```
-
-`session_id`는 LangGraph `thread_id`로 전달된다. 같은 `session_id`로 요청하면 프로세스가 살아 있는 동안 `InMemorySaver` checkpointer가 같은 대화 이력을 이어간다. `session_id`가 없으면 요청마다 익명 thread를 새로 만들어 세션 간 이력이 섞이지 않게 처리한다.
-
 ### POST `/chat/stream` SSE
 
 클라이언트는 HTTP POST 요청으로 `message`를 보내고, 서버는 `text/event-stream` 응답을 연다.
 
 ```json
 {
-  "session_id": "optional-session-id",
+  "session_id": "conversation-id",
   "message": "노인일자리 신청 방법 알려줘",
   "metadata": {
     "source": "frontend"
@@ -244,24 +215,38 @@ Daphne 실행은 `RUNTIME_HOST`와 `RUNTIME_PORT`를 사용한다. `RUNTIME_RELO
 }
 ```
 
-응답은 SSE event다. 생성 중에는 `delta` event가 여러 번 전송되고, 완료 시 `final` event가 한 번 전송된다.
+응답은 SSE event다. 생성 중에는 `agent.text.delta` event가 여러 번 전송되고, main agent 최종 답변은 `agent.text.final`로 전송된다. 모델이 공개 reasoning content block을 제공하면 `agent.reasoning.delta` event로 분리된다. `speech_text_agent` 출력은 `speech_text.delta`/`speech_text.final`로 분리되고, TTS 오디오는 `tts.audio.chunk`/`tts.completed`로 전송된다. LangGraph node lifecycle은 `node.updated`와 `task.*`로 전송하지만, BFF는 현재 이 이벤트를 FE로 전달하지 않는다.
 
 ```text
-event: delta
-data: {"type": "delta", "content": "신청은 "}
+event: agent.text.delta
+data: {"type": "agent.text.delta", "source_agent": "main_agent", "node": "main_agent", "text": "신청은 "}
 ```
 
 ```text
-event: delta
-data: {"type": "delta", "content": "주민센터에서 "}
+event: agent.text.delta
+data: {"type": "agent.text.delta", "source_agent": "main_agent", "node": "main_agent", "text": "주민센터에서 "}
 ```
 
 ```text
-event: final
-data: {"type": "final", "answer": "신청은 주민센터에서 할 수 있습니다.", "tool_calls": [], "sources": [], "session_id": "optional-session-id"}
+event: agent.text.final
+data: {"type": "agent.text.final", "source_agent": "main_agent", "node": "main_agent_result", "text": "신청은 주민센터에서 할 수 있습니다.", "answer": "신청은 주민센터에서 할 수 있습니다.", "sources": [], "session_id": "optional-session-id"}
 ```
 
-`final` event는 기존 `ChatResponse`와 같은 필드(`answer`, `tool_calls`, `sources`, `session_id`)를 사용한다. 이후 `speech_text_agent`가 `final_response_script`를 state에 저장하고, `speech_synthesis_node`가 그 값을 ElevenLabs로 보내 `speech_text`, `audio`, `audio_done` event를 이어 보낸다. `session_id`는 `/chat`과 동일하게 LangGraph `thread_id`로 전달되므로 같은 세션의 대화 문맥이 이어진다.
+`agent.reasoning.delta`는 provider/LangChain이 stream으로 공개한 reasoning token만 전달한다. backend가 숨겨진 chain-of-thought를 별도로 수집하거나 생성하지 않는다.
+
+```text
+event: agent.reasoning.delta
+data: {"type": "agent.reasoning.delta", "source_agent": "main_agent", "node": "main_agent", "text": "..."}
+```
+
+`speech_text.delta`는 `speech_text_agent`의 TTS용 문장 생성 token을 전달한다. 현재 FE는 이 이벤트를 일반 답변으로 누적하지 않고 trace data로만 받을 수 있으며, backend는 같은 이벤트를 `logger.debug`로 남기되 토큰 본문은 로그에 넣지 않고 글자 수만 기록한다.
+
+```text
+event: speech_text.delta
+data: {"type": "speech_text.delta", "source_agent": "speech_text_agent", "node": "speech_text_agent", "text": "..."}
+```
+
+`agent.text.final` event는 최종 답변 필드(`answer`, `sources`, `session_id`)를 포함한다. 이후 `speech_text_agent`가 `final_response_script`를 state에 저장하고, `speech_synthesis_node`가 그 값을 ElevenLabs로 보내 `speech_text.final`, `tts.audio.chunk`, `tts.completed` event를 이어 보낸다. `session_id`는 LangGraph `thread_id`로 전달되므로 같은 세션의 대화 문맥이 이어진다. 자세한 정책은 `../docs/chat_thread_policy.md`를 참고한다.
 
 ## 🧾 Prompt
 
@@ -295,11 +280,11 @@ agent별 제공 정책은 `profiles/{agent_name}.json`, 조합/캐시는 `regist
 
 RAG 없이 main model만 확인해야 하는 경우에는 `RAG_TOOLS_ENABLED=false`로
 실행한다. 이때 agent에는 빈 tool 목록이 전달되므로 RAG MCP 서버가 떠 있지
-않아도 `/chat` 호출 경로를 확인할 수 있다.
+않아도 `/chat/stream` 호출 경로를 확인할 수 있다.
 
 ## 📊 벤치마크 결과 위치
 
-backend 안의 `scripts/`는 현재 수동 `/chat` 테스트용 `manual_chat.py`만 유지한다. 벤치마크 실행/변환/LangSmith 검증용 임시 스크립트는 backend 서비스 코드 안에 두지 않고, 발표와 검증에 사용할 결과 산출물은 repo 루트의 `presentation/test-data/no-tool-benchmark/`에 정리했다.
+벤치마크 실행/변환/LangSmith 검증용 임시 스크립트는 backend 서비스 코드 안에 두지 않고, 발표와 검증에 사용할 결과 산출물은 repo 루트의 `presentation/test-data/no-tool-benchmark/`에 정리했다.
 
 주요 산출물:
 
@@ -358,7 +343,7 @@ make env-check
 | `RAG_TOOLS_ENABLED` | `true` | `false`로 두면 RAG MCP tools를 로딩하지 않고 no-RAG/no-tool로 agent 실행 |
 | `RAG_TOOL_TIMEOUT_MS` | `30000` | tool 실행 timeout |
 
-실제 `backend/.env`와 `.env.local`은 Git에 커밋하지 않는다. local env 내용을 직접 출력하지 말고 `varlock load --agent --path backend` 또는 `make env-check`를 사용한다. `/health`는 키 없이도 동작하지만 `/chat`은 실제 LLM 호출이므로 선택한 provider의 API key가 필요하다.
+실제 `backend/.env`와 `.env.local`은 Git에 커밋하지 않는다. local env 내용을 직접 출력하지 말고 `varlock load --agent --path backend` 또는 `make env-check`를 사용한다. `/health`는 키 없이도 동작하지만 `/chat/stream`은 실제 LLM 호출이므로 선택한 provider의 API key가 필요하다.
 
 ## 🐳 Docker 실행
 
@@ -392,7 +377,7 @@ RAG_TOOLS_ENABLED=false \
 docker compose up -d --build backend
 
 curl -s http://127.0.0.1:8002/health
-curl -s http://127.0.0.1:8002/chat \
+curl -N http://127.0.0.1:8002/chat/stream \
   -H "Content-Type: application/json" \
   -d '{"session_id":"qwen-no-rag-smoke","message":"근로기준법에서 근로자와 사용자 관련해서 기본적으로 어떤 내용을 확인해야 해? 5문장 이내로 답해줘."}'
 ```
@@ -462,30 +447,7 @@ curl -s http://127.0.0.1:8000/health
 {"status":"ok","service":"SKN28 Backend","version":"0.1.0"}
 ```
 
-### 6. chat curl 확인
-
-실제 LLM 호출이므로 선택한 provider의 API key가 필요하다.
-
-```bash
-curl -s http://127.0.0.1:8000/chat \
-  -H "Content-Type: application/json" \
-  -d '{"message":"노인일자리 신청 방법 알려줘"}'
-```
-
-기대 응답 형태:
-
-```json
-{
-  "answer": "LLM이 생성한 한국어 답변",
-  "tool_calls": [],
-  "sources": []
-}
-```
-
-RAG MCP tools는 backend agent에 연결되어 있다. 실제 답변 생성과 tool
-선택은 LLM provider 호출이므로 선택한 provider의 API key가 유효해야 한다.
-
-### 7. chat stream SSE 확인
+### 6. chat stream SSE 확인
 
 실제 LLM 호출이므로 선택한 provider의 API key가 필요하다. 아래 명령은 HTTP SSE event stream을 확인한다.
 
@@ -498,28 +460,19 @@ curl -N http://127.0.0.1:8000/chat/stream \
 기대 응답 형태:
 
 ```text
-event: delta
-data: {"type":"delta","content":"..."}
+event: agent.text.delta
+data: {"type":"agent.text.delta","source_agent":"main_agent","node":"main_agent","text":"..."}
 
-event: final
-data: {"type":"final","answer":"...","tool_calls":[],"sources":[],"session_id":"manual-stream-session"}
+event: agent.text.final
+data: {"type":"agent.text.final","source_agent":"main_agent","text":"...","answer":"...","sources":[],"session_id":"manual-stream-session"}
 ```
 
-`delta` event가 여러 번 출력되면 text chunk가 나뉘어 수신된 것이다.
-
-### 8. 터미널 수동 테스트
-
-```bash
-PYTHONPATH=src uv run python scripts/manual_chat.py
-```
-
-수동 테스트는 `/chat`에 직접 요청을 보내고 `answer`, `tool_calls`, `sources`를 터미널에 출력한다.
+`agent.text.delta` event가 여러 번 출력되면 text chunk가 나뉘어 수신된 것이다.
 
 ## 🧯 자주 나는 문제
 
 | 증상 | 확인할 것 |
 | --- | --- |
-| `/chat`이 500을 반환 | `LLM_AGENT_MAIN_PROVIDER`와 선택 provider의 `LLM_PROVIDER_*_API_KEY` 설정 여부 |
 | `/chat/stream` SSE 연결이 실패 | 최신 backend 코드로 실행 중인지, 서버를 재시작했는지 확인 |
 | `/chat/stream`이 한 번에만 출력됨 | 질문이 너무 짧은지 확인하고, curl `-N`으로 실제 SSE event를 확인 |
 | `/health` 연결 실패 | Daphne이 켜져 있는지, 포트가 `8000`인지 확인 |
@@ -533,8 +486,7 @@ PYTHONPATH=src uv run python scripts/manual_chat.py
 - `compileall` 성공
 - `make check` 성공
 - `GET /health`가 200 반환
-- `POST /chat`이 `answer` 필드를 포함한 200 반환
-- `POST /chat/stream` SSE가 `delta`와 `final` event 반환
+- `POST /chat/stream` SSE가 `agent.text.delta`와 `agent.text.final` event 반환
 - 같은 `session_id`로 연속 요청 시 같은 LangGraph thread를 사용
 - `schemas`, `mock`, `session_store.py`, `rate_limiter.py` import가 남아 있지 않음
 

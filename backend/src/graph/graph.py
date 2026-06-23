@@ -6,13 +6,14 @@ from langgraph.graph import END, START, StateGraph
 
 from agents.main_agent import create_main_agent
 from agents.screen_control_agent import create_screen_control_agent
-from agents.speech_text_agent import (
-    SpeechTextAgent,
-    create_final_response_script,
-    create_speech_text_agent,
-)
+from agents.speech_text_agent import create_speech_text_agent
 from graph.state import ChatTurnState
 from logger import get_logger
+from memory import get_checkpointer
+from nodes.agent_wrappers import (
+    create_screen_control_agent_node,
+    create_speech_text_agent_node,
+)
 from nodes.speech_synthesis_node import SpeechSynthesisNode, SpeechSynthesisRequest
 
 logger = get_logger(__name__)
@@ -21,27 +22,36 @@ logger = get_logger(__name__)
 def build_chat_turn_graph(
     *,
     main_agent: Any,
-    speech_text_agent: SpeechTextAgent,
+    speech_text_agent: Any,
     speech_synthesis_node: SpeechSynthesisNode,
-    window_changing_agent: Any,
+    screen_control_agent: Any,
+    checkpointer: Any | None = None,
 ) -> Any:
     graph = StateGraph(ChatTurnState)
 
     graph.add_node("main_agent", main_agent)
     graph.add_node("main_agent_result", _main_agent_result_node)
-    graph.add_node("speech_text_agent", _speech_text_agent_node(speech_text_agent))
+    graph.add_node("speech_text_agent", create_speech_text_agent_node(speech_text_agent))
+    graph.add_node("speech_text_result", _speech_text_result_node)
     graph.add_node("speech_synthesis_node", _speech_synthesis_node(speech_synthesis_node))
-    graph.add_node("window_changing_agent", window_changing_agent)
+    graph.add_node(
+        "screen_control_agent",
+        create_screen_control_agent_node(screen_control_agent),
+    )
 
     graph.add_edge(START, "main_agent")
     graph.add_edge("main_agent", "main_agent_result")
     graph.add_edge("main_agent_result", "speech_text_agent")
-    graph.add_edge("main_agent_result", "window_changing_agent")
-    graph.add_edge("speech_text_agent", "speech_synthesis_node")
+    graph.add_edge("main_agent_result", "screen_control_agent")
+    graph.add_edge("speech_text_agent", "speech_text_result")
+    graph.add_edge("speech_text_result", "speech_synthesis_node")
     graph.add_edge("speech_synthesis_node", END)
-    graph.add_edge("window_changing_agent", END)
+    graph.add_edge("screen_control_agent", END)
 
-    return graph.compile(name="chat-turn-graph")
+    compile_kwargs: dict[str, Any] = {"name": "chat-turn-graph"}
+    if checkpointer is not None:
+        compile_kwargs["checkpointer"] = checkpointer
+    return graph.compile(**compile_kwargs)
 
 
 async def create_chat_turn_graph() -> Any:
@@ -49,7 +59,8 @@ async def create_chat_turn_graph() -> Any:
         main_agent=await create_main_agent(),
         speech_text_agent=await create_speech_text_agent(),
         speech_synthesis_node=SpeechSynthesisNode(),
-        window_changing_agent=await create_screen_control_agent(),
+        screen_control_agent=await create_screen_control_agent(),
+        checkpointer=get_checkpointer(),
     )
 
 
@@ -59,7 +70,10 @@ def _main_agent_result_node(state: ChatTurnState) -> dict[str, Any]:
 
     _writer()(
         {
-            "type": "final",
+            "type": "agent.text.final",
+            "source_agent": "main_agent",
+            "node": "main_agent_result",
+            "text": final_response,
             "answer": final_response,
             "sources": used_information,
             "session_id": state.get("session_id"),
@@ -72,29 +86,24 @@ def _main_agent_result_node(state: ChatTurnState) -> dict[str, Any]:
     }
 
 
-def _speech_text_agent_node(speech_text_agent: SpeechTextAgent) -> Any:
-    async def invoke_speech_text_agent(
-        state: ChatTurnState,
-        config: RunnableConfig | None = None,
-    ) -> dict[str, Any]:
-        final_response = str(state.get("final_response") or "").strip()
-        script = await create_final_response_script(
-            speech_text_agent,
-            final_response,
-            config=config or {},
-        )
+def _speech_text_result_node(state: ChatTurnState) -> dict[str, Any]:
+    script = str(state.get("final_response_script") or "").strip()
+    if not script:
+        script = _final_message_text(state) or str(state.get("final_response") or "").strip()
+    if not script:
+        script = "답변을 생성하지 못했습니다. 잠시 후 다시 시도해 주세요."
 
-        _writer()(
-            {
-                "type": "speech_text",
-                "text": script,
-                "session_id": state.get("session_id"),
-                "turn_id": state.get("turn_id"),
-            }
-        )
-        return {"final_response_script": script}
-
-    return invoke_speech_text_agent
+    _writer()(
+        {
+            "type": "speech_text.final",
+            "source_agent": "speech_text_agent",
+            "node": "speech_text_result",
+            "text": script,
+            "session_id": state.get("session_id"),
+            "turn_id": state.get("turn_id"),
+        }
+    )
+    return {"final_response_script": script}
 
 
 def _speech_synthesis_node(speech_synthesis_node: SpeechSynthesisNode) -> Any:
@@ -163,7 +172,8 @@ def _speech_synthesis_payload(event: dict[str, Any]) -> dict[str, Any] | None:
     event_type = event.get("type")
     if event_type == "tts.audio.chunk":
         return {
-            "type": "audio",
+            "type": "tts.audio.chunk",
+            "node": "speech_synthesis_node",
             "audio_base64": event.get("audio_base64"),
             "mime_type": event.get("mime_type"),
             "chunk_index": event.get("chunk_index"),
@@ -172,7 +182,8 @@ def _speech_synthesis_payload(event: dict[str, Any]) -> dict[str, Any] | None:
 
     if event_type == "tts.completed":
         return {
-            "type": "audio_done",
+            "type": "tts.completed",
+            "node": "speech_synthesis_node",
             "chunks": event.get("chunks", 0),
             "configured": event.get("configured"),
         }
@@ -184,5 +195,11 @@ def _speech_synthesis_payload(event: dict[str, Any]) -> dict[str, Any] | None:
             "message": event.get("message") or "음성 합성 중 오류가 발생했습니다.",
         }
 
-    logger.debug("ignored speech synthesis event=%s", event_type)
+    logger.debug(
+        "ignored speech synthesis event",
+        extra={
+            "event": "tts.event_ignored",
+            "tts_event_type": event_type,
+        },
+    )
     return None

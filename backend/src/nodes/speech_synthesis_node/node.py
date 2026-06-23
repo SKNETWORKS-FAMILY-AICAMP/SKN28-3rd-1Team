@@ -35,7 +35,15 @@ class SpeechSynthesisNode:
         mime_type = _mime_type(elevenlabs.output_format)
 
         if not self._settings.tts_configured:
-            logger.warning("speech synthesis skipped: ELEVENLABS_API_KEY/VOICE_ID not set")
+            logger.warning(
+                "speech synthesis skipped because configuration is incomplete",
+                extra={
+                    "event": "tts.unconfigured",
+                    "conversation_id": request.session_id,
+                    "turn_id": request.turn_id,
+                    "configured": False,
+                },
+            )
             yield {
                 "type": "error",
                 "code": "tts_unconfigured",
@@ -68,15 +76,28 @@ class SpeechSynthesisNode:
                     "mime_type": mime_type,
                 }
 
-            logger.info(
-                "speech synthesis completed session=%s turn=%s chunks=%d",
-                request.session_id,
-                request.turn_id,
-                chunk_count,
+            logger.debug(
+                "speech synthesis completed",
+                extra={
+                    "event": "tts.completed",
+                    "conversation_id": request.session_id,
+                    "turn_id": request.turn_id,
+                    "chunk_count": chunk_count,
+                    "configured": True,
+                },
             )
             yield {"type": "tts.completed", "configured": True, "chunks": chunk_count}
         except Exception as error:
-            logger.exception("speech synthesis failed")
+            logger.exception(
+                "speech synthesis failed",
+                extra={
+                    "event": "tts.failed",
+                    "conversation_id": request.session_id,
+                    "turn_id": request.turn_id,
+                    "chunk_count": chunk_count,
+                    "configured": True,
+                },
+            )
             yield {"type": "error", "code": "tts_failed", "message": str(error)}
             yield {"type": "tts.completed", "configured": True, "chunks": chunk_count}
 
