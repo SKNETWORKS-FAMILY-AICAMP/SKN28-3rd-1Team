@@ -320,11 +320,18 @@ make env-check
 | `LLM_PROVIDER_OPENROUTER_API_KEY` | 빈 값 | `LLM_AGENT_*_PROVIDER=openrouter`일 때 필요한 OpenRouter API 키 |
 | `LLM_PROVIDER_CEREBRAS_API_KEY` | 빈 값 | `LLM_AGENT_*_PROVIDER=cerebras`일 때 필요한 Cerebras API 키 |
 | `LLM_AGENT_MAIN_PROVIDER` | `cerebras` | main agent provider. `openai`, `openrouter`, `cerebras` |
-| `LLM_AGENT_MAIN_MODEL` | `gpt-oss-120b` | main agent가 사용할 모델 |
+| `LLM_AGENT_MAIN_MODEL` | `zai-glm-4.7` | main agent가 사용할 모델 |
+| `LLM_AGENT_MAIN_REASONING_EFFORT` | `high` | reasoning effort 지원 provider에서 main agent에 전달할 effort |
+| `LLM_AGENT_MAIN_REASONING_FORMAT` | `hidden` | Cerebras reasoning을 응답 payload에 포함하지 않을 format |
+| `LLM_AGENT_MAIN_CLEAR_THINKING` | `false` | Cerebras GLM thinking trace 보존 여부. `false`면 thinking을 clear하지 않음 |
 | `LLM_AGENT_SANITIZE_PROVIDER` | `openrouter` | speech text sanitization agent provider |
 | `LLM_AGENT_SANITIZE_MODEL` | `openai/gpt-oss-20b` | speech text sanitization agent가 사용할 모델 |
+| `LLM_AGENT_SANITIZE_REASONING_EFFORT` | `low` | reasoning effort 지원 provider에서 speech text sanitization agent에 전달할 effort |
 | `LLM_AGENT_WINDOW_PROVIDER` | `cerebras` | screen control/window-changing agent provider |
-| `LLM_AGENT_WINDOW_MODEL` | `gpt-oss-120b` | screen control/window-changing agent가 사용할 모델 |
+| `LLM_AGENT_WINDOW_MODEL` | `zai-glm-4.7` | screen control/window-changing agent가 사용할 모델 |
+| `LLM_AGENT_WINDOW_REASONING_EFFORT` | `medium` | reasoning effort 지원 provider에서 screen control/window-changing agent에 전달할 effort |
+| `LLM_AGENT_WINDOW_REASONING_FORMAT` | `hidden` | Cerebras reasoning을 응답 payload에 포함하지 않을 format |
+| `LLM_AGENT_WINDOW_CLEAR_THINKING` | `false` | Cerebras GLM thinking trace 보존 여부. `false`면 thinking을 clear하지 않음 |
 | `LLM_REQUEST_TIMEOUT_MS` | `60000` | 모든 LLM 요청 timeout |
 | `LLM_REQUEST_MAX_RETRIES` | `2` | 모든 LLM 요청 재시도 횟수 |
 | `LLM_RESPONSE_MAX_TOKENS` | 빈 값 | 모든 LLM 응답 max token. 비워두면 제한 없음 |

@@ -10,7 +10,9 @@ parent chat-turn graph but must not write their full agent state back into
 - `speech_text_agent` is a per-turn worker that converts `final_response` into
   `final_response_script`.
 - `screen_control_agent` is a per-turn worker that may call UI-control tools
-  from the current turn context.
+  from the current turn context. Its final text may be emitted as a trace-only
+  custom event, but its child agent messages must not be returned into parent
+  graph state.
 
 The downstream worker agents are wrapped before being mounted in the parent
 graph. A wrapper may call the child agent with isolated input, but it must return

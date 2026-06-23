@@ -6,8 +6,17 @@ from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 LlmAgentName = Literal["main", "sanitize", "window"]
+LlmReasoningEffort = Literal["low", "medium", "high"]
+LlmReasoningFormat = Literal["parsed", "raw", "hidden", "none"]
 DEFAULT_MAIN_PROVIDER = "cerebras"
-DEFAULT_MAIN_MODEL = "gpt-oss-120b"
+DEFAULT_MAIN_MODEL = "zai-glm-4.7"
+DEFAULT_MAIN_REASONING_EFFORT: LlmReasoningEffort = "high"
+DEFAULT_MAIN_REASONING_FORMAT: LlmReasoningFormat = "hidden"
+DEFAULT_MAIN_CLEAR_THINKING = False
+DEFAULT_SANITIZE_REASONING_EFFORT: LlmReasoningEffort = "low"
+DEFAULT_WINDOW_REASONING_EFFORT: LlmReasoningEffort = "medium"
+DEFAULT_WINDOW_REASONING_FORMAT: LlmReasoningFormat = "hidden"
+DEFAULT_WINDOW_CLEAR_THINKING = False
 DEFAULT_TIMEOUT_MS = 60_000
 DEFAULT_MAX_RETRIES = 2
 DEFAULT_OPENROUTER_APP_TITLE = "SKN28 Backend Agent"
@@ -19,16 +28,51 @@ class LlmAgentSettings(BaseSettings):
 
     main_provider: str = Field(default=DEFAULT_MAIN_PROVIDER, validation_alias="LLM_AGENT_MAIN_PROVIDER")
     main_model: str = Field(default=DEFAULT_MAIN_MODEL, validation_alias="LLM_AGENT_MAIN_MODEL")
+    main_reasoning_effort: LlmReasoningEffort | None = Field(
+        default=DEFAULT_MAIN_REASONING_EFFORT,
+        validation_alias="LLM_AGENT_MAIN_REASONING_EFFORT",
+    )
+    main_reasoning_format: LlmReasoningFormat | None = Field(
+        default=DEFAULT_MAIN_REASONING_FORMAT,
+        validation_alias="LLM_AGENT_MAIN_REASONING_FORMAT",
+    )
+    main_clear_thinking: bool | None = Field(
+        default=DEFAULT_MAIN_CLEAR_THINKING,
+        validation_alias="LLM_AGENT_MAIN_CLEAR_THINKING",
+    )
     sanitize_provider: str | None = Field(default=None, validation_alias="LLM_AGENT_SANITIZE_PROVIDER")
     sanitize_model: str | None = Field(default=None, validation_alias="LLM_AGENT_SANITIZE_MODEL")
+    sanitize_reasoning_effort: LlmReasoningEffort | None = Field(
+        default=DEFAULT_SANITIZE_REASONING_EFFORT,
+        validation_alias="LLM_AGENT_SANITIZE_REASONING_EFFORT",
+    )
     window_provider: str | None = Field(default=None, validation_alias="LLM_AGENT_WINDOW_PROVIDER")
     window_model: str | None = Field(default=None, validation_alias="LLM_AGENT_WINDOW_MODEL")
+    window_reasoning_effort: LlmReasoningEffort | None = Field(
+        default=DEFAULT_WINDOW_REASONING_EFFORT,
+        validation_alias="LLM_AGENT_WINDOW_REASONING_EFFORT",
+    )
+    window_reasoning_format: LlmReasoningFormat | None = Field(
+        default=DEFAULT_WINDOW_REASONING_FORMAT,
+        validation_alias="LLM_AGENT_WINDOW_REASONING_FORMAT",
+    )
+    window_clear_thinking: bool | None = Field(
+        default=DEFAULT_WINDOW_CLEAR_THINKING,
+        validation_alias="LLM_AGENT_WINDOW_CLEAR_THINKING",
+    )
 
     @field_validator(
+        "main_reasoning_effort",
+        "main_reasoning_format",
+        "main_clear_thinking",
         "sanitize_provider",
         "sanitize_model",
+        "sanitize_reasoning_effort",
         "window_provider",
         "window_model",
+        "window_reasoning_effort",
+        "window_reasoning_format",
+        "window_clear_thinking",
         mode="before",
     )
     @classmethod
@@ -53,6 +97,33 @@ class LlmAgentSettings(BaseSettings):
             return self.sanitize_model or self.main_model
         if agent == "window":
             return self.window_model or self.main_model
+        raise ValueError(f"Unsupported LLM agent: {agent}")
+
+    def reasoning_effort(self, agent: LlmAgentName) -> LlmReasoningEffort | None:
+        if agent == "main":
+            return self.main_reasoning_effort
+        if agent == "sanitize":
+            return self.sanitize_reasoning_effort
+        if agent == "window":
+            return self.window_reasoning_effort
+        raise ValueError(f"Unsupported LLM agent: {agent}")
+
+    def reasoning_format(self, agent: LlmAgentName) -> LlmReasoningFormat | None:
+        if agent == "main":
+            return self.main_reasoning_format
+        if agent == "sanitize":
+            return None
+        if agent == "window":
+            return self.window_reasoning_format
+        raise ValueError(f"Unsupported LLM agent: {agent}")
+
+    def clear_thinking(self, agent: LlmAgentName) -> bool | None:
+        if agent == "main":
+            return self.main_clear_thinking
+        if agent == "sanitize":
+            return None
+        if agent == "window":
+            return self.window_clear_thinking
         raise ValueError(f"Unsupported LLM agent: {agent}")
 
 
@@ -145,3 +216,12 @@ class LlmSettings:
 
     def agent_model(self, agent: LlmAgentName) -> str:
         return self.agents.model(agent)
+
+    def agent_reasoning_effort(self, agent: LlmAgentName) -> LlmReasoningEffort | None:
+        return self.agents.reasoning_effort(agent)
+
+    def agent_reasoning_format(self, agent: LlmAgentName) -> LlmReasoningFormat | None:
+        return self.agents.reasoning_format(agent)
+
+    def agent_clear_thinking(self, agent: LlmAgentName) -> bool | None:
+        return self.agents.clear_thinking(agent)

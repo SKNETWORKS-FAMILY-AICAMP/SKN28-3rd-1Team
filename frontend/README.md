@@ -78,16 +78,47 @@ Next.js route handler는 backend `POST /chat/stream` SSE event를 다음처럼 �
 
 | Backend event | Frontend 처리 |
 | --- | --- |
-| `agent.text.delta` + `main_agent` | assistant text part로 streaming 렌더링 |
+| `agent.text.delta` + `main_agent` | assistant text part로만 streaming 렌더링. Trace drawer에는 표시하지 않음 |
 | `agent.text.delta` + `screen_control_agent` | persistent `data-agentTrace` part로 변환하고 `Screen Control Agent` lane에서 렌더링 |
-| `agent.reasoning.delta` | persistent `data-agentTrace` part로 변환하고 agent별 reasoning lane에서 렌더링 |
+| `agent.text.final` + non-main agent | persistent `data-agentTrace` part로 변환하고 agent별 final debug text로 렌더링 |
+| `agent.reasoning.delta`, `thinking_delta` + `speech_text_agent` | persistent `data-agentTrace` part로 변환하고 `Speech Agent` lane에서 reasoning으로 렌더링 |
+| `agent.reasoning.delta`, `thinking_delta` + main/screen agent | 내부 reasoning token으로 간주하고 BFF 변환 지점에서 drop |
 | `agent.tool_call.delta` | persistent `data-toolCall` part로 tool 이름, 상태, source agent를 agent별 drawer에 렌더링 |
+| `speech_text.input` | speech agent에 들어간 입력을 `Speech Agent` lane에서 렌더링 |
+| `screen_control.input` | screen control agent에 들어간 입력을 `Screen Control Agent` lane에서 렌더링 |
 | `speech_text.*` | speech/internal trace로 변환하고 speech agent lane에서 렌더링 |
-| `tts.audio.chunk` | transient audio chunk로 재생용 누적, persistent `data-audioStatus`로 chunk 상태 표시 |
-| `tts.completed` | audio chunk flush/playback cleanup |
+| `tts.audio.chunk` | transient audio chunk를 MediaSource player에 append하고, persistent `data-audioStatus`로 chunk 상태 표시 |
+| `tts.completed` | MediaSource stream finalize/cleanup. MediaSource 미지원 또는 초기화 실패 시 기존 Blob playback fallback |
+| `error` | assistant error text로 노출하고 진행 중인 TTS playback buffer cleanup |
 | `node.updated`, `task.*` | BFF 변환 지점에서 의도적으로 drop |
 
-일반 assistant bubble에는 `main_agent` 답변만 표시합니다. reasoning, screen control agent, speech agent, TTS 상태는 왼쪽 sidebar 상단의 `Trace` 버튼으로 확장한 drawer에서 확인합니다.
+일반 assistant bubble에는 `main_agent` 답변만 표시합니다. Screen control agent, speech agent, TTS 상태는 왼쪽 sidebar 상단의 `Trace` 버튼으로 확장한 drawer에서 확인합니다.
+
+### TTS playback debug log
+
+TTS chunk가 Blob fallback으로 재생되는지, MediaSource stream으로 재생되는지 확인할 때는 브라우저 콘솔에서 debug log를 켭니다.
+
+```js
+localStorage.setItem("debug:tts", "1")
+location.reload()
+```
+
+또는 `/chat_page?debug_tts=1`처럼 query string으로 일회성 활성화할 수 있습니다. Chrome DevTools Console에서 `tts:`로 필터링하면 다음 이벤트를 볼 수 있습니다.
+
+| Console event | 확인 기준 |
+| --- | --- |
+| `[tts:chunk.received]` | frontend가 `data-audio` chunk를 받은 시점. `msSinceFirstChunk`는 첫 chunk 이후 경과 시간 |
+| `[tts:source-buffer.append.start]` / `[tts:source-buffer.append.done]` | MediaSource `SourceBuffer`에 chunk가 append되는 시점 |
+| `[tts:play.started]` | 실제 audio playback 시작 시점. `startedBeforeStreamCompleted: true`면 `tts.completed` 전에 재생이 시작된 streaming playback |
+| `[tts:stream.finalize]` | `data-audioDone` 수신 후 stream finalize 시점 |
+| `[tts:fallback.blob]` / `[tts:blob.create]` | MediaSource 미지원/실패로 Blob fallback 경로를 탄 시점 |
+| `[tts:cleanup.dispose]` | 새 메시지, reset, error, unmount 등으로 audio resource를 정리한 시점 |
+
+확인 후에는 로그를 끕니다.
+
+```js
+localStorage.removeItem("debug:tts")
+```
 
 ## 개발 명령
 
