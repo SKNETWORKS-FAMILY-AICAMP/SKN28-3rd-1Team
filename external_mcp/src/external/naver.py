@@ -90,6 +90,7 @@ def search_naver(
         for index, item in enumerate(payload.get("items") or [], start=1)
         if isinstance(item, dict)
     ]
+    warnings = [] if results else ["No Naver search results found."]
 
     return {
         "provider": "naver",
@@ -99,7 +100,7 @@ def search_naver(
         "count": len(results),
         "queried_at": queried_at,
         "results": results,
-        "warnings": [],
+        "warnings": warnings,
     }
 
 

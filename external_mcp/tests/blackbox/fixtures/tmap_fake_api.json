@@ -1,0 +1,196 @@
+{
+  "tmap.poi.gangnam_senior_welfare_center": {
+    "searchPoiInfo": {
+      "pois": {
+        "poi": [
+          {
+            "id": "gangnam-senior-001",
+            "name": "강남노인종합복지관",
+            "upperAddrName": "서울",
+            "middleAddrName": "강남구",
+            "lowerAddrName": "삼성동",
+            "detailAddrName": "66",
+            "telNo": "02-549-7070",
+            "upperBizName": "복지",
+            "frontLon": "127.05193243",
+            "frontLat": "37.51604471"
+          },
+          {
+            "id": "gangnam-senior-002",
+            "name": "강남구립논현노인종합복지관",
+            "upperAddrName": "서울",
+            "middleAddrName": "강남구",
+            "lowerAddrName": "논현동",
+            "detailAddrName": "125",
+            "telNo": "02-541-0226",
+            "upperBizName": "복지",
+            "frontLon": "127.0345",
+            "frontLat": "37.5119"
+          }
+        ]
+      }
+    }
+  },
+  "tmap.poi.busan_haeundae_senior_welfare": {
+    "searchPoiInfo": {
+      "pois": {
+        "poi": [
+          {
+            "id": "haeundae-senior-001",
+            "name": "해운대구노인복지관",
+            "upperAddrName": "부산",
+            "middleAddrName": "해운대구",
+            "lowerAddrName": "좌동",
+            "detailAddrName": "1341",
+            "telNo": "051-782-5005",
+            "upperBizName": "복지",
+            "frontLon": "129.1672",
+            "frontLat": "35.1704"
+          },
+          {
+            "id": "haeundae-senior-002",
+            "name": "해운대종합사회복지관",
+            "upperAddrName": "부산",
+            "middleAddrName": "해운대구",
+            "lowerAddrName": "반여동",
+            "detailAddrName": "1591",
+            "telNo": "051-781-5005",
+            "upperBizName": "복지",
+            "frontLon": "129.1324",
+            "frontLat": "35.195"
+          }
+        ]
+      }
+    }
+  },
+  "tmap.poi.daejeon_seogu_office": {
+    "searchPoiInfo": {
+      "pois": {
+        "poi": [
+          {
+            "id": "daejeon-seogu-office-001",
+            "name": "대전광역시 서구청",
+            "upperAddrName": "대전",
+            "middleAddrName": "서구",
+            "lowerAddrName": "둔산동",
+            "detailAddrName": "1300",
+            "telNo": "042-288-2114",
+            "upperBizName": "공공기관",
+            "frontLon": "127.3848",
+            "frontLat": "36.3554"
+          },
+          {
+            "id": "daejeon-seogu-office-002",
+            "name": "대전광역시 서구보건소",
+            "upperAddrName": "대전",
+            "middleAddrName": "서구",
+            "lowerAddrName": "만년동",
+            "detailAddrName": "340",
+            "telNo": "042-288-4500",
+            "upperBizName": "공공기관",
+            "frontLon": "127.3811",
+            "frontLat": "36.354"
+          }
+        ]
+      }
+    }
+  },
+  "tmap.route.gangnam_office_to_senior_center": {
+    "features": [
+      {
+        "type": "Feature",
+        "properties": {
+          "totalDistance": "610",
+          "totalTime": "481"
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "description": "강남구청 정문에서 삼성로 방면으로 120m 이동",
+          "distance": "120",
+          "time": "95",
+          "roadName": "학동로",
+          "turnType": "11"
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "description": "강남노인종합복지관 방면 횡단보도 이용 후 490m 이동",
+          "distance": "490",
+          "time": "386",
+          "roadName": "삼성로",
+          "turnType": "12"
+        }
+      }
+    ]
+  },
+  "tmap.route.haeundae_office_to_senior_center": {
+    "features": [
+      {
+        "type": "Feature",
+        "properties": {
+          "totalDistance": "920",
+          "totalTime": "742"
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "description": "해운대구청에서 좌동 방향으로 300m 이동",
+          "distance": "300",
+          "time": "240",
+          "roadName": "중동2로",
+          "turnType": "11"
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "description": "해운대구노인복지관 입구까지 보행자도로를 따라 이동",
+          "distance": "620",
+          "time": "502",
+          "roadName": "양운로",
+          "turnType": "12"
+        }
+      }
+    ]
+  },
+  "tmap.route.daejeon_office_to_health_center": {
+    "features": [
+      {
+        "type": "Feature",
+        "properties": {
+          "totalDistance": "540",
+          "totalTime": "430"
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "description": "대전 서구청 후문에서 보라매공원 방향으로 180m 이동",
+          "distance": "180",
+          "time": "142",
+          "roadName": "둔산서로",
+          "turnType": "11"
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "description": "서구보건소까지 횡단보도 이용 후 360m 이동",
+          "distance": "360",
+          "time": "288",
+          "roadName": "만년로",
+          "turnType": "12"
+        }
+      }
+    ]
+  },
+  "tmap.route.bad_request": {
+    "error": {
+      "message": "Invalid coordinate"
+    }
+  }
+}

@@ -42,6 +42,39 @@ class TmapClientTest(unittest.TestCase):
         self.assertEqual(result["lon"], 127.063)
         self.assertEqual(result["lat"], 37.514)
 
+    # 검색어의 지역 단서와 다른 구 POI가 섞이면 응답에서 제외하는지 확인한다.
+    def test_filter_poi_by_region_removes_other_district_results(self) -> None:
+        results = [
+            {
+                "position": 1,
+                "name": "어진샘노인종합복지관",
+                "address": "부산 해운대구 재송동",
+                "category": "복지",
+            },
+            {
+                "position": 2,
+                "name": "수영구노인복지관",
+                "address": "부산 수영구 남천동",
+                "category": "복지",
+            },
+            {
+                "position": 3,
+                "name": "장산노인복지관",
+                "address": "부산 해운대구 좌동",
+                "category": "복지",
+            },
+        ]
+
+        terms = tmap._poi_region_terms("해운대구노인복지관")  # noqa: SLF001
+        filtered, dropped = tmap._filter_poi_by_region(  # noqa: SLF001
+            results,
+            region_terms=terms,
+        )
+
+        self.assertEqual([row["name"] for row in filtered], ["어진샘노인종합복지관", "장산노인복지관"])
+        self.assertEqual([row["position"] for row in filtered], [1, 2])
+        self.assertEqual([row["name"] for row in dropped], ["수영구노인복지관"])
+
     # API key가 없을 때 길찾기도 warning result를 반환하는지 확인한다.
     def test_route_returns_warning_without_app_key(self) -> None:
         fake_settings = SimpleNamespace(tmap_app_key=None)

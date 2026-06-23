@@ -119,6 +119,8 @@ def search_firecrawl(
         query=normalized_query,
     )
     warnings = _warnings(data)
+    if not results:
+        warnings.append("No Firecrawl search results found.")
 
     return {
         "provider": "firecrawl",

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from datetime import UTC, datetime
 from typing import Any
 
@@ -9,6 +11,8 @@ from pydantic import SecretStr
 from settings import settings
 
 _TMAP_BASE_URL = "https://apis.openapi.sk.com/tmap"
+_REGION_TERM_PATTERN = re.compile(r"[가-힣]{2,}(?:특별시|광역시|자치시|자치도|도|시|군|구)")
+_FACILITY_REGION_HINT_PATTERN = re.compile(r"([가-힣]{2,}?)(?:노인|복지|요양|치매|구청|보건소)")
 
 
 # TMAP POI 검색 API를 호출해서 장소 후보와 좌표를 반환한다.
@@ -96,6 +100,14 @@ def search_tmap_poi(
         for index, item in enumerate(pois, start=1)
         if isinstance(item, dict)
     ]
+    region_terms = _poi_region_terms(normalized_keyword)
+    results, dropped_results = _filter_poi_by_region(
+        results,
+        region_terms=region_terms,
+    )
+    warnings = [] if results else ["No TMAP POI results found."]
+    if dropped_results:
+        warnings.append(_filtered_poi_warning(dropped_results))
 
     return {
         "provider": "tmap",
@@ -104,8 +116,88 @@ def search_tmap_poi(
         "count": len(results),
         "searched_at": searched_at,
         "results": results,
-        "warnings": [],
+        "warnings": warnings,
     }
+
+
+# 검색어에 지역명이 들어간 경우, 다른 구/군 POI가 섞이지 않도록 응답 후처리에 쓸 지역 단서를 만든다.
+def _poi_region_terms(keyword: str) -> list[str]:
+    """검색어에서 TMAP POI 지역 필터에 쓸 단어를 추출한다."""
+
+    terms: list[str] = []
+    normalized = "".join(keyword.split())
+
+    for pattern in (_REGION_TERM_PATTERN, _FACILITY_REGION_HINT_PATTERN):
+        for match in pattern.finditer(normalized):
+            term = match.group(1) if match.lastindex else match.group(0)
+            _append_region_term(terms, term)
+
+    return terms
+
+
+def _append_region_term(terms: list[str], term: str) -> None:
+    normalized = term.strip()
+    if not normalized:
+        return
+
+    if normalized not in terms:
+        terms.append(normalized)
+
+    for suffix in ("특별시", "광역시", "자치시", "자치도", "도", "시", "군", "구"):
+        if normalized.endswith(suffix):
+            alias = normalized[: -len(suffix)]
+            if len(alias) >= 2 and alias not in terms:
+                terms.append(alias)
+            break
+
+
+def _filter_poi_by_region(
+    results: list[dict[str, Any]],
+    *,
+    region_terms: list[str],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    if not results or not region_terms:
+        return results, []
+
+    matched: list[dict[str, Any]] = []
+    dropped: list[dict[str, Any]] = []
+
+    for result in results:
+        text = " ".join(
+            str(result.get(key) or "")
+            for key in ("name", "address", "category")
+        )
+        if any(term in text for term in region_terms):
+            matched.append(result)
+        else:
+            dropped.append(result)
+
+    if not matched:
+        return results, []
+
+    return _renumber_poi_results(matched), dropped
+
+
+def _renumber_poi_results(results: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    renumbered: list[dict[str, Any]] = []
+    for index, result in enumerate(results, start=1):
+        row = dict(result)
+        row["position"] = index
+        renumbered.append(row)
+    return renumbered
+
+
+def _filtered_poi_warning(dropped_results: list[dict[str, Any]]) -> str:
+    names = [
+        str(result.get("name") or result.get("address") or "").strip()
+        for result in dropped_results[:3]
+    ]
+    visible_names = ", ".join(name for name in names if name)
+    suffix = f": {visible_names}" if visible_names else ""
+    return (
+        f"Filtered out {len(dropped_results)} TMAP POI result(s) "
+        f"outside requested region terms{suffix}"
+    )
 
 
 # TMAP POI item 하나를 frontend와 agent가 쓰기 쉬운 형태로 바꾼다.
@@ -240,6 +332,7 @@ def route_tmap_pedestrian(
     features = data.get("features") or []
     summary = _route_summary(features)
     steps = _route_steps(features)
+    warnings = [] if features else ["No TMAP pedestrian route features found."]
 
     return {
         "provider": "tmap",
@@ -259,7 +352,7 @@ def route_tmap_pedestrian(
         "distance_meters": summary.get("distance_meters"),
         "duration_seconds": summary.get("duration_seconds"),
         "steps": steps,
-        "warnings": [],
+        "warnings": warnings,
     }
 
 

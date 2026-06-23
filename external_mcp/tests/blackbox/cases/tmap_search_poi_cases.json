@@ -1,0 +1,126 @@
+[
+  {
+    "id": "TMAP-POI-001",
+    "tool": "tmap.search_poi",
+    "description": "강남노인종합복지관 POI 검색이 지도 표시용 좌표를 반환하는지 확인한다.",
+    "arguments": {
+      "keyword": "강남노인종합복지관",
+      "limit": 3,
+      "center_lon": 127.0473,
+      "center_lat": 37.5172,
+      "radius_km": 5
+    },
+    "fake_api": {
+      "fixture": "tmap.poi.gangnam_senior_welfare_center",
+      "status_code": 200
+    },
+    "expected": {
+      "success": true,
+      "min_count": 2,
+      "required_paths": [
+        "results.0.name",
+        "results.0.address",
+        "results.0.lon",
+        "results.0.lat"
+      ],
+      "contains": [
+        {
+          "path": "results.0.name",
+          "text": "강남노인종합복지관"
+        },
+        {
+          "path": "results.0.address",
+          "text": "서울 강남구"
+        }
+      ]
+    }
+  },
+  {
+    "id": "TMAP-POI-002",
+    "tool": "tmap.search_poi",
+    "description": "부산 해운대구 노인복지관 POI 검색이 지역 내 복지관 후보를 반환하는지 확인한다.",
+    "arguments": {
+      "keyword": "해운대구노인복지관",
+      "limit": 3,
+      "center_lon": 129.1636,
+      "center_lat": 35.1631,
+      "radius_km": 6
+    },
+    "fake_api": {
+      "fixture": "tmap.poi.busan_haeundae_senior_welfare",
+      "status_code": 200
+    },
+    "expected": {
+      "success": true,
+      "min_count": 2,
+      "required_paths": [
+        "results.0.name",
+        "results.0.address",
+        "results.0.category"
+      ],
+      "contains": [
+        {
+          "path": "results.0.name",
+          "text": "해운대구노인복지관"
+        },
+        {
+          "path": "results.0.address",
+          "text": "부산 해운대구"
+        }
+      ]
+    }
+  },
+  {
+    "id": "TMAP-POI-003",
+    "tool": "tmap.search_poi",
+    "description": "대전 서구청 검색이 정책 상담을 위한 공공기관 장소 후보를 반환하는지 확인한다.",
+    "arguments": {
+      "keyword": "대전 서구청",
+      "limit": 3,
+      "center_lon": 127.3848,
+      "center_lat": 36.3554,
+      "radius_km": 4
+    },
+    "fake_api": {
+      "fixture": "tmap.poi.daejeon_seogu_office",
+      "status_code": 200
+    },
+    "expected": {
+      "success": true,
+      "min_count": 2,
+      "required_paths": [
+        "results.0.name",
+        "results.0.address",
+        "results.0.lon",
+        "results.0.lat"
+      ],
+      "contains": [
+        {
+          "path": "results.0.name",
+          "text": "대전광역시 서구청"
+        },
+        {
+          "path": "results.0.address",
+          "text": "대전 서구"
+        }
+      ]
+    }
+  },
+  {
+    "id": "TMAP-POI-EDGE-004",
+    "tool": "tmap.search_poi",
+    "description": "빈 keyword가 들어오면 외부 API를 호출하지 않고 warning response를 반환하는지 확인한다.",
+    "arguments": {
+      "keyword": " ",
+      "limit": 3
+    },
+    "fake_api": null,
+    "expected": {
+      "success": false,
+      "count": 0,
+      "warnings_contain": [
+        "keyword must not be empty"
+      ]
+    }
+  }
+]
