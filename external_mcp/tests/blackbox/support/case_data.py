@@ -8,7 +8,7 @@ from typing import Any
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 CASES_DIR = BASE_DIR / "cases"
-FIXTURES_DIR = BASE_DIR / "fixtures"
+FAKE_API_RESPONSES_DIR = BASE_DIR / "fake_api_responses"
 RUN_LOGS_DIR = BASE_DIR / "run_logs"
 RESULTS_DIR = BASE_DIR / "results"
 
@@ -19,7 +19,7 @@ CASE_FILES = [
     "tmap_route_pedestrian_cases.json",
 ]
 
-FIXTURE_FILES = [
+FAKE_API_RESPONSE_FILES = [
     "naver_fake_api.json",
     "firecrawl_fake_api.json",
     "tmap_fake_api.json",
@@ -37,8 +37,8 @@ def load_cases() -> list[dict[str, Any]]:
     return cases
 
 
-def load_fixture_map() -> dict[str, dict[str, Any]]:
-    fixtures: dict[str, dict[str, Any]] = {}
-    for filename in FIXTURE_FILES:
-        fixtures.update(read_json(FIXTURES_DIR / filename))
-    return fixtures
+def load_fake_api_response_map() -> dict[str, dict[str, Any]]:
+    fake_api_responses: dict[str, dict[str, Any]] = {}
+    for filename in FAKE_API_RESPONSE_FILES:
+        fake_api_responses.update(read_json(FAKE_API_RESPONSES_DIR / filename))
+    return fake_api_responses

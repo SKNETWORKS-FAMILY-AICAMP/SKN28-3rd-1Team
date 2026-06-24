@@ -63,9 +63,10 @@ class ChatGraphRunner:
             },
         )
         started_tool_calls: set[str] = set()
+        graph_config = _graph_run_config(thread_id=thread_id, metadata=metadata)
         async for event in graph.astream(
             state,
-            config={"configurable": {"thread_id": thread_id}},
+            config=graph_config,
             stream_mode=["messages", "custom", "updates", "tasks"],
             subgraphs=True,
             version="v2",
@@ -452,3 +453,32 @@ def _initial_state(
         base_state["application_state"] = app_state
 
     return base_state
+
+
+def _graph_run_config(
+    *,
+    thread_id: str,
+    metadata: dict[str, Any] | None,
+) -> dict[str, Any]:
+    config: dict[str, Any] = {
+        "configurable": {"thread_id": thread_id},
+    }
+    normalized_metadata = metadata or {}
+    if normalized_metadata:
+        config["metadata"] = normalized_metadata
+
+    run_name = _langsmith_run_name(normalized_metadata)
+    if run_name:
+        config["run_name"] = run_name
+    return config
+
+
+def _langsmith_run_name(metadata: dict[str, Any]) -> str | None:
+    explicit_name = metadata.get("langsmith_run_name")
+    if isinstance(explicit_name, str) and explicit_name.strip():
+        return explicit_name.strip()
+
+    test_case_id = metadata.get("test_case_id")
+    if isinstance(test_case_id, str) and test_case_id.strip():
+        return test_case_id.strip()
+    return None

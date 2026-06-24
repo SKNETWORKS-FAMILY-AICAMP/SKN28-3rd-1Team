@@ -26,8 +26,12 @@ class FakeMessage:
 class FakeGraph:
     def __init__(self, events: list[dict[str, Any]]) -> None:
         self._events = events
+        self.configs: list[dict[str, Any]] = []
 
-    async def astream(self, *_: Any, **__: Any):
+    async def astream(self, *_: Any, **kwargs: Any):
+        config = kwargs.get("config")
+        if isinstance(config, dict):
+            self.configs.append(config)
         for event in self._events:
             yield event
 
@@ -327,6 +331,48 @@ class ChatGraphRunnerStreamingTest(unittest.IsolatedAsyncioTestCase):
                 },
             ],
         )
+
+    async def test_metadata_test_case_id_sets_langsmith_run_name(self) -> None:
+        graph = FakeGraph([])
+        runner = ChatGraphRunner(thread_context=ChatThreadContextStore())
+        runner._graph = graph
+
+        events = [
+            event
+            async for event in runner.run_stream(
+                "hello",
+                session_id="conversation-1",
+                metadata={"test_case_id": "AGENT-EXT-001"},
+            )
+        ]
+
+        self.assertEqual(events, [])
+        self.assertEqual(graph.configs[0]["run_name"], "AGENT-EXT-001")
+        self.assertEqual(graph.configs[0]["metadata"]["test_case_id"], "AGENT-EXT-001")
+        self.assertEqual(
+            graph.configs[0]["configurable"],
+            {"thread_id": "conversation-1"},
+        )
+
+    async def test_metadata_langsmith_run_name_overrides_test_case_id(self) -> None:
+        graph = FakeGraph([])
+        runner = ChatGraphRunner(thread_context=ChatThreadContextStore())
+        runner._graph = graph
+
+        events = [
+            event
+            async for event in runner.run_stream(
+                "hello",
+                session_id="conversation-1",
+                metadata={
+                    "test_case_id": "AGENT-EXT-001",
+                    "langsmith_run_name": "manual-name",
+                },
+            )
+        ]
+
+        self.assertEqual(events, [])
+        self.assertEqual(graph.configs[0]["run_name"], "manual-name")
 
 
 if __name__ == "__main__":

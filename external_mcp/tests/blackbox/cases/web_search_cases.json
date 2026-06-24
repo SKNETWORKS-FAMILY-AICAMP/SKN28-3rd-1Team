@@ -6,12 +6,18 @@
     "arguments": {
       "query": "강남구 노인복지 정책 공식",
       "limit": 3,
+      "sources": [
+        "web"
+      ],
       "include_markdown": false,
+      "include_domains": [
+        "gangnam.go.kr"
+      ],
       "location": "Seoul, South Korea",
       "time_range": "any"
     },
     "fake_api": {
-      "fixture": "firecrawl.gangnam_elderly_policy",
+      "response": "firecrawl.gangnam_elderly_policy",
       "status_code": 200
     },
     "expected": {
@@ -46,7 +52,7 @@
       "time_range": "any"
     },
     "fake_api": {
-      "fixture": "firecrawl.daejeon_seogu_senior_welfare",
+      "response": "firecrawl.daejeon_seogu_senior_welfare",
       "status_code": 200
     },
     "expected": {
@@ -81,7 +87,7 @@
       "time_range": "any"
     },
     "fake_api": {
-      "fixture": "firecrawl.gwangju_bukgu_dementia_center",
+      "response": "firecrawl.gwangju_bukgu_dementia_center",
       "status_code": 200
     },
     "expected": {
@@ -116,7 +122,7 @@
       "time_range": "any"
     },
     "fake_api": {
-      "fixture": "firecrawl.no_results",
+      "response": "firecrawl.no_results",
       "status_code": 200
     },
     "expected": {

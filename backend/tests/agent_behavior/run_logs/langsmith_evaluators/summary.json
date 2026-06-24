@@ -1,0 +1,21 @@
+{
+  "generated_at": "2026-06-24T08:17:10.649711+00:00",
+  "run_id": "20260624T081520418629Z",
+  "scope": "backend agent LangSmith evaluators",
+  "upload_results": false,
+  "experiment_prefix": "skn28-agent-safety-eval",
+  "experiment_name": "enchanted-reaction-30",
+  "experiment_url": null,
+  "chat_stream_url": "http://127.0.0.1:8003/chat/stream",
+  "case_files": [
+    "/home/vosnuevo/workspace/SKN28-3rd-1Team/backend/tests/agent_behavior/cases/agent_behavior_cases.json",
+    "/home/vosnuevo/workspace/SKN28-3rd-1Team/backend/tests/agent_behavior/cases/langsmith_evaluator_cases.json"
+  ],
+  "total": 9,
+  "passed": 9,
+  "failed": 0,
+  "result_csv": "/home/vosnuevo/workspace/SKN28-3rd-1Team/backend/tests/agent_behavior/results/agent_behavior_eval_results.csv",
+  "request_log": "/home/vosnuevo/workspace/SKN28-3rd-1Team/backend/tests/agent_behavior/run_logs/langsmith_evaluators/requests.jsonl",
+  "response_log": "/home/vosnuevo/workspace/SKN28-3rd-1Team/backend/tests/agent_behavior/run_logs/langsmith_evaluators/responses.jsonl",
+  "sse_dir": "/home/vosnuevo/workspace/SKN28-3rd-1Team/backend/tests/agent_behavior/run_logs/langsmith_evaluators/sse"
+}

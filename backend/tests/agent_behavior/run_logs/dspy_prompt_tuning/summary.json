@@ -1,0 +1,14 @@
+{
+  "scope": "DSPy prompt tuning baseline",
+  "config": "/home/vosnuevo/workspace/SKN28-3rd-1Team/backend/tests/agent_behavior/cases/dspy_prompt_tuning_cases.json",
+  "source_eval_csv": "/home/vosnuevo/workspace/SKN28-3rd-1Team/backend/tests/agent_behavior/results/agent_behavior_eval_results.csv",
+  "output_csv": "/home/vosnuevo/workspace/SKN28-3rd-1Team/backend/tests/agent_behavior/results/dspy_prompt_tuning_results.csv",
+  "prompt_version": "baseline_v1",
+  "prompt_path": "/home/vosnuevo/workspace/SKN28-3rd-1Team/backend/tests/agent_behavior/prompts/baseline_v1/system_prompt.j2",
+  "total": 9,
+  "passed": 9,
+  "split_counts": {
+    "eval": 5,
+    "train": 4
+  }
+}

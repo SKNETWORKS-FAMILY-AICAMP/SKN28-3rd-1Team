@@ -8,7 +8,7 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
-REPO_TESTS_DIR = Path(__file__).resolve().parents[1]
+REPO_TESTS_DIR = Path(__file__).resolve().parents[2]
 REPO_SRC_DIR = REPO_TESTS_DIR.parent / "src"
 for import_path in (REPO_TESTS_DIR, REPO_SRC_DIR):
     if str(import_path) not in sys.path:
@@ -17,7 +17,7 @@ for import_path in (REPO_TESTS_DIR, REPO_SRC_DIR):
 from blackbox.runners.server_call_runner import run_server_call_cases
 from blackbox.support.case_data import RESULTS_DIR, RUN_LOGS_DIR, read_json
 
-LIVE_CASES_FILE = Path(__file__).with_name("cases") / "live_mcp_cases.json"
+LIVE_CASES_FILE = Path(__file__).resolve().parents[1] / "cases" / "live_mcp_cases.json"
 LIVE_SERVER_LOG_DIR = RUN_LOGS_DIR / "live_server_call"
 LIVE_SERVER_SUMMARY = LIVE_SERVER_LOG_DIR / "summary.json"
 LIVE_RESULTS_CSV = RESULTS_DIR / "live_api_results.csv"
@@ -41,7 +41,7 @@ async def main() -> int:
         print("Run this through Infisical, for example:")
         print(
             "infisical run --projectId <external-mcp-project-id> "
-            "--env dev --path / -- uv run python tests/blackbox/run_live_api_test.py"
+            "--env dev --path / -- uv run python tests/blackbox/scripts/run_live_api_test.py"
         )
         return 2
 

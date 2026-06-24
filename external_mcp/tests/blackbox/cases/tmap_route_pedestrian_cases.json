@@ -12,7 +12,7 @@
       "end_name": "강남노인종합복지관"
     },
     "fake_api": {
-      "fixture": "tmap.route.gangnam_office_to_senior_center",
+      "response": "tmap.route.gangnam_office_to_senior_center",
       "status_code": 200
     },
     "expected": {
@@ -45,7 +45,7 @@
       "end_name": "해운대구노인복지관"
     },
     "fake_api": {
-      "fixture": "tmap.route.haeundae_office_to_senior_center",
+      "response": "tmap.route.haeundae_office_to_senior_center",
       "status_code": 200
     },
     "expected": {
@@ -74,7 +74,7 @@
       "end_name": "서구보건소"
     },
     "fake_api": {
-      "fixture": "tmap.route.daejeon_office_to_health_center",
+      "response": "tmap.route.daejeon_office_to_health_center",
       "status_code": 200
     },
     "expected": {
@@ -103,13 +103,17 @@
       "end_name": "강남노인종합복지관"
     },
     "fake_api": {
-      "fixture": "tmap.route.bad_request",
+      "response": "tmap.route.bad_request",
       "status_code": 400
     },
     "expected": {
       "success": false,
       "distance_meters": null,
       "duration_seconds": null,
+      "required_paths": [
+        "start",
+        "end"
+      ],
       "warnings_contain": [
         "TMAP pedestrian route failed"
       ]

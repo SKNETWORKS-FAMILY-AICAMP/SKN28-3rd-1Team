@@ -8,7 +8,7 @@
 
 노인·고령층 상담 agent가 RAG 문서 검색 외에도 외부 정보를 안전하게 조회할 수 있는지 확인하기 위해 External MCP tool 4개를 black-box 방식으로 검증했다.
 
-이번 테스트는 fake API fixture 검증과 실제 API live 검증을 분리해서 수행한다. 먼저 각 API의 raw response DTO를 흉내 낸 fake fixture로 MCP request/response 구조를 고정하고, 이후 Infisical secret을 주입해 실제 Naver, Firecrawl, TMAP API를 호출한다.
+이번 테스트는 fake API response 검증과 실제 API live 검증을 분리해서 수행한다. 먼저 각 API의 raw response DTO를 흉내 낸 fake response로 MCP request/response 구조를 고정하고, 이후 Infisical secret을 주입해 실제 Naver, Firecrawl, TMAP API를 호출한다.
 
 주의할 점은 이번 테스트가 backend `/chat/stream`까지 연결한 통합 검증은 아니라는 것이다. 이번에 새로 확인한 범위는 External MCP 서버 내부의 tool contract, fake API 요청, 정규화된 MCP 응답, 그리고 MCP HTTP client가 실제로 `list_tools`와 `call_tool`을 수행하는 연결이다. backend agent가 질문을 보고 어떤 tool을 선택하는지는 별도 end-to-end 테스트에서 확인해야 한다.
 
@@ -45,7 +45,7 @@
 ## 검증 방법
 
 1. JSON case 파일에 tool 이름, 입력값, 기대 결과를 정의한다.
-2. fake API fixture에 실제 외부 API와 비슷한 raw response DTO를 저장한다.
+2. `tests/blackbox/fake_api_responses/`에 실제 외부 API와 비슷한 raw response DTO를 저장한다.
 3. 테스트 코드에서 `httpx.Client`를 fake client로 patch한다.
 4. External MCP ASGI 앱을 임시 HTTP 포트에 띄운다.
 5. MCP client가 `list_tools`로 4개 tool 노출을 확인한다.
@@ -79,14 +79,16 @@
 
 ```bash
 cd external_mcp
-PYTHONPATH=src uv run python -m unittest discover -s tests
+uv run python tests/blackbox/scripts/run_fake_api_test.py
+infisical run --projectId <external-mcp-project-id> --env dev --path / -- \
+  uv run python tests/blackbox/scripts/run_live_api_test.py
 ```
 
 결과:
 
 ```text
-Ran 11 tests
-OK
+Fake MCP cases: total=16 passed=16 failed=0
+Live MCP cases: total=12 passed=12 failed=0
 ```
 
 Black-box 세부 결과:
@@ -111,7 +113,7 @@ live server call: 12 cases passed, 0 failed
 
 | 평가 질문 | 반영 내용 |
 | --- | --- |
-| 주요 기능 테스트 항목과 방법이 적절한가 | tool별 JSON test case와 fake API fixture로 입력/요청/응답을 분리해 검증 |
+| 주요 기능 테스트 항목과 방법이 적절한가 | tool별 JSON test case와 fake API response로 입력/요청/응답을 분리해 검증 |
 | 질문 입력, API 요청, LLM 응답 출력 등 핵심 기능이 검증되었는가 | 이번 범위에서는 LLM 응답 출력이 아니라 MCP 입력, fake API 요청, MCP HTTP 연결, MCP 응답 DTO를 검증. backend agent end-to-end 검증은 별도 과제로 분리 |
 | 빈 입력, 잘못된 요청, 응답 실패, 답변 불가 상황이 테스트되었는가 | 빈 query/keyword, 검색 결과 없음, TMAP API 실패를 포함 |
 | 테스트 결과와 발견 문제, 수정 사항이 정리되었는가 | artifacts와 이 보고서에 결과 및 edge warning 개선 사항을 기록 |

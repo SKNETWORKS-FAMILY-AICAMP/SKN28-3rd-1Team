@@ -87,7 +87,7 @@ async def run_server_call_cases(
     result_csv: Path,
     summary_path: Path,
     summary_scope: str,
-    fixtures: dict[str, dict[str, Any]] | None = None,
+    fake_api_responses: dict[str, dict[str, Any]] | None = None,
     verbose: bool = False,
 ) -> ServerCallRunResult:
     log_dir.mkdir(parents=True, exist_ok=True)
@@ -130,7 +130,7 @@ async def run_server_call_cases(
                         listed_tools=tool_names,
                         mcp_url=url,
                         fake_httpx=fake_httpx,
-                        fixtures=fixtures or {},
+                        fake_api_responses=fake_api_responses or {},
                         requests_artifact=requests_artifact,
                         responses_artifact=responses_artifact,
                     )
@@ -186,7 +186,7 @@ async def _call_case(
     listed_tools: list[str],
     mcp_url: str,
     fake_httpx: MutableFakeHttpx | None,
-    fixtures: dict[str, dict[str, Any]],
+    fake_api_responses: dict[str, dict[str, Any]],
     requests_artifact: Path,
     responses_artifact: Path,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
@@ -196,8 +196,8 @@ async def _call_case(
         if fake_httpx is None:
             raise RuntimeError("fake_httpx is required when mode='fake'.")
         fake_api = case.get("fake_api") or {}
-        fixture_name = fake_api.get("fixture")
-        payload = fixtures.get(fixture_name, {}) if fixture_name else {}
+        response_name = fake_api.get("response")
+        payload = fake_api_responses.get(response_name, {}) if response_name else {}
         status_code = int(fake_api.get("status_code", 200))
         fake_api_requests: list[dict[str, Any]] = []
         fake_httpx.set_response(
@@ -207,7 +207,7 @@ async def _call_case(
         )
         request_extra = {
             "fake_api": {
-                "fixture": fixture_name,
+                "response": response_name,
                 "status_code": status_code,
                 "requests": fake_api_requests,
             }

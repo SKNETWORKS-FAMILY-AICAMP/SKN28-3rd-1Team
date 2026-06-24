@@ -21,3 +21,14 @@ class ServerToolRegistrationTest(unittest.TestCase):
                 "web.search",
             ],
         )
+
+    # Firecrawl MCP tool이 검색 source와 도메인 필터 인자를 노출하는지 확인한다.
+    def test_web_search_exposes_firecrawl_filters(self) -> None:
+        mcp = create_external_mcp()
+
+        schema = mcp._tool_manager._tools["web.search"].parameters  # noqa: SLF001
+        properties = schema["properties"]
+
+        self.assertIn("sources", properties)
+        self.assertIn("include_domains", properties)
+        self.assertIn("exclude_domains", properties)

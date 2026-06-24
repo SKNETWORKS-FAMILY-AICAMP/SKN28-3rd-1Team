@@ -319,6 +319,10 @@ make env-check
 | `LLM_PROVIDER_OPENAI_API_KEY` | 빈 값 | `LLM_AGENT_*_PROVIDER=openai`일 때 필요한 OpenAI API 키 |
 | `LLM_PROVIDER_OPENROUTER_API_KEY` | 빈 값 | `LLM_AGENT_*_PROVIDER=openrouter`일 때 필요한 OpenRouter API 키 |
 | `LLM_PROVIDER_CEREBRAS_API_KEY` | 빈 값 | `LLM_AGENT_*_PROVIDER=cerebras`일 때 필요한 Cerebras API 키 |
+| `LANGSMITH_API_KEY` | Infisical dev secret | LangSmith trace 전송에 필요한 API key. 값은 `backend/.env.schema`에 두지 않고 Infisical에서 주입한다. |
+| `LANGSMITH_TRACING` | `false` | LangSmith trace 수집 여부. baseline이나 agent 행동 테스트 때만 `true`로 켠다. |
+| `LANGSMITH_PROJECT` | `skn28-backend-agent-dev` | LangSmith에서 trace를 모을 project 이름 |
+| `LANGSMITH_ENDPOINT` | 빈 값 | LangSmith SDK 기본 endpoint 사용. EU/APAC 등 별도 region이면 endpoint를 설정한다. |
 | `LLM_AGENT_MAIN_PROVIDER` | `cerebras` | main agent provider. `openai`, `openrouter`, `cerebras` |
 | `LLM_AGENT_MAIN_MODEL` | `zai-glm-4.7` | main agent가 사용할 모델 |
 | `LLM_AGENT_MAIN_REASONING_EFFORT` | `high` | reasoning effort 지원 provider에서 main agent에 전달할 effort |

@@ -5,6 +5,8 @@ from types import SimpleNamespace
 from typing import Any
 from unittest.mock import patch
 
+import httpx
+
 from pydantic import SecretStr
 
 from external import firecrawl, naver, tmap
@@ -17,7 +19,13 @@ class FakeResponse:
 
     def raise_for_status(self) -> None:
         if self.status_code >= 400:
-            raise RuntimeError(f"Fake HTTP {self.status_code}")
+            request = httpx.Request("GET", "https://fake.local")
+            response = httpx.Response(self.status_code, request=request)
+            raise httpx.HTTPStatusError(
+                f"Fake HTTP {self.status_code}",
+                request=request,
+                response=response,
+            )
 
     def json(self) -> dict[str, Any]:
         return self._payload
@@ -75,6 +83,10 @@ class RecordingFakeClient:
 
 
 class MutableFakeHttpx:
+    HTTPError = httpx.HTTPError
+    HTTPStatusError = httpx.HTTPStatusError
+    RequestError = httpx.RequestError
+
     def __init__(self) -> None:
         self.payload: dict[str, Any] = {}
         self.status_code = 200

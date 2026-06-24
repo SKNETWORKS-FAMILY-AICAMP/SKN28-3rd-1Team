@@ -9,7 +9,7 @@
       "limit": 3
     },
     "fake_api": {
-      "fixture": "naver.gangnam_senior_welfare_center",
+      "response": "naver.gangnam_senior_welfare_center",
       "status_code": 200
     },
     "expected": {
@@ -43,7 +43,7 @@
       "limit": 3
     },
     "fake_api": {
-      "fixture": "naver.busan_haeundae_senior_welfare",
+      "response": "naver.busan_haeundae_senior_welfare",
       "status_code": 200
     },
     "expected": {
@@ -76,7 +76,7 @@
       "limit": 3
     },
     "fake_api": {
-      "fixture": "naver.incheon_yeonsu_nursing_home",
+      "response": "naver.incheon_yeonsu_nursing_home",
       "status_code": 200
     },
     "expected": {

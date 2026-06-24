@@ -11,7 +11,7 @@
       "radius_km": 5
     },
     "fake_api": {
-      "fixture": "tmap.poi.gangnam_senior_welfare_center",
+      "response": "tmap.poi.gangnam_senior_welfare_center",
       "status_code": 200
     },
     "expected": {
@@ -47,7 +47,7 @@
       "radius_km": 6
     },
     "fake_api": {
-      "fixture": "tmap.poi.busan_haeundae_senior_welfare",
+      "response": "tmap.poi.busan_haeundae_senior_welfare",
       "status_code": 200
     },
     "expected": {
@@ -82,7 +82,7 @@
       "radius_km": 4
     },
     "fake_api": {
-      "fixture": "tmap.poi.daejeon_seogu_office",
+      "response": "tmap.poi.daejeon_seogu_office",
       "status_code": 200
     },
     "expected": {

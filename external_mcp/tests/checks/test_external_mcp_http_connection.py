@@ -7,7 +7,7 @@ from blackbox.support.case_data import (
     RESULTS_DIR,
     RUN_LOGS_DIR,
     load_cases,
-    load_fixture_map,
+    load_fake_api_response_map,
 )
 
 
@@ -21,11 +21,11 @@ class ExternalMcpHttpConnectionTest(unittest.IsolatedAsyncioTestCase):
         result = await run_server_call_cases(
             mode="fake",
             cases=load_cases(),
-            fixtures=load_fixture_map(),
+            fake_api_responses=load_fake_api_response_map(),
             log_dir=FAKE_SERVER_LOG_DIR,
             result_csv=FAKE_RESULTS_CSV,
             summary_path=FAKE_SERVER_SUMMARY,
-            summary_scope="external_mcp MCP server-call tests with fake API fixtures",
+            summary_scope="external_mcp MCP server-call tests with fake API responses",
         )
 
         self.assertEqual(result.failed, 0, "\n".join(result.error_messages))

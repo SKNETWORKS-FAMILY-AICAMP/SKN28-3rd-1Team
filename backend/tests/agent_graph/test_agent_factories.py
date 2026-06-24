@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import unittest
+
+from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
 import agents.main_agent.agent as main_agent
@@ -21,6 +23,24 @@ class AgentFactoryTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(first, "main-1")
         self.assertEqual(second, "main-2")
         self.assertEqual(create_agent.call_count, 2)
+
+    async def test_main_agent_factory_accepts_prompt_path_override(self) -> None:
+        override_path = Path("/tmp/skn28-main-agent-candidate.j2")
+        with (
+            patch.dict(
+                main_agent.os.environ,
+                {"MAIN_AGENT_SYSTEM_PROMPT_PATH": str(override_path)},
+            ),
+            patch.object(main_agent, "get_main", return_value=object()),
+            patch.object(main_agent, "get_tools", new=AsyncMock(return_value=[])),
+            patch.object(main_agent, "render_prompt", return_value="candidate prompt") as render_prompt,
+            patch.object(main_agent, "create_agent", return_value="main") as create_agent,
+        ):
+            result = await main_agent.create_main_agent()
+
+        self.assertEqual(result, "main")
+        render_prompt.assert_called_once_with(override_path)
+        self.assertEqual(create_agent.call_args.kwargs["system_prompt"], "candidate prompt")
 
     async def test_screen_control_agent_factory_does_not_cache_agent_instance(self) -> None:
         with (

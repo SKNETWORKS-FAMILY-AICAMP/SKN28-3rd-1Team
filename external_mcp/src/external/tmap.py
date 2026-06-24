@@ -1,18 +1,23 @@
 from __future__ import annotations
 
+import logging
+import math
 import re
 
 from datetime import UTC, datetime
 from typing import Any
+from urllib.parse import quote
 
 import httpx
 
-from pydantic import SecretStr
+from external._utils import bounded_limit, secret_value
 from settings import settings
 
 _TMAP_BASE_URL = "https://apis.openapi.sk.com/tmap"
+_NAVER_MAP_WEB_BASE_URL = "https://map.naver.com"
 _REGION_TERM_PATTERN = re.compile(r"[가-힣]{2,}(?:특별시|광역시|자치시|자치도|도|시|군|구)")
 _FACILITY_REGION_HINT_PATTERN = re.compile(r"([가-힣]{2,}?)(?:노인|복지|요양|치매|구청|보건소)")
+logger = logging.getLogger(__name__)
 
 
 # TMAP POI 검색 API를 호출해서 장소 후보와 좌표를 반환한다.
@@ -35,7 +40,7 @@ def search_tmap_poi(
             warning="keyword must not be empty.",
         )
 
-    app_key = _secret_value(settings.tmap_app_key)
+    app_key = secret_value(settings.tmap_app_key)
 
     if not app_key:
         return _failure(
@@ -44,7 +49,11 @@ def search_tmap_poi(
             warning="TMAP app key is missing.",
         )
 
-    safe_limit = _bounded_limit(limit)
+    safe_limit = bounded_limit(
+        limit,
+        default_limit=settings.search_default_limit,
+        max_limit=settings.search_max_limit,
+    )
     url = f"{_TMAP_BASE_URL}/pois"
 
     params: dict[str, Any] = {
@@ -76,7 +85,8 @@ def search_tmap_poi(
         response.raise_for_status()
         payload = response.json()
 
-    except Exception as exc:  # noqa: BLE001
+    except httpx.HTTPError as exc:
+        logger.warning("TMAP POI search failed: %s", exc)
         return _failure(
             keyword=normalized_keyword,
             searched_at=searched_at,
@@ -204,16 +214,25 @@ def _filtered_poi_warning(dropped_results: list[dict[str, Any]]) -> str:
 def _normalize_poi(item: dict[str, Any], *, position: int) -> dict[str, Any]:
     """TMAP POI 한 개를 frontend와 agent가 쓰기 쉬운 형태로 바꾼다."""
 
+    name = _text(item.get("name"))
+    address = _join_address(item)
+    lon = _float_or_none(item.get("frontLon") or item.get("noorLon"))
+    lat = _float_or_none(item.get("frontLat") or item.get("noorLat"))
+
+    place_url = _naver_map_place_url(_map_query(name=name, address=address))
+
     return {
         "provider": "tmap",
         "position": position,
-        "name": _text(item.get("name")),
-        "address": _join_address(item),
+        "name": name,
+        "address": address,
         "phone": _text(item.get("telNo")),
         "category": _text(item.get("upperBizName")),
-        "lon": _float_or_none(item.get("frontLon") or item.get("noorLon")),
-        "lat": _float_or_none(item.get("frontLat") or item.get("noorLat")),
+        "lon": lon,
+        "lat": lat,
         "poi_id": _text(item.get("id")),
+        "naver_map_place_url": place_url,
+        "naver_map_search_url": place_url,
     }
 
 
@@ -229,25 +248,6 @@ def _join_address(item: dict[str, Any]) -> str:
     ]
     clean_parts = [_text(part) for part in parts]
     return " ".join(part for part in clean_parts if part)
-
-
-# Pydantic SecretStr에서 실제 문자열 값을 꺼내되 빈 값은 None으로 처리한다.
-def _secret_value(value: SecretStr | None) -> str | None:
-    if value is None:
-        return None
-
-    secret = value.get_secret_value().strip()
-    return secret or None
-
-
-# 요청 결과 개수를 기본값과 최대값 범위 안으로 맞춘다.
-def _bounded_limit(limit: int | None) -> int:
-    default_limit = min(settings.search_default_limit, settings.search_max_limit)
-
-    if limit is None:
-        return default_limit
-
-    return min(max(int(limit), 1), settings.search_max_limit)
 
 
 # 외부 API 값을 공백 정리된 문자열로 바꾼다.
@@ -290,12 +290,31 @@ def route_tmap_pedestrian(
     """TMAP 보행자 길찾기 API를 호출해서 거리, 시간, 안내 단계를 반환한다."""
 
     routed_at = datetime.now(UTC).isoformat()
-    app_key = _secret_value(settings.tmap_app_key)
+    start = _route_point(name=start_name, lon=start_lon, lat=start_lat)
+    end = _route_point(name=end_name, lon=end_lon, lat=end_lat)
+
+    invalid_coordinate_warning = _route_coordinate_warning(
+        start_lon=start_lon,
+        start_lat=start_lat,
+        end_lon=end_lon,
+        end_lat=end_lat,
+    )
+    if invalid_coordinate_warning:
+        return _route_failure(
+            routed_at=routed_at,
+            warning=invalid_coordinate_warning,
+            start=start,
+            end=end,
+        )
+
+    app_key = secret_value(settings.tmap_app_key)
 
     if not app_key:
         return _route_failure(
             routed_at=routed_at,
             warning="TMAP app key is missing.",
+            start=start,
+            end=end,
         )
 
     url = f"{_TMAP_BASE_URL}/routes/pedestrian"
@@ -323,10 +342,13 @@ def route_tmap_pedestrian(
         response.raise_for_status()
         data = response.json()
 
-    except Exception as exc:  # noqa: BLE001
+    except httpx.HTTPError as exc:
+        logger.warning("TMAP pedestrian route failed: %s", exc)
         return _route_failure(
             routed_at=routed_at,
             warning=f"TMAP pedestrian route failed: {exc}",
+            start=start,
+            end=end,
         )
 
     features = data.get("features") or []
@@ -339,16 +361,16 @@ def route_tmap_pedestrian(
         "success": True,
         "mode": "pedestrian",
         "routed_at": routed_at,
-        "start": {
-            "name": start_name,
-            "lon": start_lon,
-            "lat": start_lat,
-        },
-        "end": {
-            "name": end_name,
-            "lon": end_lon,
-            "lat": end_lat,
-        },
+        "start": start,
+        "end": end,
+        "naver_map_route_url": _naver_map_route_url(
+            dest_name=end_name,
+            lon=end_lon,
+            lat=end_lat,
+            start_name=start_name,
+            start_lon=start_lon,
+            start_lat=start_lat,
+        ),
         "distance_meters": summary.get("distance_meters"),
         "duration_seconds": summary.get("duration_seconds"),
         "steps": steps,
@@ -428,7 +450,13 @@ def _int_or_none(value: Any) -> int | None:
 
 
 # 길찾기 실패도 항상 같은 응답 구조로 반환한다.
-def _route_failure(*, routed_at: str, warning: str) -> dict[str, Any]:
+def _route_failure(
+    *,
+    routed_at: str,
+    warning: str,
+    start: dict[str, Any] | None = None,
+    end: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """길찾기 실패도 항상 같은 형태로 반환한다."""
 
     return {
@@ -436,8 +464,97 @@ def _route_failure(*, routed_at: str, warning: str) -> dict[str, Any]:
         "success": False,
         "mode": "pedestrian",
         "routed_at": routed_at,
+        "start": start,
+        "end": end,
         "distance_meters": None,
         "duration_seconds": None,
         "steps": [],
         "warnings": [warning],
     }
+
+
+def _route_point(*, name: str, lon: float, lat: float) -> dict[str, Any]:
+    return {
+        "name": name,
+        "lon": lon,
+        "lat": lat,
+    }
+
+
+def _route_coordinate_warning(
+    *,
+    start_lon: float,
+    start_lat: float,
+    end_lon: float,
+    end_lat: float,
+) -> str | None:
+    invalid_names: list[str] = []
+    for name, value, low, high in (
+        ("start_lon", start_lon, -180, 180),
+        ("start_lat", start_lat, -90, 90),
+        ("end_lon", end_lon, -180, 180),
+        ("end_lat", end_lat, -90, 90),
+    ):
+        if (
+            not isinstance(value, int | float)
+            or not math.isfinite(value)
+            or value < low
+            or value > high
+        ):
+            invalid_names.append(name)
+
+    if invalid_names:
+        return "invalid route coordinate range: " + ", ".join(invalid_names)
+
+    if start_lon == start_lat == end_lon == end_lat == 0:
+        return "invalid route coordinate value: all route coordinates are zero"
+
+    return None
+
+
+def _map_query(*, name: str, address: str) -> str:
+    return " ".join(part for part in (name, address) if part).strip()
+
+
+def _naver_map_search_url(query: str) -> str | None:
+    return _naver_map_place_url(query)
+
+
+def _naver_map_place_url(query: str) -> str | None:
+    if not query:
+        return None
+
+    return f"{_NAVER_MAP_WEB_BASE_URL}/p/search/{quote(query, safe='')}"
+
+
+def _naver_map_route_url(
+    *,
+    dest_name: str,
+    lon: float | None,
+    lat: float | None,
+    start_name: str | None = None,
+    start_lon: float | None = None,
+    start_lat: float | None = None,
+) -> str | None:
+    if lon is None or lat is None:
+        return None
+
+    destination = _naver_map_place_segment(
+        name=dest_name or "도착지",
+        lon=lon,
+        lat=lat,
+    )
+    if start_lon is not None and start_lat is not None:
+        start = _naver_map_place_segment(
+            name=start_name or "출발지",
+            lon=start_lon,
+            lat=start_lat,
+        )
+    else:
+        start = "-"
+
+    return f"{_NAVER_MAP_WEB_BASE_URL}/p/directions/{start}/{destination}/-/walk"
+
+
+def _naver_map_place_segment(*, name: str, lon: float, lat: float) -> str:
+    return f"{lon},{lat},{quote(name, safe='')},,"

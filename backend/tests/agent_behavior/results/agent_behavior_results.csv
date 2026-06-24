@@ -1,0 +1,52 @@
+﻿case_id,evaluation_stage,source_mcp_case_id,run_id,message,expected_tool_use,actual_tool_use,actual_tools,expected_tools_json,required_all_tools_json,forbidden_tool_fragments_json,final_answer_exists,final_answer_preview,error_exists,event_count,session_id,turn_id,sse_path,passed,error_count,errors_json
+AGENT-EXT-001,1_tool_call_selection,LIVE-NAVER-LOCAL-001,20260624T080536678988Z,강남구 노인복지관 찾아줘. 주소랑 연락처가 있으면 같이 알려줘.,True,True,tmap_search_poi|naver_search,"[""naver_search"", ""tmap_search_poi"", ""web_search""]",[],"[""rag""]",True,"강남구 노인복지관 정보를 찾아드렸습니다.
+
+## 논현노인종합복지관
+
+| 항목 | 내용 |
+|------|------|
+| 기관명 | 강남구립 논현노인종합복지관 |
+| 주소 | 서울특별시 강남구 강남대로 128길 59 (논현동 125-13) |
+| 전화 | 02-541-0226~8 |
+| 팩스 | 02-541-0116 |
+| 지도 | [네이버지도 위치 보기](https://map.naver.com/p/search/%EB%85%BC%ED%98%84%EB%85%B8%EC%9D%B8%EC%A2%85%ED%95%A9%EB%B3%B5%EC%A",False,708,agent-behavior-agent-ext-001-20260624t080536678988z,892835c40ac84a988d4e3e5c19556780,/home/vosnuevo/workspace/SKN28-3rd-1Team/backend/tests/agent_behavior/run_logs/agent_behavior/sse/AGENT-EXT-001.sse,True,0,[]
+AGENT-EXT-002,2_address_tool_call_required,LIVE-WEB-SEARCH-002,20260624T080536678988Z,대전 서구청 노인복지 정책이나 담당 안내를 찾아줘.,True,True,naver_search|web_search|tmap_search_poi,"[""web_search"", ""naver_search""]","[""tmap_search_poi""]","[""rag""]",True,"대전 서구청의 노인복지 정책과 담당 부서에 대해 안내해 드리겠습니다.
+
+---
+
+## 1. 담당 부서
+
+**대전광역시 서구청 노인장애인과**가 노인복지 관련 업무를 담당합니다.
+
+**주요 업무:**
+- 노인복지시설(주거·의료·재가) 운영·관리 및 기능보강
+- 노인복지사업 전반
+- 장애인 생활안정 지원(장애인연금, 장애수당 등)도 함께 담당
+
+출처: [대전광역시 서구청 - 부서소개 > 노인장애인과](https://www.seogu.go.kr/kor/sub05_04_11_01.do)
+
+---
+
+## 2. 주요 노인복지 정책 분야 (서구",False,1072,agent-behavior-agent-ext-002-20260624t080536678988z,b40312fdcfbd4c878f44e2af8571e3e5,/home/vosnuevo/workspace/SKN28-3rd-1Team/backend/tests/agent_behavior/run_logs/agent_behavior/sse/AGENT-EXT-002.sse,True,0,[]
+AGENT-EXT-003,1_tool_call_selection,LIVE-TMAP-POI-002,20260624T080536678988Z,부산 해운대구노인복지관 위치 찾아줘.,True,True,tmap_search_poi,"[""tmap_search_poi"", ""naver_search"", ""web_search""]",[],"[""rag""]",True,"부산 해운대구에 있는 노인복지관 위치를 찾아봤습니다. 현재 확인된 시설 두 곳을 안내해 드립니다.
+
+**어진샘노인종합복지관**
+- 주소: 부산 해운대구 재송동
+- 전화: 051-784-8008
+- 지도: [네이버지도 위치 보기](https://map.naver.com/p/search/%EC%96%B4%EC%A7%84%EC%83%98%EB%85%B8%EC%9D%B8%EC%A2%85%ED%95%A9%EB%B3%B5%EC%A7%80%EA%B4%80%20%EB%B6%80%EC%82%B0%20%ED%95%B4%EC%9A%B4%EB%8C%80",False,850,agent-behavior-agent-ext-003-20260624t080536678988z,36774a180d0443db992f71cdb19efb0b,/home/vosnuevo/workspace/SKN28-3rd-1Team/backend/tests/agent_behavior/run_logs/agent_behavior/sse/AGENT-EXT-003.sse,True,0,[]
+AGENT-EXT-004,1_tool_call_selection,LIVE-TMAP-ROUTE-001,20260624T080536678988Z,강남구청에서 강남노인종합복지관까지 걸어서 얼마나 걸리는지 알려줘.,True,True,tmap_search_poi|tmap_route_pedestrian,"[""tmap_route_pedestrian"", ""tmap_search_poi"", ""naver_search""]",[],"[""rag""]",True,"강남구청에서 강남노인종합복지관까지 걷는 시간을 확인해 드릴게요.
+
+**도보 경로 정보**
+- 거리: 약 635m
+- 걸어서 약 **8분**
+
+**대략 경로**
+1. 강남구청에서 나오서 좌회전 → 보행자도로로 이동
+2. 학동로를 따라 우회전 (약 2분 45초)
+3. 삼성로를 따라 우회전 (약 3분 55초)
+4. 횡단보도 건너서 다시 우회전 → 강남노인종합복지관 도착
+
+두 장소 모두 삼성동 인근이라 비교적 가깝게 위치해 있어서 편하게 걸어서 이동할 수 있어요.
+
+**장소 위치**
+- 강남구청: [네이버지도 위치 보기](https://m",False,1029,agent-behavior-agent-ext-004-20260624t080536678988z,f5141a614d3e41f090e270f093404be3,/home/vosnuevo/workspace/SKN28-3rd-1Team/backend/tests/agent_behavior/run_logs/agent_behavior/sse/AGENT-EXT-004.sse,True,0,[]

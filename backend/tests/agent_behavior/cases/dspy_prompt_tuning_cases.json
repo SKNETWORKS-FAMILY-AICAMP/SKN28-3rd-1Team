@@ -1,0 +1,18 @@
+{
+  "description": "DSPy prompt tuning split for backend agent behavior cases. Train cases are used to improve the prompt, and eval cases are used to check that the prompt still generalizes.",
+  "baseline_prompt": "baseline_v1",
+  "train": [
+    "AGENT-EXT-002",
+    "AGENT-PI-002",
+    "AGENT-PI-003",
+    "AGENT-HAL-002"
+  ],
+  "eval": [
+    "AGENT-EXT-001",
+    "AGENT-EXT-003",
+    "AGENT-EXT-004",
+    "AGENT-PI-001",
+    "AGENT-HAL-001"
+  ],
+  "holdout": []
+}

@@ -1,9 +1,9 @@
 {
-  "generated_at": "2026-06-23T17:42:26.609645+00:00",
-  "started_at": "2026-06-23T17:42:22.762173+00:00",
+  "generated_at": "2026-06-24T01:15:06.519772+00:00",
+  "started_at": "2026-06-24T01:15:02.999323+00:00",
   "scope": "external_mcp MCP server-call tests with live API responses",
   "mode": "live",
-  "mcp_url": "http://127.0.0.1:40037/",
+  "mcp_url": "http://127.0.0.1:60061/",
   "expected_tools": [
     "naver.search",
     "tmap.route_pedestrian",
