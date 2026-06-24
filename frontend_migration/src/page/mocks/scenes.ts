@@ -11,6 +11,11 @@ export const mockScenes: MockScene[] = [
     description: "상담 진입 전 초기 상태를 확인하는 장면",
   },
   {
+    slug: "character-animation",
+    title: "로디 캐릭터 애니메이션",
+    description: "Chat Workspace에 연결할 로디 상태 애니메이션을 확인하는 장면",
+  },
+  {
     slug: "profile-form",
     title: "상담 정보 입력",
     description: "생년과 거주지 입력 상태를 확인하는 장면",

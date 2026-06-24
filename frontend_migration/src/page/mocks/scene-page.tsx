@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { CharacterAnimationShowcase } from "@/page/mocks/character-animation-showcase";
 import type { MockScene } from "@/page/mocks/scenes";
 
 type MockScenePageProps = {
@@ -7,6 +8,8 @@ type MockScenePageProps = {
 };
 
 export function MockScenePage({ scene }: MockScenePageProps) {
+  const isCharacterAnimationScene = scene.slug === "character-animation";
+
   return (
     <main className="min-h-dvh bg-background text-foreground">
       <div className="mx-auto flex max-w-6xl flex-col gap-5 px-5 py-8">
@@ -25,14 +28,18 @@ export function MockScenePage({ scene }: MockScenePageProps) {
           </Link>
         </header>
 
-        <section className="grid min-h-[520px] grid-cols-1 gap-4 lg:grid-cols-[360px_minmax(0,1fr)]">
-          <aside className="rounded-md border border-border bg-card p-4 text-card-foreground">
-            <h2 className="text-base font-semibold">상담 패널</h2>
-          </aside>
-          <div className="rounded-md border border-border bg-card p-4 text-card-foreground">
-            <h2 className="text-base font-semibold">{scene.description}</h2>
-          </div>
-        </section>
+        {isCharacterAnimationScene ? (
+          <CharacterAnimationShowcase />
+        ) : (
+          <section className="grid min-h-[520px] grid-cols-1 gap-4 lg:grid-cols-[360px_minmax(0,1fr)]">
+            <aside className="rounded-md border border-border bg-card p-4 text-card-foreground">
+              <h2 className="text-base font-semibold">상담 패널</h2>
+            </aside>
+            <div className="rounded-md border border-border bg-card p-4 text-card-foreground">
+              <h2 className="text-base font-semibold">{scene.description}</h2>
+            </div>
+          </section>
+        )}
       </div>
     </main>
   );
