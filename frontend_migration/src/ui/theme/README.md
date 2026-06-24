@@ -7,7 +7,8 @@
 ## 파일 역할
 
 - `tokens.css`: Tailwind v4와 shadcn이 사용할 semantic token mapping.
-- `font.css`: `next/font`로 주입된 CSS variable을 Tailwind font token으로 연결.
+- `fonts.ts`: `next/font/google` 설정과 루트 레이아웃에 붙일 font variable className.
+- `font.css`: `fonts.ts`가 주입한 CSS variable을 Tailwind font token으로 연결.
 - `white.css`: 기본 white/light color scheme 값과 명시적 `.theme-white` override.
 - `dark.css`: OS dark preference와 명시적 `.theme-dark` override.
 - `base.css`: 문서 전체에 적용되는 최소한의 `html`, `body`, border, outline 기본값.

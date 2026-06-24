@@ -8,6 +8,29 @@ html {
   scroll-behavior: smooth;
 }
 
+@layer utilities {
+  .fade-in-anim {
+    opacity: 0;
+    transform: translateY(1.75rem);
+    transition:
+      opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1),
+      transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .fade-in-anim[data-direction="left"] {
+    transform: translateX(-2rem);
+  }
+
+  .fade-in-anim[data-direction="right"] {
+    transform: translateX(2rem);
+  }
+
+  .fade-in-anim[data-visible="true"] {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
