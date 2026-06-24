@@ -1,36 +1,45 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Frontend Migration
 
-## Getting Started
+Next.js App Router 기반 프론트엔드 마이그레이션 작업 디렉토리입니다.
+기존 `frontend/`와 나란히 띄워 화면과 라우트 경계를 비교하기 위해 기본 개발 포트는 `3005`를 사용합니다.
 
-First, run the development server:
+## 실행
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
+cd frontend_migration
+bun install
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+기본 접속 주소:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```text
+http://127.0.0.1:3005
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+기존 `frontend/`를 `3000`에서 실행한 상태로 둘 수 있습니다.
 
-## Learn More
+```text
+기존 frontend:        http://127.0.0.1:3000
+frontend_migration:  http://127.0.0.1:3005
+```
 
-To learn more about Next.js, take a look at the following resources:
+## 라우트
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| 경로 | 책임 |
+| --- | --- |
+| `/` | 로디 랜딩/시작 페이지 |
+| `/chat` | canonical 상담 workspace |
+| `/mocks` | 마이그레이션 목업 확인 |
+| `/mocks/[scene]` | 장면별 목업 확인 |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+`src/app`은 Next.js 라우팅 경계로만 유지하고, 화면 구성은 `src/page` 아래에 둡니다.
 
-## Deploy on Vercel
+## 명령
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+bun dev      # 127.0.0.1:3005 개발 서버
+bun run build
+bun start    # 127.0.0.1:3005 production server
+bun run lint
+```

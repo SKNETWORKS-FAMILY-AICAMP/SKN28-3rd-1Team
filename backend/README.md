@@ -101,6 +101,7 @@ backend/
 ## 🖥️ Frontend 연결 위치
 
 Frontend는 RAG 서버나 LLM을 직접 호출하지 않고 BFF를 통해 backend의 `/chat/stream`만 호출한다. AI SDK `UIMessage` 변환은 Next.js Route Handler/BFF에서 담당하고, backend는 자체 SSE event 계약만 유지한다.
+전체 browser route, BFF route, backend endpoint, static asset route 이름 경계는 `../docs/chat_route_boundary.md`에 정리한다.
 
 | 구분 | backend 파일 | frontend에서 할 일 |
 | --- | --- | --- |

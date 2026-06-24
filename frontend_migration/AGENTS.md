@@ -40,6 +40,6 @@ src/
 
 ## Migration Policy
 
-- Do not copy bloated legacy frontend modules into this app as a shortcut.
+- Do not copy bloated previous frontend modules into this app as a shortcut.
 - When moving behavior from `frontend/`, first identify the target layer and rewrite the smallest contract-shaped piece.
 - Keep commits atomic by layer or artifact type: static assets, dependencies, scaffolding, BFF contracts, UI primitives, and page composition should be separable.

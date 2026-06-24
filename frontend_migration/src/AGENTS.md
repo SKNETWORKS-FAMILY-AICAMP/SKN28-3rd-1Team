@@ -1,6 +1,6 @@
 # Source Layer Rules
 
-This `src/` tree is split by responsibility, not by legacy folder names. Follow these boundaries before adding code.
+This `src/` tree is split by responsibility, not by previous folder names. Follow these boundaries before adding code.
 
 ## `app/`
 
@@ -38,3 +38,9 @@ Generic utilities only. Keep utilities pure and broadly reusable unless there is
 ## Dependencies
 
 Use AI SDK for chat/streaming behavior. Use Streamdown for AI message rendering. Use shadcn registry components where they fit before building new primitives. Change dependencies with Bun commands, not manual `package.json` edits.
+
+## Route Policy
+
+- `/` is the product landing/start page. Keep the route file thin and delegate the screen to `src/page/home/`.
+- `/chat` is the canonical 상담 workspace route in this migration app.
+- `/mocks` is a preserved design/development surface for inspecting chat states and future AG-UI/A2UI component shapes.

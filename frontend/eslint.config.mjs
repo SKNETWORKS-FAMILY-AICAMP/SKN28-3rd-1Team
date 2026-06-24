@@ -3,7 +3,7 @@ import nextTypescript from "eslint-config-next/typescript"
 
 const eslintConfig = [
   {
-    ignores: [".bun/**", ".bun-tmp/**", "chat_page/**"],
+    ignores: [".bun/**", ".bun-tmp/**", "src/chat_page/**"],
   },
   ...nextVitals,
   ...nextTypescript,

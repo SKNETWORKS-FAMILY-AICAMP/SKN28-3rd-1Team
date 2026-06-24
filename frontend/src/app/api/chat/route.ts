@@ -1,8 +1,9 @@
 import { createUIMessageStream, createUIMessageStreamResponse } from "ai"
 import type { UIMessageStreamWriter } from "ai"
 
-import { createBackendChatStream, getLatestUserText } from "@/features/chat/services/chat-stream"
 import type { LegalChatMessage } from "@/features/chat/types"
+
+import { createBackendChatStream, getLatestUserText } from "./_lib/backend-chat-stream-adapter"
 
 export const runtime = "nodejs"
 export const maxDuration = 60

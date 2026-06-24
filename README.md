@@ -31,7 +31,7 @@
 |---|---|---|---|---|---|
 |사진|<img width="467" height="622" alt="image" src="https://github.com/user-attachments/assets/1d55d805-ca88-4045-870c-efcf3cd093cd" />|<img width="457" height="546" alt="image" src="https://github.com/user-attachments/assets/e80bef47-6176-41c2-8471-28b5c4d14d00" />|<img width="283" height="571" alt="image" src="https://github.com/user-attachments/assets/eff9d9d9-f08c-4648-8435-0079015314b9" />|<img width="353" height="488" alt="image" src="https://github.com/user-attachments/assets/6f58acc9-b043-4a64-8387-3f2d78465fda" />|<img width="244" height="488" alt="image" src="https://github.com/user-attachments/assets/369cd18c-71bd-40b8-b035-70873142869c" />|
 | 역할 | 팀장 | RAG | 프론트엔드 | 백엔드 | 기획·문서 |
-| 한 일 | 전체 일정 관리, 작업 방향 컨펌, 파트별 진행 상황 확인 | 노인·고령층 관련 법령 데이터 확인, 문서 전처리와 임베딩 흐름 정리 | 사용자 질문 화면 구성, API 연결 흐름 설계, 결과 화면 UX 정리, RAG 기반 테스트 케이스 설계 | Django Channels `/chat` 구성, LangGraph Agent 실행 구조 정리, MCP tool 연동 준비 | 전체 서비스 흐름 정리, README와 발표 자료 구성, 팀 산출물 내용 정리 |
+| 한 일 | 전체 일정 관리, 작업 방향 컨펌, 파트별 진행 상황 확인 | 노인·고령층 관련 법령 데이터 확인, 문서 전처리와 임베딩 흐름 정리 | 사용자 질문 화면 구성, API 연결 흐름 설계, 결과 화면 UX 정리, RAG 기반 테스트 케이스 설계 | Django ASGI `/chat/stream` 구성, LangGraph Agent 실행 구조 정리, MCP tool 연동 준비 | 전체 서비스 흐름 정리, README와 발표 자료 구성, 팀 산출물 내용 정리 |
 
 ### 2) 일정 계획
 
@@ -104,7 +104,8 @@
 ```text
 사용자 질문
   -> Frontend 또는 legacy Streamlit 화면
-  -> Backend Django ASGI /chat 또는 /chat/stream SSE
+  -> Frontend BFF /api/chat
+  -> Backend Django ASGI /chat/stream SSE
   -> LangChain + LangGraph Agent
   -> RAG MCP Tool Server
   -> Memgraph 기반 문서 검색
@@ -146,7 +147,7 @@
 
 | 기능 | 설명 |
 | --- | --- |
-| Django ASGI `/chat` | 프론트엔드가 호출하는 메인 채팅 API와 SSE stream입니다. |
+| Django ASGI `/chat/stream` | 프론트엔드 BFF가 호출하는 canonical backend SSE stream입니다. |
 | LangGraph Agent | `session_id` 기반으로 대화 흐름을 이어갈 수 있도록 구성합니다. |
 | LLM Provider | `ChatOpenAI`, `ChatOpenRouter`, `ChatCerebras`로 LLM을 호출합니다. |
 | MCP Tool | RAG 검색 기능을 Agent tool로 연결하기 위한 구조입니다. |
@@ -158,13 +159,13 @@
 
 | 영역 | 상태 |
 | --- | --- |
-| Backend `/chat` API | Django Channels에서 사용자 메시지를 받아 Agent 답변을 반환합니다. |
+| Backend `/chat/stream` API | Django ASGI에서 사용자 메시지를 받아 Agent SSE event stream을 반환합니다. |
 | LLM Provider 연동 | `LLM_AGENT_<AGENT>_PROVIDER` 설정으로 agent별 LLM provider와 model을 선택합니다. |
 | LangGraph Agent | `ChatThreadContextStore`와 `InMemorySaver` 기반 session/thread 처리를 사용합니다. |
 | LangSmith 검증 | LLM 호출 trace와 mock tool call trace를 확인했습니다. |
 | RAG Backend | 문서 ingest, 검색 API, read-only MCP endpoint 구조가 있습니다. |
 | RAG Frontend | 문서 목록, ingest job, review queue를 확인하는 운영 UI가 있습니다. |
-| Streamlit | legacy 상담 form, 채팅형 화면, backend `/chat` 연결 흐름을 검증합니다. |
+| Streamlit | legacy 상담 form과 채팅형 화면이 남아 있으나 현재 active frontend/backend route 검증 범위는 아닙니다. |
 | RAG Red Team | Neo4j 기반 graph schema와 read-only Cypher MCP 실험 공간이 있습니다. |
 | Presentation | 발표 스크립트, PPTX, 최종 PDF, Memgraph Lab 시연 캡처를 정리했습니다. |
 
@@ -198,7 +199,7 @@
 ```text
 SKN28-3rd-1Team/
 ├── backend/                 # Django Channels 기반 Agent Orchestrator
-│   ├── src/api/             # /chat API
+│   ├── src/django_backend/  # /health, /chat/stream HTTP/SSE transport
 │   ├── src/agents/          # Main Agent, LLM provider, tools
 │   ├── src/graph/           # chat turn stream runner
 │   ├── src/memory/          # conversation id, checkpointer, TTL boundary
@@ -234,7 +235,8 @@ SKN28-3rd-1Team/
 
 | 문서 | 설명 |
 | --- | --- |
-| `backend/README.md` | Backend Agent 구조, `/chat` API, MCP 연결 위치 |
+| `backend/README.md` | Backend Agent 구조, `/chat/stream` API, MCP 연결 위치 |
+| `docs/chat_route_boundary.md` | `/chat_page`, `/api/chat`, backend `/chat/stream`, static asset route 책임 경계 |
 | `rag/README.md` | RAG 서브시스템 전체 구조 |
 | `rag/be/README.md` | RAG Backend API, MCP endpoint, 환경 변수 |
 | `rag/fe/README.md` | RAG 운영 UI 실행 방법 |
@@ -322,7 +324,7 @@ rag-be -> redis://redis:6379/0
 
 Legacy Streamlit UI까지 실행해야 할 때만 `cd deploy/makefile && make compose-up-legacy`를 사용한다.
 
-`/chat`은 실제 LLM provider 호출이므로 `deploy/docker/.env_backend`에
+`/chat/stream`은 실제 LLM provider 호출이므로 `deploy/docker/.env_backend`에
 선택한 provider의 `LLM_PROVIDER_*_API_KEY`가 유효해야 한다.
 
 Makefile target이 있는 서비스는 `make`를 우선 사용한다. Python 서비스의
@@ -347,10 +349,10 @@ curl -s http://127.0.0.1:8000/health | python -m json.tool
 채팅 API 테스트:
 
 ```bash
-curl -s -X POST http://127.0.0.1:8000/chat \
+curl -N -s -X POST http://127.0.0.1:8000/chat/stream \
   -H "Content-Type: application/json" \
-  -d '{"session_id":"readme-test-1","message":"안녕. 너는 어떤 일을 할 수 있어?"}' \
-  | python -m json.tool
+  -H "Accept: text/event-stream" \
+  -d '{"session_id":"readme-test-1","message":"안녕. 너는 어떤 일을 할 수 있어?"}'
 ```
 
 ### 4) Legacy Streamlit 상담 UI 실행

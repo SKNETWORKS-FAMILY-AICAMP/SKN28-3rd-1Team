@@ -232,30 +232,17 @@ http://127.0.0.1:3001/chat_page
 1. F12 또는 Ctrl + Shift + I
 2. Network 탭
 3. Fetch/XHR 필터
-4. /api/chat_page 요청 클릭
-5. Response 탭에서 answer, tool_calls 확인
+4. /api/chat 요청 클릭
+5. Payload에서 id/messages 확인
+6. Response 또는 Preview 탭에서 AI SDK stream chunk와 data-toolCall/data-agentTrace 확인
 ```
 
-`tool_calls` 예시:
+tool call 이름 예시:
 
-```json
-[
-  {
-    "name": "web_search",
-    "status": "completed",
-    "id": "9a6aa335f"
-  },
-  {
-    "name": "tmap_search_poi",
-    "status": "completed",
-    "id": "fc0fcfd60"
-  },
-  {
-    "name": "tmap_route_pedestrian",
-    "status": "completed",
-    "id": "51e6d77af"
-  }
-]
+```text
+web_search
+tmap_search_poi
+tmap_route_pedestrian
 ```
 
 `naver_search`가 항상 나오는 것은 아니다.
@@ -268,7 +255,7 @@ agent가 질문을 보고 필요한 tool을 선택하기 때문이다.
 네이버 지역 검색으로 강남구 노인복지관을 찾아보고, 찾은 장소 이름과 주소를 알려줘
 ```
 
-그러면 `tool_calls`에 아래가 나오는지 확인한다.
+그러면 frontend trace drawer 또는 `/api/chat` stream chunk에서 아래 tool 이름이 나오는지 확인한다.
 
 ```text
 naver_search
@@ -279,9 +266,11 @@ naver_search
 frontend를 거치지 않고 backend에 바로 질문할 수 있다.
 
 ```bash
-curl -s http://127.0.0.1:8002/chat \
+curl -N -s http://127.0.0.1:8002/chat/stream \
   -H "Content-Type: application/json" \
+  -H "Accept: text/event-stream" \
   -d '{
+    "session_id": "external-mcp-manual-test",
     "message": "강남구 안에서 노인복지관 찾아주고, 위치와 걸어가는 방법도 알려줘",
     "metadata": {
       "source": "manual_test"
@@ -289,35 +278,30 @@ curl -s http://127.0.0.1:8002/chat \
   }'
 ```
 
-한글 답변만 보기:
+SSE에서 확인할 것:
 
-```bash
-curl -s http://127.0.0.1:8002/chat \
-  -H "Content-Type: application/json" \
-  -d '{
-    "message": "강남구 안에서 노인복지관 찾아줘",
-    "metadata": {
-      "source": "manual_test"
-    }
-  }' | jq -r '.answer'
+```text
+event: agent.tool_call.delta
+event: agent.text.delta
+event: agent.text.final
 ```
 
-tool 호출만 보기:
+네이버를 강제로 확인하고 싶으면 backend stream에도 같은 질문을 보낸다.
 
 ```bash
-curl -s http://127.0.0.1:8002/chat \
+curl -N -s http://127.0.0.1:8002/chat/stream \
   -H "Content-Type: application/json" \
+  -H "Accept: text/event-stream" \
   -d '{
+    "session_id": "external-mcp-naver-test",
     "message": "네이버 지역 검색으로 강남구 노인복지관을 찾아보고, 찾은 장소 이름과 주소를 알려줘",
     "metadata": {
       "source": "manual_test"
     }
-  }' | jq '.tool_calls'
+  }'
 ```
 
 ## 8. Backend stream으로 tool 호출 과정을 보는 방법
-
-`/chat`은 최종 답변을 한 번에 받는다.
 
 `/chat/stream`은 중간 과정을 실시간으로 보여준다.
 
@@ -1020,17 +1004,19 @@ BACKEND_URL=http://127.0.0.1:8002 make start PORT=3001
 의미:
 
 ```text
-JSON이 한글을 Unicode escape 형태로 보여주는 것
+SSE data JSON이 한글을 Unicode escape 형태로 보여주는 것
 ```
 
 한글로 보기:
 
 ```bash
-curl -s http://127.0.0.1:8002/chat \
+curl -N -s http://127.0.0.1:8002/chat/stream \
   -H "Content-Type: application/json" \
+  -H "Accept: text/event-stream" \
   -d '{
+    "session_id": "external-mcp-unicode-check",
     "message": "강남구 안에서 노인복지관 찾아줘"
-  }' | jq -r '.answer'
+  }'
 ```
 
 ### 12.4 TMAP route 400

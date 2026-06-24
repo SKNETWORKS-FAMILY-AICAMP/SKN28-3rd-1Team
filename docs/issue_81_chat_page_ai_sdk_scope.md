@@ -10,8 +10,8 @@ Backend는 이미 `POST /chat/stream` SSE 계약을 확정했으므로, 이번 �
 ## Fixed Context
 
 - Canonical user-facing page는 `/chat_page`다.
-- `/chat` page는 legacy로 보고 제거하거나 `/chat_page`로만 정리한다.
-- 기존 `/api/chat_page` JSON BFF는 legacy다. Backend `/chat` JSON 경로도 현재 canonical이 아니다.
+- `/chat` page는 legacy redirect로만 유지한다.
+- 기존 `/api/chat_page` JSON BFF는 legacy이며 현재는 `410 Gone`을 반환한다. Backend `/chat` JSON 경로는 현재 계약에 없다.
 - Backend canonical endpoint는 `POST /chat/stream`이다.
 - Backend stream 검증 기준은 `backend/tests/artifacts/chat_stream_events.jsonl`이다.
 - Backend code는 이번 작업에서 수정하지 않는다.
@@ -61,28 +61,29 @@ Backend는 이미 `POST /chat/stream` SSE 계약을 확정했으므로, 이번 �
 
 예상 구조:
 
-- `frontend/app/chat_page/page.tsx`
+- `frontend/src/app/chat_page/page.tsx`
   - 계속 `/chat_page` entrypoint로 유지.
-- `frontend/app/chat_page/chat-page-client.tsx`
+- `frontend/src/app/chat_page/chat-page-client.tsx`
   - sidebar chat state를 AI SDK hook 기반으로 전환.
   - 오른쪽 workspace state는 현재 mock/static interaction을 유지.
-- `frontend/features/chat/hooks/use-chat-session.ts`
+- `frontend/src/features/chat/hooks/use-chat-session.ts`
   - `useChat` 기반 conversation id, message send, data part handling 담당.
   - audio chunk 누적과 `tts.completed` flush 담당.
-- `frontend/features/chat/services/chat-stream.ts`
-  - Backend SSE parser와 AI SDK `UIMessageChunk` 변환 담당.
+- `frontend/src/app/api/chat/_lib/backend-chat-stream-adapter.ts`
+  - `/api/chat` BFF 내부에서 Backend SSE parser와 AI SDK `UIMessageChunk` 변환 담당.
   - event별 mapping/drop 위치를 명확하게 유지.
-- `frontend/features/chat/types.ts`
+- `frontend/src/features/chat/types.ts`
   - `ChatMessageData`, trace/tool/audio data part 타입 정의.
-- `frontend/features/chat/components/*`
+- `frontend/src/features/chat/components/*`
   - sidebar message bubble, reasoning/tool/internal trace 렌더링 정리.
 
 ## Route Cleanup
 
 - `/chat_page`: canonical browser page.
-- `/chat`: 제거하거나 `/chat_page` redirect만 남기는 legacy route. 구현 중 정리 가능.
-- `/api/chat_page`: legacy JSON BFF. 제거하거나 더 이상 사용하지 않게 전환.
+- `/chat`: `/chat_page` redirect만 남기는 legacy route.
+- `/api/chat_page`: legacy JSON BFF. backend를 호출하지 않고 `410 Gone` 반환.
 - `/api/chat`: AI SDK `useChat` default transport와 맞는 internal BFF로 유지할 수 있다. 이름을 바꾸려면 `DefaultChatTransport({ api: ... })`를 명시해야 한다.
+- `/chat_page/*`: local `frontend/src/chat_page/` generated/static asset serving route. `/chat_page` page route와 책임이 다르므로 `docs/chat_route_boundary.md`에서 별도 관리한다.
 
 ## Rendering Requirements
 
@@ -100,7 +101,8 @@ Backend는 이미 `POST /chat/stream` SSE 계약을 확정했으므로, 이번 �
 - `cd frontend && make build`
 - 가능하면 backend 없이도 BFF parser 단위 검증 또는 fixture 기반 smoke test를 추가한다.
 - 실제 backend가 실행 중이면 `/chat_page`에서 다음을 확인한다.
-  - `/api/chat_page`를 호출하지 않는다.
+  - `/chat_page`는 `/api/chat_page`를 호출하지 않는다.
+  - 직접 `POST /api/chat_page`를 호출하면 `410 Gone`을 반환한다.
   - BFF가 `POST /chat/stream`만 호출한다.
   - `main_agent` 답변이 streaming으로 보인다.
   - internal reasoning/token stream이 main 답변과 분리되어 보인다.

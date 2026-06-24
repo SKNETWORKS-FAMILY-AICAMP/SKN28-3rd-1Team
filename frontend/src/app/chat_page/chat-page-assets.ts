@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises"
 import path from "node:path"
 
-const CHAT_PAGE_DIR = path.resolve(process.cwd(), "chat_page")
+const CHAT_PAGE_DIR = path.resolve(process.cwd(), "src", "chat_page")
 
 const CONTENT_TYPES: Record<string, string> = {
   ".css": "text/css; charset=utf-8",

@@ -4,7 +4,21 @@
 채팅 화면인 `/chat_page`의 왼쪽 상담 sidebar는 AI SDK `useChat` 기반으로 Next.js App Router의 `POST /api/chat` route handler를 호출합니다.
 해당 route handler가 backend의 canonical SSE 엔드포인트인 `POST /chat/stream`을 호출하고, backend event stream을 AI SDK `UIMessage` stream/data part로 변환합니다.
 레거시 `/chat` 경로는 실제 backend 연동 채팅 화면인 `/chat_page`로 리다이렉트합니다.
-레거시 JSON BFF인 `POST /api/chat_page`는 `/chat_page`에서 더 이상 호출하지 않습니다.
+레거시 JSON BFF인 `POST /api/chat_page`는 `/chat_page`에서 더 이상 호출하지 않고 `410 Gone`을 반환합니다.
+
+## 채팅 route map
+
+| 구분 | 경로/파일 | 책임 |
+| --- | --- | --- |
+| Browser page | `GET /chat_page` | 사용자가 여는 상담 화면 |
+| Legacy page | `GET /chat` | `/chat_page` redirect 전용 |
+| AI SDK BFF | `POST /api/chat` | `useChat` 요청을 받아 backend SSE를 UI message stream으로 변환 |
+| Legacy JSON BFF | `POST /api/chat_page` | 제거된 endpoint. `410 Gone` 반환 |
+| Backend endpoint | `POST /chat/stream` | backend canonical SSE 계약 |
+| Static asset route | `GET /chat_page/*` | `src/chat_page/` generated asset serving |
+| SSE adapter | `src/app/api/chat/_lib/backend-chat-stream-adapter.ts` | `/api/chat` BFF 내부에서 backend SSE를 AI SDK chunk로 변환 |
+
+상세 경계는 `../docs/chat_route_boundary.md`를 참고합니다.
 
 ## Prerequisites
 
@@ -74,7 +88,7 @@ AI SDK 기반 채팅 hook은 mount 시 URL query의 `conversation_id`를 확인�
 ## 채팅 스트림 정책
 
 `/chat_page` sidebar는 `POST /api/chat`을 통해 AI SDK UI message stream을 받습니다.
-Next.js route handler는 backend `POST /chat/stream` SSE event를 다음처럼 분리합니다.
+Next.js route handler는 `src/app/api/chat/_lib/backend-chat-stream-adapter.ts`를 통해 backend `POST /chat/stream` SSE event를 다음처럼 분리합니다.
 
 | Backend event | Frontend 처리 |
 | --- | --- |
