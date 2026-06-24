@@ -47,7 +47,8 @@ def main() -> int:
         case_ids=set(args.case_id) if args.case_id else None,
     )
 
-    run_dir = RUN_LOGS_DIR / RUN_NAME
+    run_name = args.run_name
+    run_dir = RUN_LOGS_DIR / run_name
     sse_dir = run_dir / "sse"
     request_log = run_dir / "requests.jsonl"
     response_log = run_dir / "responses.jsonl"
@@ -64,6 +65,7 @@ def main() -> int:
         url=args.url,
         timeout_seconds=args.timeout,
         run_id=run_id,
+        run_name=run_name,
         sse_dir=sse_dir,
         request_log=request_log,
         response_log=response_log,
@@ -84,7 +86,8 @@ def main() -> int:
             "and hallucination guardrails."
         ),
         metadata={
-            "test_suite": RUN_NAME,
+            "test_suite": run_name,
+            "run_name": run_name,
             "test_run_id": run_id,
             "case_files": [str(case_file) for case_file in case_files],
             "chat_stream_url": args.url,
@@ -108,6 +111,7 @@ def main() -> int:
             "generated_at": datetime.now(UTC).isoformat(),
             "run_id": run_id,
             "scope": "backend agent LangSmith evaluators",
+            "run_name": run_name,
             "upload_results": upload_results,
             "experiment_prefix": args.experiment_prefix,
             "experiment_name": experiment_name,
@@ -152,13 +156,14 @@ def _build_target(
     url: str,
     timeout_seconds: float,
     run_id: str,
+    run_name: str,
     sse_dir: Path,
     request_log: Path,
     response_log: Path,
 ) -> Any:
     def target(inputs: dict[str, Any]) -> dict[str, Any]:
         case_id = str(inputs["case_id"])
-        payload = _build_payload(inputs, run_id=run_id)
+        payload = _build_payload(inputs, run_id=run_id, run_name=run_name)
         sse_path = sse_dir / f"{case_id}.sse"
 
         append_jsonl(
@@ -226,10 +231,10 @@ def _build_target(
     return target
 
 
-def _build_payload(inputs: dict[str, Any], *, run_id: str) -> dict[str, Any]:
+def _build_payload(inputs: dict[str, Any], *, run_id: str, run_name: str) -> dict[str, Any]:
     case_id = str(inputs["case_id"])
     metadata = {
-        "test_suite": RUN_NAME,
+        "test_suite": run_name,
         "test_case_id": case_id,
         "langsmith_run_name": case_id,
         "test_run_id": run_id,
@@ -437,6 +442,11 @@ def _parse_args() -> argparse.Namespace:
         type=Path,
         default=RESULTS_DIR / "agent_behavior_eval_results.csv",
         help="CSV path for local evaluator results.",
+    )
+    parser.add_argument(
+        "--run-name",
+        default=RUN_NAME,
+        help=f"Run log folder name under run_logs. Default: {RUN_NAME}",
     )
     parser.add_argument(
         "--experiment-prefix",

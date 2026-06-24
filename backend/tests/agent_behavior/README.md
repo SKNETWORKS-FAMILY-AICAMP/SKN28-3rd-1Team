@@ -28,6 +28,7 @@ tests/agent_behavior/
 │       └── sse/
 ├── scripts/
 │   └── run_agent_behavior_test.py
+│   └── compare_prompt_eval_results.py
 │   └── run_dspy_prompt_tuning.py
 │   └── run_langsmith_evaluators.py
 └── support/
@@ -35,12 +36,14 @@ tests/agent_behavior/
     ├── case_data.py
     ├── dspy_prompt_tuning.py
     ├── langsmith_evaluators.py
+    ├── prompt_comparison.py
     ├── result_checker.py
     ├── sse_parser.py
     └── stream_client.py
 └── test_sse_parser.py
 └── test_dspy_prompt_tuning.py
 └── test_langsmith_evaluators.py
+└── test_prompt_comparison.py
 ```
 
 ## Test Boundary
@@ -89,6 +92,21 @@ uv run python tests/agent_behavior/scripts/run_dspy_prompt_tuning.py
 MAIN_AGENT_SYSTEM_PROMPT_PATH=tests/agent_behavior/prompts/baseline_v1/system_prompt.j2 \
   uv run daphne -b 127.0.0.1 -p 8003 -v 0 --access-log /dev/null app:application
 ```
+
+candidate prompt 평가 결과를 baseline과 비교하려면 candidate 평가 CSV를 따로 저장한 뒤 비교 스크립트를 실행한다.
+
+```bash
+uv run python tests/agent_behavior/scripts/run_langsmith_evaluators.py \
+  --no-upload \
+  --run-name candidate_v1_evaluators \
+  --url http://127.0.0.1:8004/chat/stream \
+  --result-csv tests/agent_behavior/results/candidate_v1_eval_results.csv
+
+uv run python tests/agent_behavior/scripts/compare_prompt_eval_results.py
+```
+
+비교 결과는 `results/prompt_comparison_results.csv`에 저장된다.
+`change` 컬럼은 `unchanged_pass`, `unchanged_fail`, `improved`, `regressed`, `baseline_only`, `candidate_only` 중 하나로 기록된다.
 
 ## LangSmith Evaluators
 
@@ -159,6 +177,8 @@ uv run python tests/agent_behavior/scripts/run_agent_behavior_test.py \
 - `results/agent_behavior_eval_results.csv`: 1~4단계 전체 testcase를 모두 실행한 최종 비교 결과. `agent_behavior_cases.json`과 `langsmith_evaluator_cases.json`의 모든 `case_id`가 이 파일에 남아야 한다.
 - `results/agent_behavior_results.csv`: `run_agent_behavior_test.py`만 따로 실행했을 때 생기는 1/2단계 상세 보조 결과
 - `results/dspy_prompt_tuning_results.csv`: `agent_behavior_eval_results.csv`를 prompt version과 train/eval split 기준으로 재정리한 DSPy 준비 결과
+- `results/candidate_v1_eval_results.csv`: candidate prompt로 backend를 실행한 뒤 저장하는 전체 evaluator 결과
+- `results/prompt_comparison_results.csv`: baseline evaluator 결과와 candidate evaluator 결과를 case_id 기준으로 나란히 비교한 결과
 - `run_logs/agent_behavior/requests.jsonl`: backend에 보낸 요청
 - `run_logs/agent_behavior/responses.jsonl`: SSE 파싱 결과와 검증 결과
 - `run_logs/agent_behavior/sse/*.sse`: 원본 SSE stream
