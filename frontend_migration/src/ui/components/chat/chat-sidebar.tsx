@@ -27,6 +27,10 @@ type ChatSidebarProps = {
   width?: number;
   traceExpanded: boolean;
   traceItemCount: number;
+  dictationShortcut: {
+    ariaKeyShortcuts: string;
+    label: string;
+  };
   dictationStatus: DictationStatus;
   dictationError?: string;
   onInputChange: (value: string) => void;
@@ -46,6 +50,7 @@ export function ChatSidebar({
   width,
   traceExpanded,
   traceItemCount,
+  dictationShortcut,
   dictationStatus,
   dictationError,
   onInputChange,
@@ -124,6 +129,7 @@ export function ChatSidebar({
         input={input}
         isBusy={isBusy}
         error={error}
+        dictationShortcut={dictationShortcut}
         dictationStatus={dictationStatus}
         dictationError={dictationError}
         onInputChange={onInputChange}

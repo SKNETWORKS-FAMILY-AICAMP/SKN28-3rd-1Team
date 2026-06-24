@@ -14,6 +14,7 @@ type VoiceInputButtonProps = {
   status: DictationStatus;
   onClick?: () => void;
   ariaKeyShortcuts?: string;
+  shortcutLabel?: string;
   className?: string;
 };
 
@@ -21,12 +22,16 @@ export function VoiceInputButton({
   status,
   onClick,
   ariaKeyShortcuts,
+  shortcutLabel,
   className,
 }: VoiceInputButtonProps) {
   const buttonState = getVoiceInputButtonState(status);
   const active = buttonState.tone === "active";
   const busy = buttonState.tone === "busy";
   const disabled = !onClick || status === "unsupported" || busy;
+  const title = shortcutLabel
+    ? `${buttonState.ariaLabel} (${shortcutLabel})`
+    : buttonState.ariaLabel;
 
   return (
     <Button
@@ -47,7 +52,7 @@ export function VoiceInputButton({
       disabled={disabled}
       onClick={onClick}
       size="icon-lg"
-      title={buttonState.ariaLabel}
+      title={title}
       type="button"
       variant={active || busy ? "outline" : "ghost"}
     >

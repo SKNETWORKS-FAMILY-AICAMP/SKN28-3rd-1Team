@@ -9,6 +9,10 @@ type ChatComposerProps = {
   input: string;
   isBusy: boolean;
   error?: Error;
+  dictationShortcut: {
+    ariaKeyShortcuts: string;
+    label: string;
+  };
   dictationStatus: DictationStatus;
   dictationError?: string;
   onInputChange: (value: string) => void;
@@ -20,6 +24,7 @@ export function ChatComposer({
   input,
   isBusy,
   error,
+  dictationShortcut,
   dictationStatus,
   dictationError,
   onInputChange,
@@ -44,7 +49,8 @@ export function ChatComposer({
           className="min-w-0 flex-1 bg-transparent text-sm text-[var(--chat-text)] outline-none placeholder:text-[var(--chat-text-soft)]"
         />
         <VoiceInputButton
-          ariaKeyShortcuts="Control+Shift+M Meta+Shift+M"
+          ariaKeyShortcuts={dictationShortcut.ariaKeyShortcuts}
+          shortcutLabel={dictationShortcut.label}
           status={dictationStatus}
           onClick={isBusy ? undefined : onVoiceClick}
         />

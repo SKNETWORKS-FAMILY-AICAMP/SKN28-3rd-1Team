@@ -3,6 +3,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { collectAgentTraceLanes } from "@/ui/components/chat/agent-trace-drawer";
+import {
+  DICTATION_SHORTCUT,
+  isDictationShortcut,
+} from "@/page/chat/dictation-shortcut";
 import { useChatPanelResize } from "@/page/chat/hooks/use-chat-panel-resize";
 import { useChatSession } from "@/page/chat/hooks/use-chat-session";
 import {
@@ -20,17 +24,6 @@ function mergeSpeechTranscript(baseInput: string, transcript: string) {
   if (!text) return base;
 
   return `${base} ${text}`;
-}
-
-function isSpeechShortcut(event: KeyboardEvent) {
-  const isMKey = event.key.toLowerCase() === "m" || event.code === "KeyM";
-
-  return (
-    isMKey &&
-    event.shiftKey &&
-    (event.ctrlKey || event.metaKey) &&
-    !event.altKey
-  );
 }
 
 function canToggleSpeechStatus(status: DictationStatus) {
@@ -124,7 +117,7 @@ export function useChatPageController() {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (
-        !isSpeechShortcut(event) ||
+        !isDictationShortcut(event) ||
         isBusy ||
         !canToggleSpeechStatus(dictationStatus)
       ) {
@@ -155,6 +148,7 @@ export function useChatPageController() {
   return {
     chatSidebar: {
       dictationError,
+      dictationShortcut: DICTATION_SHORTCUT,
       dictationStatus,
       error,
       input,
