@@ -232,7 +232,7 @@ function SidebarChatMessage({
             {textParts.map((part, index) => (
               <MessageResponse
                 key={`${message.id}-text-${index}`}
-                className="whitespace-pre-wrap leading-relaxed"
+                className="break-words leading-relaxed"
               >
                 {part.text}
               </MessageResponse>
