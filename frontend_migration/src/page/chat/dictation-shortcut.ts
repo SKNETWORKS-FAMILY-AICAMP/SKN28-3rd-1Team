@@ -4,8 +4,8 @@ export type DictationShortcutPresentation = {
 };
 
 export const DICTATION_SHORTCUT = {
-  ariaKeyShortcuts: "Control+Shift+M Meta+Shift+M",
-  label: "Ctrl+Shift+M / Cmd+Shift+M",
+  ariaKeyShortcuts: "Alt+M",
+  label: "Alt+M / Option+M",
 } as const satisfies DictationShortcutPresentation;
 
 export function isDictationShortcut(event: KeyboardEvent) {
@@ -13,9 +13,10 @@ export function isDictationShortcut(event: KeyboardEvent) {
 
   return (
     isMKey &&
-    event.shiftKey &&
-    (event.ctrlKey || event.metaKey) &&
-    !event.altKey &&
+    event.altKey &&
+    !event.ctrlKey &&
+    !event.metaKey &&
+    !event.shiftKey &&
     !event.repeat
   );
 }
