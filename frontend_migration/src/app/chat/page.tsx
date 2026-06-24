@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
 import { ChatPage } from "@/page/chat/page";
 
@@ -7,5 +8,11 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  return <ChatPage />;
+  return (
+    <Suspense
+      fallback={<main className="h-dvh min-h-[660px] bg-background" />}
+    >
+      <ChatPage />
+    </Suspense>
+  );
 }
