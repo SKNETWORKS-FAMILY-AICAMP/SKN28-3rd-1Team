@@ -152,6 +152,7 @@ export type WorkspaceChecklistItem = {
   id: string;
   title: string;
   detail: string;
+  expandedDetail?: string;
   status: "ready" | "todo" | "warning" | "done";
   required: boolean;
   meta?: string;
@@ -172,6 +173,7 @@ export type ChatWorkspaceActionChecklistSurface = {
   nextActionTitle: string;
   nextActionDescription: string;
   nextActionLabel: string;
+  nextActionPrompt?: string;
 };
 
 export type WorkspaceAccessTravel = {
@@ -243,6 +245,10 @@ export type ChatWorkspaceCommand =
       type: "workspace.setMascotAnimation";
       animation: MascotAnimationName;
       animationControl?: ChatWorkspaceMascotState["animationControl"];
+    }
+  | {
+      type: "workspace.selectInstitution";
+      institutionId: string;
     }
   | {
       type: "workspace.useAutoMascot";
@@ -427,6 +433,8 @@ export function reduceChatWorkspaceState(
       return {
         surface: command.surface,
       };
+    case "workspace.selectInstitution":
+      return selectInstitutionSurface(state, command.institutionId);
     case "workspace.setMascotAnimation":
       return updateMascotSurface(state, {
         animation: command.animation,
@@ -452,9 +460,38 @@ export function resolveChatWorkspaceState(
     return state;
   }
 
-  return updateMascotSurface(state, {
+  const nextState = updateMascotSurface(state, {
     animation: runtimeMascotAnimation,
   });
+
+  if (nextState.surface.type !== "default") return nextState;
+
+  return {
+    surface: {
+      ...nextState.surface,
+      statusLabel: getRuntimeMascotStatusLabel(runtimeMascotAnimation),
+    },
+  };
+}
+
+function getRuntimeMascotStatusLabel(animation: MascotAnimationName) {
+  switch (animation) {
+    case "attentive":
+      return "입력 확인 중";
+    case "greeting":
+    case "idle":
+      return "상담 대기 중";
+    case "listening":
+      return "음성 듣는 중";
+    case "sad":
+      return "확인 필요";
+    case "speaking":
+      return "음성 답변 중";
+    case "thinking":
+      return "답변 준비 중";
+    default:
+      return assertNever(animation);
+  }
 }
 
 function createDefaultMascotState(): ChatWorkspaceMascotState {
@@ -484,6 +521,28 @@ function updateMascotSurface(
         ...state.surface.mascot,
         ...mascot,
       },
+    },
+  };
+}
+
+function selectInstitutionSurface(
+  state: ChatWorkspaceState,
+  institutionId: string
+): ChatWorkspaceState {
+  if (state.surface.type !== "institution-results") return state;
+  if (
+    !state.surface.institutions.some(
+      (institution) => institution.id === institutionId
+    )
+  ) {
+    return state;
+  }
+
+  return {
+    surface: {
+      ...state.surface,
+      selectedInstitutionId: institutionId,
+      view: "map",
     },
   };
 }

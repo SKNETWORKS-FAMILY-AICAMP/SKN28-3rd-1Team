@@ -83,6 +83,7 @@ const workspaceChecklistItemSchema = z.object({
   id: z.string(),
   title: z.string(),
   detail: z.string(),
+  expandedDetail: z.string().optional(),
   status: z.enum(["ready", "todo", "warning", "done"]),
   required: z.boolean(),
   meta: z.string().optional(),
@@ -154,6 +155,7 @@ const actionChecklistSurfaceSchema = z.object({
   nextActionTitle: z.string(),
   nextActionDescription: z.string(),
   nextActionLabel: z.string(),
+  nextActionPrompt: z.string().optional(),
 })
 
 const accessSummarySurfaceSchema = z.object({

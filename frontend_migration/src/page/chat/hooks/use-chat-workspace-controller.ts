@@ -16,6 +16,7 @@ type UseChatWorkspaceControllerOptions = {
   chatStatus: "submitted" | "streaming" | "ready" | "error";
   conversationEmpty: boolean;
   dictationStatus: DictationStatus;
+  draftInputActive: boolean;
   ttsPlaybackStatus: TtsPlaybackStatus;
 };
 
@@ -23,6 +24,7 @@ export function useChatWorkspaceController({
   chatStatus,
   conversationEmpty,
   dictationStatus,
+  draftInputActive,
   ttsPlaybackStatus,
 }: UseChatWorkspaceControllerOptions) {
   const [workspaceState, setWorkspaceState] = useState(
@@ -32,6 +34,7 @@ export function useChatWorkspaceController({
     chatStatus,
     conversationEmpty,
     dictationStatus,
+    draftInputActive,
     ttsPlaybackStatus,
   });
   const state = useMemo(
@@ -52,6 +55,7 @@ function resolveRuntimeMascotAnimation({
   chatStatus,
   conversationEmpty,
   dictationStatus,
+  draftInputActive,
   ttsPlaybackStatus,
 }: UseChatWorkspaceControllerOptions): MascotAnimationName {
   if (
@@ -74,6 +78,8 @@ function resolveRuntimeMascotAnimation({
   if (chatStatus === "submitted" || chatStatus === "streaming") {
     return "thinking";
   }
+
+  if (draftInputActive) return "attentive";
 
   if (conversationEmpty) return "greeting";
 

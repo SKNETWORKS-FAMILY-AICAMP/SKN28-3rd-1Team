@@ -119,6 +119,7 @@ export function useChatPageController() {
     chatStatus: status,
     conversationEmpty,
     dictationStatus,
+    draftInputActive: input.trim().length > 0,
     ttsPlaybackStatus,
   });
   const { applyCommand: applyWorkspaceCommand, state: workspaceState } =
@@ -241,6 +242,7 @@ export function useChatPageController() {
       : null,
     workspace: {
       consultationBusy: isBusy,
+      onCommand: applyWorkspaceCommand,
       onVoiceClick: canUseVoiceInput ? toggleSpeechInput : undefined,
       onStartConsultation: handleWorkspaceConsultationStart,
       state: workspaceState,

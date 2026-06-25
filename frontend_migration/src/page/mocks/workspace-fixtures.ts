@@ -229,16 +229,18 @@ const workspaceMockStates: Record<string, ChatWorkspaceState> = {
       title: "신청 전 확인할 일",
       description:
         "답변을 들은 뒤 바로 실행할 수 있는 확인 항목과 준비 서류를 정리합니다.",
-      nextActionTitle: "다음 실행",
+      nextActionTitle: "주소 확인 필요",
       nextActionDescription:
-        "방문 전에는 모집 기간과 접수 가능 여부를 전화로 먼저 확인합니다.",
-      nextActionLabel: "기관에 전화 문의",
+        "가까운 복지관·주민센터의 연락처를 찾으려면 거주하시는 시·군·구 명칭을 알려 주세요.",
+      nextActionLabel: "시·군·구 알려주기",
       items: [
         {
           id: "call-before-visit",
           title: "방문 전 전화로 모집 여부 확인",
           detail:
             "기관별 모집 기간과 접수 가능 시간이 다르므로 방문 전 전화 확인이 필요합니다.",
+          expandedDetail:
+            "전화할 때는 현재 거주지 기준 신청 가능 여부, 모집 마감일, 당일 방문 상담 가능 시간, 추가로 필요한 서류를 한 번에 확인하는 것이 좋습니다.",
           meta: "강남시니어클럽 02-123-4567",
           defaultExpanded: true,
           required: true,
@@ -263,6 +265,8 @@ const workspaceMockStates: Record<string, ChatWorkspaceState> = {
           title: "신분증과 주민등록등본 준비",
           detail:
             "기본 본인 확인과 거주지 확인에 필요한 서류를 먼저 챙깁니다.",
+          expandedDetail:
+            "서류는 기관별로 요구 범위가 다를 수 있으므로 원본 필요 여부와 최근 발급 기준을 전화로 확인한 뒤 준비합니다.",
           required: true,
           status: "todo",
           steps: [

@@ -18,6 +18,7 @@ import { ChatComposer } from "@/ui/components/chat/chat-composer";
 import { MascotAvatar } from "@/ui/components/mascot/mascot-avatar";
 import {
   formatTimestamp,
+  getDataParts,
   getMessageText,
 } from "@/page/chat/message-utils";
 
@@ -148,6 +149,7 @@ export function ChatSidebar({
         {messages.map((message) => (
           <SidebarChatMessage
             key={message.id}
+            isLive={status === "streaming" && message.id === messages.at(-1)?.id}
             message={message}
             timestamp={messageTimestamps.get(message.id)}
           />
@@ -233,9 +235,11 @@ function MessageTimestamp({
 }
 
 function SidebarChatMessage({
+  isLive = false,
   message,
   timestamp,
 }: {
+  isLive?: boolean;
   message: LegalChatMessage;
   timestamp?: string;
 }) {
@@ -273,6 +277,7 @@ function SidebarChatMessage({
                 {part.text}
               </MessageResponse>
             ))}
+            <MainAgentToolIndicator isLive={isLive} message={message} />
             <MessageTimestamp
               timestamp={timestamp}
               className="text-[var(--chat-text-muted)]"
@@ -282,4 +287,67 @@ function SidebarChatMessage({
       </div>
     </div>
   );
+}
+
+function MainAgentToolIndicator({
+  isLive,
+  message,
+}: {
+  isLive: boolean;
+  message: LegalChatMessage;
+}) {
+  const toolSummary = getMainAgentToolSummary(message);
+
+  if (toolSummary.count > 0) {
+    return (
+      <div
+        className="mt-2 inline-flex max-w-full items-center gap-1.5 rounded-[8px] bg-[var(--chat-success-bg)] px-2 py-1 text-[11px] font-bold text-[var(--chat-success-text)]"
+        title={toolSummary.names.length ? toolSummary.names.join(", ") : undefined}
+      >
+        <span className="size-1.5 rounded-full bg-[var(--chat-success-text)]" />
+        메인 도구 호출 {toolSummary.count}회
+      </div>
+    );
+  }
+
+  if (isLive) {
+    return (
+      <div className="mt-2 inline-flex items-center gap-1.5 rounded-[8px] bg-[var(--chat-sidebar-muted)] px-2 py-1 text-[11px] font-bold text-[var(--chat-text-muted)]">
+        <span className="size-1.5 animate-pulse rounded-full bg-[var(--chat-text-soft)]" />
+        메인 도구 확인 중
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-2 inline-flex items-center gap-1.5 rounded-[8px] bg-[var(--chat-warning-bg)] px-2 py-1 text-[11px] font-bold text-[var(--chat-warning-text)]">
+      <span className="size-1.5 rounded-full bg-[var(--chat-warning-text)]" />
+      메인 도구 호출 없음
+    </div>
+  );
+}
+
+function getMainAgentToolSummary(message: LegalChatMessage) {
+  const toolCalls = getDataParts(message, "toolCall")
+    .map((part) => part.data)
+    .filter((toolCall) => normalizeAgentName(toolCall.sourceAgent) === "main_agent");
+  const toolKeys = new Set<string>();
+  const names = new Set<string>();
+
+  for (const toolCall of toolCalls) {
+    const name = toolCall.name?.trim() || "unknown tool";
+    const key = toolCall.id?.trim() || name;
+
+    toolKeys.add(key);
+    names.add(name);
+  }
+
+  return {
+    count: toolKeys.size,
+    names: [...names],
+  };
+}
+
+function normalizeAgentName(value?: string | null) {
+  return (value || "main_agent").trim().toLowerCase().replaceAll("-", "_");
 }

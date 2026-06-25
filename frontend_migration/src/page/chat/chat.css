@@ -136,6 +136,31 @@
   background: var(--chat-tier-far);
 }
 
+.chat-naver-map-pin {
+  display: flex;
+  width: 2rem;
+  height: 2rem;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #fff;
+  border-radius: 9999px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: var(--chat-map-pin-shadow);
+}
+
+.chat-naver-map-pin[data-selected="true"] {
+  width: 2.5rem;
+  height: 2.5rem;
+  background: var(--chat-primary);
+  box-shadow:
+    0 0 0 5px var(--chat-primary-ring),
+    var(--chat-map-pin-shadow);
+}
+
 .chat-trace-audio {
   border-color: rgb(255 210 124 / 0.25);
   background: rgb(255 210 124 / 0.1);

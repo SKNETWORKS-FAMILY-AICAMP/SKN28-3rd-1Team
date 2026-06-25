@@ -29,10 +29,12 @@ type InstitutionActionCopy = Pick<
 export function InstitutionMap({
   institutions,
   map,
+  onSelectInstitution,
   selectedInstitutionId,
 }: {
   institutions: WorkspaceInstitution[];
   map: ChatWorkspaceInstitutionResultsSurface["map"];
+  onSelectInstitution?: (institutionId: string) => void;
   selectedInstitutionId?: string;
 }) {
   return (
@@ -51,6 +53,7 @@ export function InstitutionMap({
         })),
         zoom: map.zoom,
       }}
+      onPointSelect={onSelectInstitution}
       fallbackChildren={institutions.map((institution, index) => {
         const isSelected = institution.id === selectedInstitutionId;
 
@@ -60,7 +63,8 @@ export function InstitutionMap({
             x={institution.x}
             y={institution.y}
           >
-            <span
+            <button
+              aria-label={`${institution.name} 선택`}
               className={cn(
                 "chat-map-pin flex items-center justify-center rounded-full border-2 border-white text-base font-bold text-white shadow-[var(--chat-map-pin-shadow)]",
                 isSelected
@@ -68,14 +72,16 @@ export function InstitutionMap({
                   : "size-8"
               )}
               data-tier={isSelected ? undefined : institution.tier}
+              onClick={() => onSelectInstitution?.(institution.id)}
               style={
                 isSelected
                   ? { backgroundColor: "var(--chat-primary)" }
                   : undefined
               }
+              type="button"
             >
               {index + 1}
-            </span>
+            </button>
           </WorkspaceMapMarker>
         );
       })}
@@ -85,9 +91,11 @@ export function InstitutionMap({
 
 export function InstitutionList({
   institutions,
+  onSelectInstitution,
   selectedInstitutionId,
 }: {
   institutions: WorkspaceInstitution[];
+  onSelectInstitution?: (institutionId: string) => void;
   selectedInstitutionId?: string;
 }) {
   return (
@@ -96,10 +104,13 @@ export function InstitutionList({
         const isSelected = institution.id === selectedInstitutionId;
 
         return (
-          <div
+          <button
             key={institution.id}
+            type="button"
+            aria-pressed={isSelected}
+            onClick={() => onSelectInstitution?.(institution.id)}
             className={cn(
-              "rounded-[15px] border bg-[var(--chat-surface)] p-3.5 transition",
+              "w-full rounded-[15px] border bg-[var(--chat-surface)] p-3.5 text-left transition hover:border-[var(--chat-primary-border)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--chat-primary)]",
               isSelected
                 ? "border-[var(--chat-primary-border)] shadow-[var(--chat-shadow-soft)]"
                 : "border-[var(--chat-border)]"
@@ -130,7 +141,7 @@ export function InstitutionList({
                 </div>
               </div>
             </div>
-          </div>
+          </button>
         );
       })}
     </div>

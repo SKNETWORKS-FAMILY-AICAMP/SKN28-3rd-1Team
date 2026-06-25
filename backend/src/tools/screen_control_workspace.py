@@ -95,6 +95,7 @@ class WorkspaceChecklistItem(WorkspaceToolModel):
     id: str
     title: str
     detail: str
+    expandedDetail: str | None = None
     status: Literal["ready", "todo", "warning", "done"]
     required: bool
     meta: str | None = None
@@ -179,6 +180,7 @@ class WorkspaceShowActionChecklistArgs(WorkspaceToolModel):
     nextActionTitle: str
     nextActionDescription: str
     nextActionLabel: str
+    nextActionPrompt: str | None = None
 
 
 class WorkspaceShowAccessSummaryArgs(WorkspaceToolModel):

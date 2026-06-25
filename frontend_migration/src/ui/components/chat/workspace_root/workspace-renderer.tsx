@@ -4,10 +4,14 @@ import { DefaultWorkspaceSurface } from "@/ui/components/chat/workspace_surface/
 import { EvidenceDocumentsSurface } from "@/ui/components/chat/workspace_surface/evidence_documents/evidence-documents-surface";
 import { InstitutionResultsSurface } from "@/ui/components/chat/workspace_surface/institution_results/institution-results-surface";
 import { ProfileIntakeSurface } from "@/ui/components/chat/workspace_surface/profile_intake/profile-intake-surface";
-import type { ChatWorkspaceState } from "@/ui/components/chat/workspace_root/workspace-state";
+import type {
+  ChatWorkspaceCommand,
+  ChatWorkspaceState,
+} from "@/ui/components/chat/workspace_root/workspace-state";
 
 type ChatWorkspaceRendererProps = {
   consultationBusy?: boolean;
+  onCommand?: (command: ChatWorkspaceCommand) => void;
   onVoiceClick?: () => void;
   onStartConsultation?: (prompt: string) => void;
   state: ChatWorkspaceState;
@@ -16,6 +20,7 @@ type ChatWorkspaceRendererProps = {
 
 export function ChatWorkspaceRenderer({
   consultationBusy,
+  onCommand,
   onVoiceClick,
   onStartConsultation,
   state,
@@ -39,11 +44,22 @@ export function ChatWorkspaceRenderer({
         />
       );
     case "institution-results":
-      return <InstitutionResultsSurface surface={state.surface} />;
+      return (
+        <InstitutionResultsSurface
+          onCommand={onCommand}
+          surface={state.surface}
+        />
+      );
     case "evidence-documents":
       return <EvidenceDocumentsSurface surface={state.surface} />;
     case "action-checklist":
-      return <ActionChecklistSurface surface={state.surface} />;
+      return (
+        <ActionChecklistSurface
+          consultationBusy={consultationBusy}
+          onStartConsultation={onStartConsultation}
+          surface={state.surface}
+        />
+      );
     case "access-summary":
       return <AccessSummarySurface surface={state.surface} />;
     default:

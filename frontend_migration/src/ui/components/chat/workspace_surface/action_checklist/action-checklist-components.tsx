@@ -20,10 +20,13 @@ export function ChecklistStepGroup({
   item: WorkspaceChecklistItem;
 }) {
   const Icon = item.status === "warning" ? ExclamationTriangleIcon : CheckCircleIcon;
+  const steps = item.steps ?? [];
+  const expandedDetail = item.expandedDetail?.trim();
+  const hasExpandedContent = Boolean(expandedDetail) || steps.length > 0;
 
   return (
     <details
-      open={item.defaultExpanded}
+      open={hasExpandedContent ? item.defaultExpanded : undefined}
       className={cn(
         "group rounded-[18px] border border-[var(--chat-border)] bg-[var(--chat-panel)]",
         item.status === "warning" &&
@@ -74,33 +77,43 @@ export function ChecklistStepGroup({
         <ChevronDownIcon className="mt-2 size-5 shrink-0 text-[var(--chat-text-muted)] transition group-open:rotate-180" />
       </summary>
 
-      <div className="border-t border-[var(--chat-border)] px-5 pb-5 pt-4">
-        <div className="grid gap-3 md:grid-cols-2">
-          {(item.steps ?? []).map((step) => (
-            <div
-              key={step.id}
-              className="rounded-[14px] border border-[var(--chat-border)] bg-[var(--chat-surface)] p-4"
-            >
-              <div className="flex items-start gap-3">
-                <StepStatusDot status={step.status} />
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="text-lg font-extrabold text-[var(--chat-text-strong)]">
-                      {step.title}
-                    </h3>
-                    <WorkspaceBadge tone={statusTone(step.status)}>
-                      {statusLabel(step.status)}
-                    </WorkspaceBadge>
+      {hasExpandedContent ? (
+        <div className="border-t border-[var(--chat-border)] px-5 pb-5 pt-4">
+          {expandedDetail ? (
+            <p className="mb-4 rounded-[14px] bg-[var(--chat-surface)] px-4 py-3 text-base leading-7 text-[var(--chat-text)]">
+              {expandedDetail}
+            </p>
+          ) : null}
+
+          {steps.length ? (
+            <div className="grid gap-3 md:grid-cols-2">
+              {steps.map((step) => (
+                <div
+                  key={step.id}
+                  className="rounded-[14px] border border-[var(--chat-border)] bg-[var(--chat-surface)] p-4"
+                >
+                  <div className="flex items-start gap-3">
+                    <StepStatusDot status={step.status} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="text-lg font-extrabold text-[var(--chat-text-strong)]">
+                          {step.title}
+                        </h3>
+                        <WorkspaceBadge tone={statusTone(step.status)}>
+                          {statusLabel(step.status)}
+                        </WorkspaceBadge>
+                      </div>
+                      <p className="mt-2 text-base leading-7 text-[var(--chat-text)]">
+                        {step.detail}
+                      </p>
+                    </div>
                   </div>
-                  <p className="mt-2 text-base leading-7 text-[var(--chat-text)]">
-                    {step.detail}
-                  </p>
                 </div>
-              </div>
+              ))}
             </div>
-          ))}
+          ) : null}
         </div>
-      </div>
+      ) : null}
     </details>
   );
 }
@@ -108,10 +121,14 @@ export function ChecklistStepGroup({
 export function ChecklistNextAction({
   actionLabel,
   description,
+  disabled = false,
+  onAction,
   title,
 }: {
   actionLabel: string;
   description: string;
+  disabled?: boolean;
+  onAction?: () => void;
   title: string;
 }) {
   return (
@@ -129,9 +146,14 @@ export function ChecklistNextAction({
           </p>
         </div>
       </div>
-      <span className="flex h-12 min-w-44 items-center justify-center rounded-[11px] bg-[var(--chat-primary)] px-5 text-lg font-bold text-white shadow-[var(--chat-shadow-primary)]">
+      <button
+        type="button"
+        disabled={disabled || !onAction}
+        onClick={onAction}
+        className="flex h-12 min-w-44 items-center justify-center rounded-[11px] bg-[var(--chat-primary)] px-5 text-lg font-bold text-white shadow-[var(--chat-shadow-primary)] transition hover:bg-[var(--chat-primary-strong)] disabled:cursor-not-allowed disabled:opacity-60"
+      >
         {actionLabel}
-      </span>
+      </button>
     </WorkspacePanel>
   );
 }

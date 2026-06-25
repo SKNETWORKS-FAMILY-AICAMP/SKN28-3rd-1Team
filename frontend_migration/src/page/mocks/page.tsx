@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import { CharacterAnimationShowcase } from "@/page/mocks/character-animation-showcase";
 import { MockChatRail } from "@/page/mocks/mock-chat-rail";
@@ -11,6 +11,11 @@ import {
   getWorkspaceMockState,
 } from "@/page/mocks/workspace-fixtures";
 import { ChatWorkspace } from "@/ui/components/chat/workspace_root/chat-workspace";
+import {
+  reduceChatWorkspaceState,
+  type ChatWorkspaceCommand,
+  type ChatWorkspaceState,
+} from "@/ui/components/chat/workspace_root/workspace-state";
 import "@/page/chat/chat.css";
 
 type MocksPageProps = {
@@ -25,7 +30,10 @@ export function MocksPage({ initialSceneSlug }: MocksPageProps) {
     () => getMockScene(selectedSceneSlug) ?? mockScenes[0],
     [selectedSceneSlug]
   );
-  const workspaceState = getWorkspaceMockState(selectedScene.slug);
+  const initialWorkspaceState = useMemo(
+    () => getWorkspaceMockState(selectedScene.slug),
+    [selectedScene.slug]
+  );
   const hasConversation =
     selectedScene.slug !== "chat-start" && selectedScene.slug !== "profile-form";
 
@@ -76,13 +84,16 @@ export function MocksPage({ initialSceneSlug }: MocksPageProps) {
         <div className="min-h-0 flex-1 overflow-y-auto bg-[var(--chat-bg)] p-6">
           <CharacterAnimationShowcase />
         </div>
-      ) : workspaceState ? (
+      ) : initialWorkspaceState ? (
         <div className="flex min-h-0 flex-1">
           <MockChatRail
             hasConversation={hasConversation}
             questions={getWorkspaceMockQuestions(selectedScene.slug)}
           />
-          <ChatWorkspace state={workspaceState} />
+          <MockWorkspacePreview
+            key={selectedScene.slug}
+            initialState={initialWorkspaceState}
+          />
         </div>
       ) : (
         <div className="flex min-h-0 flex-1 items-center justify-center p-6">
@@ -92,6 +103,28 @@ export function MocksPage({ initialSceneSlug }: MocksPageProps) {
         </div>
       )}
     </main>
+  );
+}
+
+function MockWorkspacePreview({
+  initialState,
+}: {
+  initialState: ChatWorkspaceState;
+}) {
+  const [workspaceState, setWorkspaceState] = useState(initialState);
+  const handleWorkspaceCommand = useCallback((command: ChatWorkspaceCommand) => {
+    setWorkspaceState((current) => reduceChatWorkspaceState(current, command));
+  }, []);
+  const handleStartConsultation = useCallback((prompt: string) => {
+    document.documentElement.dataset.lastConsultationPrompt = prompt;
+  }, []);
+
+  return (
+    <ChatWorkspace
+      onCommand={handleWorkspaceCommand}
+      onStartConsultation={handleStartConsultation}
+      state={workspaceState}
+    />
   );
 }
 
