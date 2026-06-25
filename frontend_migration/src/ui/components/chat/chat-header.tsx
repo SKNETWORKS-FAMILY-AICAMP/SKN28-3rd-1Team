@@ -1,23 +1,13 @@
-import {
-  BookmarkSquareIcon,
-  PlusIcon,
-} from "@heroicons/react/24/outline";
+import { PlusIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
 
 import { MascotAvatar } from "@/ui/components/mascot/mascot-avatar";
-import { cn } from "@/lib/utils";
 
 type ChatHeaderProps = {
-  canShowDocuments: boolean;
-  onShowDocuments: () => void;
-  onSaveSummary: () => void;
   onNewChat: () => void;
 };
 
 export function ChatHeader({
-  canShowDocuments,
-  onShowDocuments,
-  onSaveSummary,
   onNewChat,
 }: ChatHeaderProps) {
   return (
@@ -29,39 +19,9 @@ export function ChatHeader({
         </span>
       </Link>
 
-      <nav className="hidden items-center gap-7 text-sm font-medium text-[var(--chat-text-muted)] md:flex">
-        <span>상담 주제</span>
-        <span>이용 방법</span>
-        <Link
-          href="/mocks"
-          className="font-medium transition-colors hover:text-[var(--chat-text-strong)]"
-        >
-          디자인
-        </Link>
-        <button
-          type="button"
-          onClick={onShowDocuments}
-          aria-disabled={!canShowDocuments}
-          className={cn(
-            "font-medium transition-colors hover:text-[var(--chat-text-strong)]",
-            !canShowDocuments && "cursor-not-allowed opacity-70"
-          )}
-        >
-          근거 문서
-        </button>
-      </nav>
-
       <div className="flex-1" />
 
       <div className="flex items-center gap-2.5">
-        <button
-          type="button"
-          onClick={onSaveSummary}
-          className="hidden h-10 items-center gap-2 rounded-[10px] border border-[var(--chat-border-strong)] bg-[var(--chat-panel)] px-4 text-sm font-semibold text-[var(--chat-text-muted)] sm:inline-flex"
-        >
-          <BookmarkSquareIcon className="size-4 text-[var(--chat-primary)]" />
-          상담 요약 저장
-        </button>
         <button
           type="button"
           onClick={onNewChat}

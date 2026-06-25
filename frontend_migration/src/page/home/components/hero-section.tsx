@@ -31,7 +31,7 @@ export function HeroSection() {
               className={buttonVariants({
                 size: "lg",
                 className:
-                  "w-full rounded-full px-6 py-3 font-heading text-base whitespace-nowrap sm:w-auto",
+                  "h-auto min-h-9 w-full rounded-full px-5.5 py-4 text-center font-heading text-[1.625rem] leading-tight whitespace-normal sm:w-auto sm:whitespace-nowrap",
               })}
             >
               <MessageCircleQuestion className="size-5" />
@@ -43,7 +43,7 @@ export function HeroSection() {
                 size: "lg",
                 variant: "outline",
                 className:
-                  "w-full rounded-full border-primary/30 bg-card px-6 py-3 font-heading text-base whitespace-nowrap sm:w-auto",
+                  "h-auto min-h-9 w-full rounded-full border-primary/30 bg-card px-5.5 py-4 font-heading text-[1.625rem] leading-tight whitespace-nowrap sm:w-auto",
               })}
             >
               이용 방법 보기
@@ -65,7 +65,11 @@ export function HeroSection() {
         </FadeIn>
 
         <FadeIn direction="right" delay={150} className="relative flex justify-center">
-          <div className="group relative flex aspect-square w-full max-w-md items-center justify-center rounded-[2.5rem] bg-gradient-to-b from-card to-secondary/60 shadow-xl ring-1 ring-border">
+          <Link
+            href="/chat"
+            aria-label="상담 화면으로 이동"
+            className="group relative flex aspect-square w-full max-w-md items-center justify-center rounded-[2.5rem] bg-gradient-to-b from-card to-secondary/60 shadow-xl ring-1 ring-border transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+          >
             <Image
               src="/mascots/mascot.png"
               alt="법률 가이드 책을 든 법률 챗봇 마스코트 로디"
@@ -86,7 +90,7 @@ export function HeroSection() {
             <span className="absolute -right-3 top-10 rounded-2xl bg-card px-4 py-2 text-sm font-medium text-foreground shadow-md ring-1 ring-border">
               안녕하세요, 로디예요!
             </span>
-          </div>
+          </Link>
         </FadeIn>
       </div>
     </section>

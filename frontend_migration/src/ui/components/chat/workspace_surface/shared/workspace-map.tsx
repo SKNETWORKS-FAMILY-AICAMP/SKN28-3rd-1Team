@@ -38,8 +38,17 @@ type NaverLatLng = {
   lng: () => number;
 };
 
+type NaverFitBoundsOptions = {
+  bottom: number;
+  left: number;
+  maxZoom?: number;
+  right: number;
+  top: number;
+};
+
 type NaverMap = {
   autoResize: () => void;
+  fitBounds: (bounds: NaverLatLng[], options?: NaverFitBoundsOptions) => void;
   getMaxZoom: () => number;
   getMinZoom: () => number;
   setCenter: (center: NaverLatLng) => void;
@@ -59,6 +68,7 @@ type NaverMapsNamespace = {
     element: HTMLElement,
     options: {
       center: NaverLatLng;
+      minZoom?: number;
       zoom: number;
     }
   ) => NaverMap;
@@ -84,6 +94,16 @@ declare global {
 
 let naverMapsScriptPromise: Promise<void> | null = null;
 let naverMapsRuntimeUnavailable = false;
+const NAVER_MAP_MIN_LOCAL_ZOOM = 14;
+const NAVER_MAP_FOCUSED_ZOOM = 16;
+const NAVER_MAP_MULTI_POINT_ZOOM = 15;
+const NAVER_MAP_LOCAL_FIT_RADIUS_KM = 4;
+const NAVER_MAP_BOUNDS_MARGIN: Omit<NaverFitBoundsOptions, "maxZoom"> = {
+  bottom: 40,
+  left: 40,
+  right: 40,
+  top: 40,
+};
 
 export function WorkspaceMapFrame({
   children,
@@ -215,9 +235,11 @@ function WorkspaceNaverMapCanvas({
       (point): point is WorkspaceMapPoint & { coordinate: WorkspaceCoordinate } =>
         Boolean(point.coordinate)
     );
-    const resolvedCenter =
-      center ?? resolveCoordinateCenter(mapPoints.map((point) => point.coordinate));
-    const resolvedZoom = zoom ?? (mapPoints.length > 1 ? 14 : 15);
+    const hasExplicitCenter = Boolean(center);
+    const resolvedCenter = resolveMapCenter(center, mapPoints);
+    const resolvedZoom = resolveLocalMapZoom(zoom, {
+      focused: hasExplicitCenter || mapPoints.length <= 1,
+    });
 
     if (!resolvedCenter) {
       onUnavailable();
@@ -228,14 +250,20 @@ function WorkspaceNaverMapCanvas({
       if (!mapRef.current) {
         mapRef.current = new naver.Map(canvasRef.current, {
           center: new naver.LatLng(resolvedCenter.lat, resolvedCenter.lng),
+          minZoom: NAVER_MAP_MIN_LOCAL_ZOOM,
           zoom: resolvedZoom,
         });
       }
 
       const map = mapRef.current;
-      map.autoResize();
-      map.setCenter(new naver.LatLng(resolvedCenter.lat, resolvedCenter.lng));
-      map.setZoom(clampNaverMapZoom(map, resolvedZoom), false);
+      applyNaverMapViewport({
+        center: resolvedCenter,
+        map,
+        naver,
+        points: mapPoints,
+        shouldFitBounds: !hasExplicitCenter,
+        zoom: resolvedZoom,
+      });
 
       overlaysRef.current.forEach((overlay) => overlay.setMap(null));
       overlaysRef.current = mapPoints.map(
@@ -248,8 +276,14 @@ function WorkspaceNaverMapCanvas({
       );
 
       const resizeFrame = window.requestAnimationFrame(() => {
-        map.autoResize();
-        map.setCenter(new naver.LatLng(resolvedCenter.lat, resolvedCenter.lng));
+        applyNaverMapViewport({
+          center: resolvedCenter,
+          map,
+          naver,
+          points: mapPoints,
+          shouldFitBounds: !hasExplicitCenter,
+          zoom: resolvedZoom,
+        });
       });
 
       return () => {
@@ -371,6 +405,19 @@ function isNaverMapsSdkError(event: ErrorEvent | Event) {
   );
 }
 
+function resolveMapCenter(
+  center: WorkspaceCoordinate | undefined,
+  points: Array<WorkspaceMapPoint & { coordinate: WorkspaceCoordinate }>
+) {
+  if (center) return center;
+
+  return (
+    points.find((point) => point.selected)?.coordinate ??
+    points[0]?.coordinate ??
+    resolveCoordinateCenter(points.map((point) => point.coordinate))
+  );
+}
+
 function resolveCoordinateCenter(points: WorkspaceCoordinate[]) {
   if (!points.length) return undefined;
 
@@ -380,6 +427,85 @@ function resolveCoordinateCenter(points: WorkspaceCoordinate[]) {
   };
 }
 
+function applyNaverMapViewport({
+  center,
+  map,
+  naver,
+  points,
+  shouldFitBounds,
+  zoom,
+}: {
+  center: WorkspaceCoordinate;
+  map: NaverMap;
+  naver: NaverMapsNamespace;
+  points: Array<WorkspaceMapPoint & { coordinate: WorkspaceCoordinate }>;
+  shouldFitBounds: boolean;
+  zoom: number;
+}) {
+  const resolvedZoom = clampNaverMapZoom(map, zoom);
+  const coordinates = points.map((point) => point.coordinate);
+  const canFitLocalBounds =
+    shouldFitBounds &&
+    coordinates.length > 1 &&
+    getMaxDistanceKm(center, coordinates) <= NAVER_MAP_LOCAL_FIT_RADIUS_KM;
+
+  map.autoResize();
+
+  if (canFitLocalBounds) {
+    map.fitBounds(
+      coordinates.map((point) => new naver.LatLng(point.lat, point.lng)),
+      {
+        ...NAVER_MAP_BOUNDS_MARGIN,
+        maxZoom: resolvedZoom,
+      }
+    );
+    return;
+  }
+
+  map.setCenter(new naver.LatLng(center.lat, center.lng));
+  map.setZoom(resolvedZoom, false);
+}
+
+function resolveLocalMapZoom(
+  zoom: number | undefined,
+  { focused }: { focused: boolean }
+) {
+  const fallbackZoom = focused ? NAVER_MAP_FOCUSED_ZOOM : NAVER_MAP_MULTI_POINT_ZOOM;
+  const requestedZoom =
+    typeof zoom === "number" && Number.isFinite(zoom) ? zoom : fallbackZoom;
+  const minimumZoom = focused ? NAVER_MAP_FOCUSED_ZOOM : NAVER_MAP_MIN_LOCAL_ZOOM;
+
+  return Math.max(requestedZoom, minimumZoom);
+}
+
 function clampNaverMapZoom(map: NaverMap, zoom: number) {
   return Math.min(Math.max(zoom, map.getMinZoom()), map.getMaxZoom());
+}
+
+function getMaxDistanceKm(
+  center: WorkspaceCoordinate,
+  points: WorkspaceCoordinate[]
+) {
+  return points.reduce(
+    (maxDistance, point) =>
+      Math.max(maxDistance, getDistanceKm(center, point)),
+    0
+  );
+}
+
+function getDistanceKm(from: WorkspaceCoordinate, to: WorkspaceCoordinate) {
+  const earthRadiusKm = 6371;
+  const latDelta = toRadians(to.lat - from.lat);
+  const lngDelta = toRadians(to.lng - from.lng);
+  const fromLat = toRadians(from.lat);
+  const toLat = toRadians(to.lat);
+  const a =
+    Math.sin(latDelta / 2) ** 2 +
+    Math.cos(fromLat) * Math.cos(toLat) * Math.sin(lngDelta / 2) ** 2;
+
+  return earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function toRadians(value: number) {
+  return (value * Math.PI) / 180;
 }

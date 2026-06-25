@@ -25,11 +25,13 @@ function createConversationId() {
 type UseChatSessionOptions = {
   getApplicationState?: () => ChatWorkspaceSnapshot | undefined;
   onWorkspaceCommand?: (command: ChatMessageData["workspaceCommand"]) => void;
+  ttsEnabled?: boolean;
 };
 
 export function useChatSession({
   getApplicationState,
   onWorkspaceCommand,
+  ttsEnabled = true,
 }: UseChatSessionOptions = {}) {
   const pathname = usePathname();
   const router = useRouter();
@@ -43,7 +45,7 @@ export function useChatSession({
   const [input, setInput] = useState("");
   const startedRef = useRef(false);
   const { disposeTtsPlayer, handleTtsData, ttsPlaybackStatus } =
-    useTtsStreamingPlayback();
+    useTtsStreamingPlayback({ enabled: ttsEnabled });
   const transport = useMemo(
     () =>
       new DefaultChatTransport<LegalChatMessage>({
