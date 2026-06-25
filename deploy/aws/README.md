@@ -89,6 +89,8 @@ Recommended runtime URLs:
 frontend_migration:
   BFF_BACKEND_BASE_URL=http://backend:8000
   BFF_BACKEND_CHAT_STREAM_PATH=/chat/stream
+  DEMO_ACCESS_KEY=<stored in Secrets Manager>
+  DEMO_CHAT_RATE_LIMIT_PER_MINUTE=20
 
 backend:
   RAG_TOOLS_ENABLED=false
