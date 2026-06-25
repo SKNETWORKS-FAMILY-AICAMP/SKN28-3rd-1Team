@@ -7,15 +7,27 @@ import { ProfileIntakeSurface } from "@/ui/components/chat/workspace_surface/pro
 import type { ChatWorkspaceState } from "@/ui/components/chat/workspace_root/workspace-state";
 
 type ChatWorkspaceRendererProps = {
+  consultationBusy?: boolean;
+  onStartConsultation?: (prompt: string) => void;
   state: ChatWorkspaceState;
 };
 
-export function ChatWorkspaceRenderer({ state }: ChatWorkspaceRendererProps) {
+export function ChatWorkspaceRenderer({
+  consultationBusy,
+  onStartConsultation,
+  state,
+}: ChatWorkspaceRendererProps) {
   switch (state.surface.type) {
     case "default":
       return <DefaultWorkspaceSurface surface={state.surface} />;
     case "profile-intake":
-      return <ProfileIntakeSurface surface={state.surface} />;
+      return (
+        <ProfileIntakeSurface
+          consultationBusy={consultationBusy}
+          onStartConsultation={onStartConsultation}
+          surface={state.surface}
+        />
+      );
     case "institution-results":
       return <InstitutionResultsSurface surface={state.surface} />;
     case "evidence-documents":

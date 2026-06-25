@@ -1,7 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
+import type { ChatMessageData } from "@/bff/chat/contract";
 import { collectAgentTraceLanes } from "@/ui/components/chat/agent-trace-drawer";
 import {
   DICTATION_SHORTCUT,
@@ -16,6 +24,11 @@ import {
 } from "@/page/chat/hooks/use-browser-speech-dictation";
 import { useChatWorkspaceController } from "@/page/chat/hooks/use-chat-workspace-controller";
 import { getMessageTimestampMap } from "@/page/chat/message-utils";
+import {
+  normalizeChatWorkspaceCommand,
+  selectChatWorkspaceSnapshot,
+  type ChatWorkspaceSnapshot,
+} from "@/ui/components/chat/workspace_root/workspace-state";
 
 function mergeSpeechTranscript(baseInput: string, transcript: string) {
   const base = baseInput.trim();
@@ -37,6 +50,13 @@ function canToggleSpeechStatus(status: DictationStatus) {
 }
 
 export function useChatPageController() {
+  const workspaceSnapshotRef = useRef<
+    () => ChatWorkspaceSnapshot | undefined
+  >(() => undefined);
+  const workspaceCommandHandlerRef = useRef<
+    (command: ChatMessageData["workspaceCommand"]) => void
+  >(() => undefined);
+  const executedWorkspaceCommandIdsRef = useRef<Set<string>>(new Set());
   const {
     messages,
     input,
@@ -47,7 +67,10 @@ export function useChatPageController() {
     isBusy,
     ttsPlaybackStatus,
     reset,
-  } = useChatSession();
+  } = useChatSession({
+    getApplicationState: () => workspaceSnapshotRef.current(),
+    onWorkspaceCommand: (command) => workspaceCommandHandlerRef.current(command),
+  });
   const [isTraceExpanded, setIsTraceExpanded] = useState(false);
   const [toast, setToast] = useState("");
   const speechBaseInputRef = useRef("");
@@ -94,6 +117,21 @@ export function useChatPageController() {
     dictationStatus,
     ttsPlaybackStatus,
   });
+  const { applyCommand: applyWorkspaceCommand, state: workspaceState } =
+    workspace;
+
+  useLayoutEffect(() => {
+    workspaceSnapshotRef.current = () =>
+      selectChatWorkspaceSnapshot(workspaceState);
+    workspaceCommandHandlerRef.current = (payload) => {
+      if (payload.id) {
+        if (executedWorkspaceCommandIdsRef.current.has(payload.id)) return;
+        executedWorkspaceCommandIdsRef.current.add(payload.id);
+      }
+
+      applyWorkspaceCommand(normalizeChatWorkspaceCommand(payload.command));
+    };
+  }, [applyWorkspaceCommand, workspaceState]);
 
   const showToast = useCallback((message: string) => {
     setToast(message);
@@ -143,9 +181,15 @@ export function useChatPageController() {
     send(input);
   }
 
+  function handleWorkspaceConsultationStart(prompt: string) {
+    resetDictation();
+    send(prompt);
+  }
+
   function resetChat() {
     resetDictation();
     reset();
+    executedWorkspaceCommandIdsRef.current.clear();
     setIsTraceExpanded(false);
     resetPanelWidths();
     showToast("새 상담을 시작했어요.");
@@ -193,7 +237,9 @@ export function useChatPageController() {
         }
       : null,
     workspace: {
-      state: workspace.state,
+      consultationBusy: isBusy,
+      onStartConsultation: handleWorkspaceConsultationStart,
+      state: workspaceState,
     },
   };
 }

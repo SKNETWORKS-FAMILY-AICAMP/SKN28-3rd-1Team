@@ -1,13 +1,14 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
+import { DefaultChatTransport, type DataUIPart } from "ai";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import type { LegalChatMessage } from "@/bff/chat/contract";
+import type { ChatMessageData, LegalChatMessage } from "@/bff/chat/contract";
 import { useTtsStreamingPlayback } from "@/page/chat/hooks/use-tts-streaming-playback";
 import { frontendSettings } from "@/settings/frontend";
+import type { ChatWorkspaceSnapshot } from "@/ui/components/chat/workspace_root/workspace-state";
 
 const CONVERSATION_ID_QUERY_PARAM = "conversation_id";
 
@@ -21,7 +22,15 @@ function createConversationId() {
     .slice(2)}`;
 }
 
-export function useChatSession() {
+type UseChatSessionOptions = {
+  getApplicationState?: () => ChatWorkspaceSnapshot | undefined;
+  onWorkspaceCommand?: (command: ChatMessageData["workspaceCommand"]) => void;
+};
+
+export function useChatSession({
+  getApplicationState,
+  onWorkspaceCommand,
+}: UseChatSessionOptions = {}) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -39,14 +48,38 @@ export function useChatSession() {
     () =>
       new DefaultChatTransport<LegalChatMessage>({
         api: frontendSettings.chatApiPath,
+        prepareSendMessagesRequest: ({ body, id, messages }) => {
+          const requestBody =
+            body && typeof body === "object" && !Array.isArray(body)
+              ? body
+              : {};
+
+          return {
+            body: {
+              id,
+              ...requestBody,
+              messages,
+            },
+          };
+        },
       }),
     []
+  );
+  const handleData = useCallback(
+    (dataPart: DataUIPart<ChatMessageData>) => {
+      handleTtsData(dataPart);
+
+      if (dataPart.type === "data-workspaceCommand") {
+        onWorkspaceCommand?.(dataPart.data);
+      }
+    },
+    [handleTtsData, onWorkspaceCommand]
   );
 
   const { messages, setMessages, sendMessage, status, error, clearError } =
     useChat<LegalChatMessage>({
       id: conversationId,
-      onData: handleTtsData,
+      onData: handleData,
       transport,
     });
   const isBusy = status === "submitted" || status === "streaming";
@@ -60,9 +93,13 @@ export function useChatSession() {
       disposeTtsPlayer("new message");
       setInput("");
 
-      void sendMessage({ text });
+      const applicationState = getApplicationState?.();
+      void sendMessage(
+        { text },
+        applicationState ? { body: { applicationState } } : undefined
+      );
     },
-    [clearError, disposeTtsPlayer, isBusy, sendMessage]
+    [clearError, disposeTtsPlayer, getApplicationState, isBusy, sendMessage]
   );
 
   const reset = useCallback(() => {

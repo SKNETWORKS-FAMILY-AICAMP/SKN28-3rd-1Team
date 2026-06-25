@@ -1,5 +1,7 @@
 import type { UIMessage } from "ai";
 
+import type { ChatWorkspaceRemoteCommand } from "@/ui/components/chat/workspace_root/workspace-state";
+
 export type ChatSource = {
   title: string;
   ref: string;
@@ -53,6 +55,13 @@ export type ChatMessageData = {
     name?: string | null;
     status?: string | null;
     sourceAgent?: string | null;
+    timestamp?: string;
+  };
+  workspaceCommand: {
+    id?: string | null;
+    command: ChatWorkspaceRemoteCommand;
+    sourceAgent?: string | null;
+    node?: string | null;
     timestamp?: string;
   };
 };

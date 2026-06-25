@@ -8,6 +8,12 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 This directory is the clean Next.js App Router migration target. Do not copy the existing `frontend/` implementation wholesale into this app. Build the new app by layer, preserving only intentionally selected assets, dependencies, contracts, and small pieces of verified behavior.
 
+## Active Workspace Command Tracker
+
+- The active planning issue for backend-driven workspace changes is GitHub issue #96, `frontend_migration workspace command 연동 설계 및 구현`.
+- Before implementing or changing this workflow, run `gh issue view 96 --comments` from the repository root and treat the issue checklist/comments as the latest task source.
+- Keep follow-up scope changes, blockers, and implementation decisions in GitHub issues instead of only local notes.
+
 ## Source Layout
 
 Use this `src/` structure:
@@ -33,6 +39,27 @@ src/
 For `/chat`, `src/page/chat` is the aggregation layer for the route. Keep `page.tsx` and route-owned hooks such as chat session, dictation, TTS playback, panel resizing, and workspace state controllers there. Chat visual components, including the right-side workspace frame and its surface renderers, belong under `src/ui/components/chat`; the workspace root component family specifically belongs under `src/ui/components/chat/workspace_root`, and surface implementations belong under `src/ui/components/chat/workspace_surface`.
 
 Agent-driven workspace updates must cross this boundary as typed frontend state or commands. Do not let backend events, backend endpoint names, arbitrary component strings, or generated JSX leak directly into `src/ui/components/chat/workspace_root` or `src/ui/components/chat/workspace_surface`.
+
+## Backend-Driven Workspace Command Flow
+
+The intended integration target is controlled frontend state mutation:
+
+- `/chat` sends a compact snapshot of the current frontend workspace state to the backend through the BFF. The backend must not directly read a live browser store.
+- Backend screen-control logic may use the snapshot and final answer context to emit serializable workspace commands, such as `workspace.showSurface`, `workspace.showDefault`, or `workspace.setMascotAnimation`.
+- `src/bff` validates and maps backend stream events into the frontend command/state contract. Lifecycle noise stays filtered or trace-only at the BFF boundary.
+- `src/page/chat` owns the browser-side command executor and applies validated commands through the workspace controller.
+- `src/ui/components/chat/workspace_root/workspace-state.ts` remains the source of truth for `ChatWorkspaceState`, `ChatWorkspaceCommand`, and reducer behavior.
+- `src/ui/components/chat/workspace_surface` components receive typed state and render prebuilt surfaces. They do not parse backend stream events or know backend endpoint names.
+
+Use `src/page/mocks` as the full-size verification surface for these states. Mock scenes should feed `ChatWorkspaceState` fixtures into `ChatWorkspace` rather than rendering separate mock-only workspace JSX.
+
+Before designing a new state snapshot, frontend command, or backend screen-control event, compare against these reference files:
+
+- `reference/2026_seoul_big_data/agent/tools/ui-state-read`
+- `reference/2026_seoul_big_data/agent/tools/ui-modification`
+- `reference/2026_seoul_big_data/docs/architectural-decisions/03-agent-controller-tool-contract.md`
+- `reference/2026_seoul_big_data/docs/architectural-decisions/05-agent-runtime-and-frontend-tools.md`
+- `reference/2026_seoul_big_data/docs/architectural-decisions/07-scene-frame-state-tools.md`
 
 ## Dependency And Component Policy
 

@@ -209,6 +209,24 @@ export type ChatWorkspaceState = {
   surface: ChatWorkspaceSurface;
 };
 
+export type ChatWorkspaceRemoteDefaultSurface = Omit<
+  ChatWorkspaceDefaultSurface,
+  "mascot"
+>;
+
+export type ChatWorkspaceRemoteProfileIntakeSurface = Omit<
+  ChatWorkspaceProfileIntakeSurface,
+  "mascot"
+>;
+
+export type ChatWorkspaceRemoteSurface =
+  | ChatWorkspaceRemoteDefaultSurface
+  | ChatWorkspaceRemoteProfileIntakeSurface
+  | ChatWorkspaceInstitutionResultsSurface
+  | ChatWorkspaceEvidenceDocumentsSurface
+  | ChatWorkspaceActionChecklistSurface
+  | ChatWorkspaceAccessSummarySurface;
+
 export type ChatWorkspaceCommand =
   | {
       type: "workspace.showDefault";
@@ -230,6 +248,37 @@ export type ChatWorkspaceCommand =
       type: "workspace.useAutoMascot";
     };
 
+export type ChatWorkspaceRemoteCommand =
+  | {
+      type: "workspace.showDefault";
+      title?: string;
+      description?: string;
+      statusLabel?: string;
+    }
+  | {
+      type: "workspace.showSurface";
+      surface: ChatWorkspaceRemoteSurface;
+    };
+
+export type ChatWorkspaceSnapshot = {
+  surface: {
+    type: ChatWorkspaceSurface["type"];
+    title?: string;
+    description?: string;
+    statusLabel?: string;
+    view?: string;
+    selectedInstitutionId?: string;
+    selectedDocumentId?: string;
+    institutionCount?: number;
+    documentCount?: number;
+    checklistItemCount?: number;
+    requiredChecklistItemCount?: number;
+    doneChecklistItemCount?: number;
+    fieldCount?: number;
+    filledFieldCount?: number;
+  };
+};
+
 export function createDefaultChatWorkspaceState(): ChatWorkspaceState {
   return {
     surface: {
@@ -239,6 +288,120 @@ export function createDefaultChatWorkspaceState(): ChatWorkspaceState {
       description: "궁금한 점을 편하게 물어보세요.",
       statusLabel: "상담 대기 중",
     },
+  };
+}
+
+export function selectChatWorkspaceSnapshot(
+  state: ChatWorkspaceState
+): ChatWorkspaceSnapshot {
+  const { surface } = state;
+
+  switch (surface.type) {
+    case "default":
+      return {
+        surface: {
+          type: surface.type,
+          title: surface.title,
+          description: surface.description,
+          statusLabel: surface.statusLabel,
+        },
+      };
+    case "profile-intake": {
+      const filledFieldCount = surface.fields.filter((field) =>
+        field.value.trim()
+      ).length;
+
+      return {
+        surface: {
+          type: surface.type,
+          title: surface.title,
+          description: surface.description,
+          fieldCount: surface.fields.length,
+          filledFieldCount,
+        },
+      };
+    }
+    case "institution-results":
+      return {
+        surface: {
+          type: surface.type,
+          title: surface.title,
+          description: surface.description,
+          view: surface.view,
+          selectedInstitutionId: surface.selectedInstitutionId,
+          institutionCount: surface.institutions.length,
+        },
+      };
+    case "evidence-documents":
+      return {
+        surface: {
+          type: surface.type,
+          title: surface.title,
+          description: surface.description,
+          view: surface.view,
+          selectedDocumentId: surface.selectedDocumentId,
+          documentCount: surface.documents.length,
+        },
+      };
+    case "action-checklist":
+      return {
+        surface: {
+          type: surface.type,
+          title: surface.title,
+          description: surface.description,
+          checklistItemCount: surface.items.length,
+          requiredChecklistItemCount: surface.items.filter(
+            (item) => item.required
+          ).length,
+          doneChecklistItemCount: surface.items.filter(
+            (item) => item.status === "done"
+          ).length,
+        },
+      };
+    case "access-summary":
+      return {
+        surface: {
+          type: surface.type,
+          title: surface.title,
+          description: surface.description,
+          selectedInstitutionId: surface.institution.id,
+        },
+      };
+    default:
+      return assertNever(surface);
+  }
+}
+
+export function normalizeChatWorkspaceCommand(
+  command: ChatWorkspaceRemoteCommand
+): ChatWorkspaceCommand {
+  if (command.type === "workspace.showDefault") {
+    return command;
+  }
+
+  const { surface } = command;
+  if (surface.type === "default") {
+    return {
+      type: "workspace.showDefault",
+      title: surface.title,
+      description: surface.description,
+      statusLabel: surface.statusLabel,
+    };
+  }
+
+  if (surface.type === "profile-intake") {
+    return {
+      type: "workspace.showSurface",
+      surface: {
+        ...surface,
+        mascot: createDefaultMascotState(),
+      },
+    };
+  }
+
+  return {
+    type: "workspace.showSurface",
+    surface,
   };
 }
 

@@ -4,9 +4,11 @@ import type { UIMessageStreamWriter } from "ai"
 import type { LegalChatMessage } from "./contract"
 
 import { createBackendChatStream, getLatestUserText } from "./backend-chat-stream-adapter"
+import type { ChatWorkspaceSnapshot } from "@/ui/components/chat/workspace_root/workspace-state"
 
 type ChatRouteRequest = {
   id?: string
+  applicationState?: ChatWorkspaceSnapshot
   messages?: LegalChatMessage[]
   profile?: {
     birthYear?: string
@@ -19,6 +21,17 @@ const INTERNAL_STREAM_METADATA = {
   streamReasoningTokens: true,
   streamScreenControlAgent: true,
   streamSpeechAgent: true,
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value))
+}
+
+function createBackendMetadata(applicationState: unknown) {
+  return {
+    ...INTERNAL_STREAM_METADATA,
+    ...(isRecord(applicationState) ? { application_state: applicationState } : {}),
+  }
 }
 
 function writeAssistantText(writer: UIMessageStreamWriter<LegalChatMessage>, text: string, finishReason: "stop" | "error") {
@@ -67,7 +80,7 @@ export async function handleChatPost(request: Request) {
       const backendStream = await createBackendChatStream({
         sessionId: body.id,
         message: createBackendMessage(message, body.profile),
-        metadata: INTERNAL_STREAM_METADATA,
+        metadata: createBackendMetadata(body.applicationState),
         signal: request.signal,
       })
 

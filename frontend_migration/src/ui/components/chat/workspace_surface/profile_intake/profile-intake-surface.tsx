@@ -11,10 +11,16 @@ import { AnimatedMascot } from "@/ui/components/mascot/animated-mascot";
 import type { ChatWorkspaceProfileIntakeSurface } from "@/ui/components/chat/workspace_root/workspace-state";
 
 type ProfileIntakeSurfaceProps = {
+  consultationBusy?: boolean;
+  onStartConsultation?: (prompt: string) => void;
   surface: ChatWorkspaceProfileIntakeSurface;
 };
 
-export function ProfileIntakeSurface({ surface }: ProfileIntakeSurfaceProps) {
+export function ProfileIntakeSurface({
+  consultationBusy = false,
+  onStartConsultation,
+  surface,
+}: ProfileIntakeSurfaceProps) {
   const initialValues = useMemo(
     () =>
       Object.fromEntries(
@@ -26,6 +32,10 @@ export function ProfileIntakeSurface({ surface }: ProfileIntakeSurfaceProps) {
 
   function handleFieldChange(fieldId: string, value: string) {
     setValues((current) => ({ ...current, [fieldId]: value }));
+  }
+
+  function handleStartConsultation() {
+    onStartConsultation?.(createProfileConsultationPrompt(surface, values));
   }
 
   return (
@@ -87,7 +97,9 @@ export function ProfileIntakeSurface({ surface }: ProfileIntakeSurfaceProps) {
           <div className="mt-auto pt-5">
             <button
               type="button"
-              className="flex h-14 w-full items-center justify-center rounded-[12px] bg-[var(--chat-primary)] text-xl font-bold text-white shadow-[var(--chat-shadow-primary)] transition hover:bg-[var(--chat-primary-strong)]"
+              disabled={consultationBusy}
+              onClick={handleStartConsultation}
+              className="flex h-14 w-full items-center justify-center rounded-[12px] bg-[var(--chat-primary)] text-xl font-bold text-white shadow-[var(--chat-shadow-primary)] transition hover:bg-[var(--chat-primary-strong)] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {surface.primaryActionLabel}
             </button>
@@ -96,4 +108,22 @@ export function ProfileIntakeSurface({ surface }: ProfileIntakeSurfaceProps) {
       </div>
     </div>
   );
+}
+
+function createProfileConsultationPrompt(
+  surface: ChatWorkspaceProfileIntakeSurface,
+  values: Record<string, string>
+) {
+  const profileLines = surface.fields.map((field) => {
+    const value = (values[field.id] ?? field.value).trim() || "미입력";
+    return `- ${field.label}: ${value}`;
+  });
+
+  return [
+    "아래 상담 정보를 바탕으로 상담을 시작해줘.",
+    "입력한 조건에 맞는 가능한 선택지, 확인해야 할 기준, 다음 행동을 알려줘.",
+    "",
+    profileLines.join("\n"),
+  ]
+    .join("\n");
 }

@@ -23,9 +23,10 @@ class AgentFactoryTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(create_agent.call_count, 2)
 
     async def test_screen_control_agent_factory_does_not_cache_agent_instance(self) -> None:
+        get_tools = AsyncMock(return_value=[])
         with (
             patch.object(screen_control_agent, "get_window", return_value=object()),
-            patch.object(screen_control_agent, "get_tools", new=AsyncMock(return_value=[])),
+            patch.object(screen_control_agent, "get_tools", new=get_tools),
             patch.object(
                 screen_control_agent,
                 "create_agent",
@@ -38,6 +39,7 @@ class AgentFactoryTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(first, "screen-1")
         self.assertEqual(second, "screen-2")
         self.assertEqual(create_agent.call_count, 2)
+        get_tools.assert_awaited_with(agent_name=screen_control_agent.SCREEN_CONTROL_AGENT_PROFILE)
 
     async def test_speech_text_agent_factory_does_not_cache_agent_instance(self) -> None:
         with (

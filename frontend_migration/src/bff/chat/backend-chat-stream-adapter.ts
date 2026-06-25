@@ -5,6 +5,7 @@ import type { UIMessage, UIMessageChunk } from "ai"
 import { getBackendChatStreamUrl } from "@/settings/bff"
 
 import type { ChatMessageData, ChatMessageMetadata, ChatSource } from "./contract"
+import { workspaceCommandDataSchema } from "./workspace-command-schema"
 
 const TEXT_PART_ID = "answer"
 const CONNECT_ERROR_MESSAGE = "서버에 연결하지 못했어요."
@@ -140,6 +141,30 @@ function getToolCallPayload(data: Record<string, unknown>) {
   }
 }
 
+function getWorkspaceCommandPayload(data: Record<string, unknown>) {
+  const command = data.command && typeof data.command === "object" ? data.command : data
+  const parsedCommand = workspaceCommandDataSchema.safeParse(command)
+  if (!parsedCommand.success) return null
+
+  const timestamp = typeof data.timestamp === "string" ? data.timestamp : createTimestamp()
+  const id =
+    typeof data.id === "string"
+      ? data.id
+      : typeof data.command_id === "string"
+        ? data.command_id
+        : typeof data.tool_call_id === "string"
+          ? data.tool_call_id
+          : null
+
+  return {
+    id,
+    command: parsedCommand.data,
+    sourceAgent: getSourceAgent(data),
+    node: typeof data.node === "string" ? data.node : null,
+    timestamp,
+  }
+}
+
 function getEventText(data: Record<string, unknown>) {
   return String(data.text ?? data.content ?? "")
 }
@@ -261,6 +286,21 @@ function createBackendUiMessageStream(responseBody: ReadableStream<Uint8Array>) 
 
         if (event === "screen_control.input") {
           enqueueAgentTrace(controller, event, data)
+          return
+        }
+
+        if (event === "screen_control.command") {
+          const workspaceCommand = getWorkspaceCommandPayload(data)
+          if (!workspaceCommand) {
+            enqueueAgentTrace(controller, "screen_control.command.invalid", data)
+            return
+          }
+
+          controller.enqueue({
+            type: "data-workspaceCommand",
+            ...(workspaceCommand.id ? { id: workspaceCommand.id } : {}),
+            data: workspaceCommand,
+          })
           return
         }
 

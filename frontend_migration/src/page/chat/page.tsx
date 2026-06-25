@@ -29,7 +29,7 @@ export function ChatPage() {
           </div>
         </aside>
 
-        <ChatWorkspace state={chatPage.workspace.state} />
+        <ChatWorkspace {...chatPage.workspace} />
       </div>
 
       {chatPage.toast ? (
