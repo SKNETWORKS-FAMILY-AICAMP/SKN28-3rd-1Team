@@ -1,0 +1,120 @@
+[
+  {
+    "id": "NAVER-LOCAL-001",
+    "tool": "naver.search",
+    "description": "강남구 노인복지관 지역 검색이 장소명, 주소, 전화번호를 반환하는지 확인한다.",
+    "arguments": {
+      "query": "강남구 노인복지관",
+      "category": "local",
+      "limit": 3
+    },
+    "fake_api": {
+      "response": "naver.gangnam_senior_welfare_center",
+      "status_code": 200
+    },
+    "expected": {
+      "success": true,
+      "min_count": 2,
+      "required_paths": [
+        "results.0.title",
+        "results.0.address",
+        "results.0.road_address",
+        "results.0.telephone"
+      ],
+      "contains": [
+        {
+          "path": "results.0.title",
+          "text": "강남노인종합복지관"
+        },
+        {
+          "path": "results.0.address",
+          "text": "강남구"
+        }
+      ]
+    }
+  },
+  {
+    "id": "NAVER-WEB-002",
+    "tool": "naver.search",
+    "description": "부산 해운대구 노인복지관 웹 검색이 공식 안내 후보를 반환하는지 확인한다.",
+    "arguments": {
+      "query": "부산 해운대구 노인복지관 공식",
+      "category": "webkr",
+      "limit": 3
+    },
+    "fake_api": {
+      "response": "naver.busan_haeundae_senior_welfare",
+      "status_code": 200
+    },
+    "expected": {
+      "success": true,
+      "min_count": 2,
+      "required_paths": [
+        "results.0.title",
+        "results.0.url",
+        "results.0.description"
+      ],
+      "contains": [
+        {
+          "path": "results.0.title",
+          "text": "해운대구노인복지관"
+        },
+        {
+          "path": "results.0.description",
+          "text": "부산"
+        }
+      ]
+    }
+  },
+  {
+    "id": "NAVER-LOCAL-003",
+    "tool": "naver.search",
+    "description": "인천 연수구 요양원 검색이 노인 돌봄 시설 후보를 반환하는지 확인한다.",
+    "arguments": {
+      "query": "인천 연수구 요양원",
+      "category": "local",
+      "limit": 3
+    },
+    "fake_api": {
+      "response": "naver.incheon_yeonsu_nursing_home",
+      "status_code": 200
+    },
+    "expected": {
+      "success": true,
+      "min_count": 2,
+      "required_paths": [
+        "results.0.title",
+        "results.0.place_category",
+        "results.0.address"
+      ],
+      "contains": [
+        {
+          "path": "results.0.title",
+          "text": "연수"
+        },
+        {
+          "path": "results.0.address",
+          "text": "인천"
+        }
+      ]
+    }
+  },
+  {
+    "id": "NAVER-EDGE-004",
+    "tool": "naver.search",
+    "description": "빈 query가 들어오면 외부 API를 호출하지 않고 warning response를 반환하는지 확인한다.",
+    "arguments": {
+      "query": "   ",
+      "category": "local",
+      "limit": 3
+    },
+    "fake_api": null,
+    "expected": {
+      "success": false,
+      "count": 0,
+      "warnings_contain": [
+        "query must not be empty"
+      ]
+    }
+  }
+]

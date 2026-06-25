@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import logging
+
 from datetime import UTC, datetime
 from typing import Any, Literal
 
 import httpx
-from pydantic import SecretStr
 
+from external._utils import bounded_limit, secret_value
 from settings import settings
 
 FirecrawlSource = Literal["web", "news"]
@@ -22,6 +24,7 @@ _TIME_RANGE_TO_TBS = {
     "month": "qdr:m",
     "year": "qdr:y",
 }
+logger = logging.getLogger(__name__)
 
 
 # Firecrawl Search API를 호출하고 웹 근거 후보를 공통 결과 형태로 반환한다.
@@ -48,7 +51,7 @@ def search_firecrawl(
             warning="query must not be empty.",
         )
 
-    api_key = _secret_value(settings.firecrawl_api_key)
+    api_key = secret_value(settings.firecrawl_api_key)
     if not api_key:
         return _failure(
             query=normalized_query,
@@ -56,7 +59,11 @@ def search_firecrawl(
             warning="Firecrawl API key is missing.",
         )
 
-    safe_limit = _bounded_limit(limit)
+    safe_limit = bounded_limit(
+        limit,
+        default_limit=settings.search_default_limit,
+        max_limit=settings.search_max_limit,
+    )
     safe_sources = _sources(sources)
     include_filter = _domain_filter(include_domains)
     exclude_filter = _domain_filter(exclude_domains)
@@ -106,7 +113,8 @@ def search_firecrawl(
         response.raise_for_status()
         data = response.json()
 
-    except Exception as exc:  # noqa: BLE001
+    except httpx.HTTPError as exc:
+        logger.warning("Firecrawl search failed: %s", exc)
         return _failure(
             query=normalized_query,
             searched_at=searched_at,
@@ -119,6 +127,8 @@ def search_firecrawl(
         query=normalized_query,
     )
     warnings = _warnings(data)
+    if not results:
+        warnings.append("No Firecrawl search results found.")
 
     return {
         "provider": "firecrawl",
@@ -221,25 +231,6 @@ def _warnings(data: Any) -> list[str]:
 
     warning = _first_text(data.get("warning"))
     return [warning] if warning else []
-
-
-# Pydantic SecretStr에서 실제 문자열 값을 꺼내되 빈 값은 None으로 처리한다.
-def _secret_value(value: SecretStr | None) -> str | None:
-    if value is None:
-        return None
-
-    secret = value.get_secret_value().strip()
-    return secret or None
-
-
-# 요청 결과 개수를 기본값과 최대값 범위 안으로 맞춘다.
-def _bounded_limit(limit: int | None) -> int:
-    default_limit = min(settings.search_default_limit, settings.search_max_limit)
-
-    if limit is None:
-        return default_limit
-
-    return min(max(int(limit), 1), settings.search_max_limit)
 
 
 # 요청할 Firecrawl source 목록을 허용된 값으로만 정리한다.

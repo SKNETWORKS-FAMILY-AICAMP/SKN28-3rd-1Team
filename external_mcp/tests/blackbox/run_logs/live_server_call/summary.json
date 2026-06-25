@@ -1,0 +1,133 @@
+{
+  "generated_at": "2026-06-24T01:15:06.519772+00:00",
+  "started_at": "2026-06-24T01:15:02.999323+00:00",
+  "scope": "external_mcp MCP server-call tests with live API responses",
+  "mode": "live",
+  "mcp_url": "http://127.0.0.1:60061/",
+  "expected_tools": [
+    "naver.search",
+    "tmap.route_pedestrian",
+    "tmap.search_poi",
+    "web.search"
+  ],
+  "total": 12,
+  "passed": 12,
+  "failed": 0,
+  "cases": [
+    {
+      "case_id": "LIVE-NAVER-LOCAL-001",
+      "execution_mode": "live_server_call",
+      "provider_group": "naver",
+      "tool": "naver.search",
+      "description": "실제 Naver local API에서 강남구 노인복지관 검색 결과가 강남/복지 맥락을 포함하는지 확인한다.",
+      "passed": true,
+      "error_count": 0
+    },
+    {
+      "case_id": "LIVE-NAVER-WEB-002",
+      "execution_mode": "live_server_call",
+      "provider_group": "naver",
+      "tool": "naver.search",
+      "description": "실제 Naver webkr API에서 부산 해운대구 노인복지관 공식 후보가 지역/복지 맥락을 포함하는지 확인한다.",
+      "passed": true,
+      "error_count": 0
+    },
+    {
+      "case_id": "LIVE-NAVER-LOCAL-003",
+      "execution_mode": "live_server_call",
+      "provider_group": "naver",
+      "tool": "naver.search",
+      "description": "실제 Naver local API에서 인천 연수구 요양원 검색 결과가 지역/요양 맥락을 포함하는지 확인한다.",
+      "passed": true,
+      "error_count": 0
+    },
+    {
+      "case_id": "LIVE-WEB-SEARCH-001",
+      "execution_mode": "live_server_call",
+      "provider_group": "web",
+      "tool": "web.search",
+      "description": "실제 Firecrawl API에서 강남구 노인복지 정책 검색 결과가 강남/노인복지 맥락을 포함하는지 확인한다.",
+      "passed": true,
+      "error_count": 0
+    },
+    {
+      "case_id": "LIVE-WEB-SEARCH-002",
+      "execution_mode": "live_server_call",
+      "provider_group": "web",
+      "tool": "web.search",
+      "description": "실제 Firecrawl API에서 대전 서구청 노인복지 검색 결과가 지역/복지 맥락을 포함하는지 확인한다.",
+      "passed": true,
+      "error_count": 0
+    },
+    {
+      "case_id": "LIVE-WEB-SEARCH-003",
+      "execution_mode": "live_server_call",
+      "provider_group": "web",
+      "tool": "web.search",
+      "description": "실제 Firecrawl API에서 광주 북구 치매안심센터 검색 결과가 지역/치매돌봄 맥락을 포함하는지 확인한다.",
+      "passed": true,
+      "error_count": 0
+    },
+    {
+      "case_id": "LIVE-TMAP-POI-001",
+      "execution_mode": "live_server_call",
+      "provider_group": "tmap",
+      "tool": "tmap.search_poi",
+      "description": "실제 TMAP POI API에서 강남노인종합복지관 검색 결과가 강남/복지 맥락과 좌표를 포함하는지 확인한다.",
+      "passed": true,
+      "error_count": 0
+    },
+    {
+      "case_id": "LIVE-TMAP-POI-002",
+      "execution_mode": "live_server_call",
+      "provider_group": "tmap",
+      "tool": "tmap.search_poi",
+      "description": "실제 TMAP POI API에서 해운대구노인복지관 검색 결과가 해운대/복지 맥락과 좌표를 포함하는지 확인한다.",
+      "passed": true,
+      "error_count": 0
+    },
+    {
+      "case_id": "LIVE-TMAP-POI-003",
+      "execution_mode": "live_server_call",
+      "provider_group": "tmap",
+      "tool": "tmap.search_poi",
+      "description": "실제 TMAP POI API에서 대전 서구청 검색 결과가 대전/서구 공공기관 맥락과 좌표를 포함하는지 확인한다.",
+      "passed": true,
+      "error_count": 0
+    },
+    {
+      "case_id": "LIVE-TMAP-ROUTE-001",
+      "execution_mode": "live_server_call",
+      "provider_group": "tmap",
+      "tool": "tmap.route_pedestrian",
+      "description": "실제 TMAP 보행자 길찾기 API에서 강남구청에서 강남노인종합복지관까지 거리/시간/안내를 반환하는지 확인한다.",
+      "passed": true,
+      "error_count": 0
+    },
+    {
+      "case_id": "LIVE-TMAP-ROUTE-002",
+      "execution_mode": "live_server_call",
+      "provider_group": "tmap",
+      "tool": "tmap.route_pedestrian",
+      "description": "실제 TMAP 보행자 길찾기 API에서 해운대구청에서 해운대구노인복지관까지 거리/시간/안내를 반환하는지 확인한다.",
+      "passed": true,
+      "error_count": 0
+    },
+    {
+      "case_id": "LIVE-TMAP-ROUTE-003",
+      "execution_mode": "live_server_call",
+      "provider_group": "tmap",
+      "tool": "tmap.route_pedestrian",
+      "description": "실제 TMAP 보행자 길찾기 API에서 대전 서구청에서 서구보건소까지 거리/시간/안내를 반환하는지 확인한다.",
+      "passed": true,
+      "error_count": 0
+    }
+  ],
+  "artifacts": {
+    "requests": "mcp_requests.jsonl",
+    "responses": "mcp_responses.jsonl",
+    "csv": "results/live_api_results.csv"
+  },
+  "secret_source": "infisical",
+  "secrets_recorded": false
+}

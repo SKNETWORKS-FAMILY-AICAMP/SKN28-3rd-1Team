@@ -1,0 +1,167 @@
+{
+  "generated_at": "2026-06-25T07:08:28.820912+00:00",
+  "started_at": "2026-06-25T07:08:28.503563+00:00",
+  "scope": "external_mcp MCP server-call tests with fake API responses",
+  "mode": "fake",
+  "mcp_url": "http://127.0.0.1:38177/",
+  "expected_tools": [
+    "naver.search",
+    "tmap.route_pedestrian",
+    "tmap.search_poi",
+    "web.search"
+  ],
+  "total": 16,
+  "passed": 16,
+  "failed": 0,
+  "cases": [
+    {
+      "case_id": "NAVER-LOCAL-001",
+      "execution_mode": "fake_server_call",
+      "provider_group": "naver",
+      "tool": "naver.search",
+      "description": "강남구 노인복지관 지역 검색이 장소명, 주소, 전화번호를 반환하는지 확인한다.",
+      "passed": true,
+      "error_count": 0
+    },
+    {
+      "case_id": "NAVER-WEB-002",
+      "execution_mode": "fake_server_call",
+      "provider_group": "naver",
+      "tool": "naver.search",
+      "description": "부산 해운대구 노인복지관 웹 검색이 공식 안내 후보를 반환하는지 확인한다.",
+      "passed": true,
+      "error_count": 0
+    },
+    {
+      "case_id": "NAVER-LOCAL-003",
+      "execution_mode": "fake_server_call",
+      "provider_group": "naver",
+      "tool": "naver.search",
+      "description": "인천 연수구 요양원 검색이 노인 돌봄 시설 후보를 반환하는지 확인한다.",
+      "passed": true,
+      "error_count": 0
+    },
+    {
+      "case_id": "NAVER-EDGE-004",
+      "execution_mode": "fake_server_call",
+      "provider_group": "naver",
+      "tool": "naver.search",
+      "description": "빈 query가 들어오면 외부 API를 호출하지 않고 warning response를 반환하는지 확인한다.",
+      "passed": true,
+      "error_count": 0
+    },
+    {
+      "case_id": "WEB-SEARCH-001",
+      "execution_mode": "fake_server_call",
+      "provider_group": "web",
+      "tool": "web.search",
+      "description": "강남구 노인복지 정책 검색이 공식 구청/복지관 페이지 후보를 반환하는지 확인한다.",
+      "passed": true,
+      "error_count": 0
+    },
+    {
+      "case_id": "WEB-SEARCH-002",
+      "execution_mode": "fake_server_call",
+      "provider_group": "web",
+      "tool": "web.search",
+      "description": "대전 서구청 노인복지 검색이 구청 정책 안내 후보를 반환하는지 확인한다.",
+      "passed": true,
+      "error_count": 0
+    },
+    {
+      "case_id": "WEB-SEARCH-003",
+      "execution_mode": "fake_server_call",
+      "provider_group": "web",
+      "tool": "web.search",
+      "description": "광주 북구 치매안심센터 검색이 노인 돌봄 관련 기관 후보를 반환하는지 확인한다.",
+      "passed": true,
+      "error_count": 0
+    },
+    {
+      "case_id": "WEB-EDGE-004",
+      "execution_mode": "fake_server_call",
+      "provider_group": "web",
+      "tool": "web.search",
+      "description": "검색 결과가 없는 경우 count 0과 warning을 반환하는지 확인한다.",
+      "passed": true,
+      "error_count": 0
+    },
+    {
+      "case_id": "TMAP-POI-001",
+      "execution_mode": "fake_server_call",
+      "provider_group": "tmap",
+      "tool": "tmap.search_poi",
+      "description": "강남노인종합복지관 POI 검색이 지도 표시용 좌표를 반환하는지 확인한다.",
+      "passed": true,
+      "error_count": 0
+    },
+    {
+      "case_id": "TMAP-POI-002",
+      "execution_mode": "fake_server_call",
+      "provider_group": "tmap",
+      "tool": "tmap.search_poi",
+      "description": "부산 해운대구 노인복지관 POI 검색이 지역 내 복지관 후보를 반환하는지 확인한다.",
+      "passed": true,
+      "error_count": 0
+    },
+    {
+      "case_id": "TMAP-POI-003",
+      "execution_mode": "fake_server_call",
+      "provider_group": "tmap",
+      "tool": "tmap.search_poi",
+      "description": "대전 서구청 검색이 정책 상담을 위한 공공기관 장소 후보를 반환하는지 확인한다.",
+      "passed": true,
+      "error_count": 0
+    },
+    {
+      "case_id": "TMAP-POI-EDGE-004",
+      "execution_mode": "fake_server_call",
+      "provider_group": "tmap",
+      "tool": "tmap.search_poi",
+      "description": "빈 keyword가 들어오면 외부 API를 호출하지 않고 warning response를 반환하는지 확인한다.",
+      "passed": true,
+      "error_count": 0
+    },
+    {
+      "case_id": "TMAP-ROUTE-001",
+      "execution_mode": "fake_server_call",
+      "provider_group": "tmap",
+      "tool": "tmap.route_pedestrian",
+      "description": "강남구청에서 강남노인종합복지관까지 보행자 길찾기 요약과 안내 단계를 반환하는지 확인한다.",
+      "passed": true,
+      "error_count": 0
+    },
+    {
+      "case_id": "TMAP-ROUTE-002",
+      "execution_mode": "fake_server_call",
+      "provider_group": "tmap",
+      "tool": "tmap.route_pedestrian",
+      "description": "해운대구청에서 해운대구노인복지관까지 도보 경로를 반환하는지 확인한다.",
+      "passed": true,
+      "error_count": 0
+    },
+    {
+      "case_id": "TMAP-ROUTE-003",
+      "execution_mode": "fake_server_call",
+      "provider_group": "tmap",
+      "tool": "tmap.route_pedestrian",
+      "description": "대전 서구청에서 서구보건소까지 도보 경로를 반환하는지 확인한다.",
+      "passed": true,
+      "error_count": 0
+    },
+    {
+      "case_id": "TMAP-ROUTE-EDGE-004",
+      "execution_mode": "fake_server_call",
+      "provider_group": "tmap",
+      "tool": "tmap.route_pedestrian",
+      "description": "길찾기 API가 실패하면 success false와 warning을 반환하는지 확인한다.",
+      "passed": true,
+      "error_count": 0
+    }
+  ],
+  "artifacts": {
+    "requests": "mcp_requests.jsonl",
+    "responses": "mcp_responses.jsonl",
+    "csv": "results/fake_api_results.csv"
+  }
+}

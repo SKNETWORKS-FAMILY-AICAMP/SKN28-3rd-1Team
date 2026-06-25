@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import html
+import logging
 import re
 
 from datetime import UTC, datetime
@@ -8,13 +9,14 @@ from typing import Any, Literal
 
 import httpx
 
-from pydantic import SecretStr
+from external._utils import bounded_limit, secret_value
 from settings import settings
 
 NaverSearchCategory = Literal["webkr", "news", "blog", "local"]
 
 _NAVER_SEARCH_BASE_URL = "https://openapi.naver.com/v1/search"
 _HTML_TAG_PATTERN = re.compile(r"<[^>]+>")
+logger = logging.getLogger(__name__)
 
 
 # 네이버 검색 API를 호출하고 agent가 쓰기 쉬운 결과 형태로 정리한다.
@@ -38,8 +40,8 @@ def search_naver(
             warning="query must not be empty.",
         )
 
-    client_id = _secret_value(settings.naver_client_id)
-    client_secret = _secret_value(settings.naver_client_secret)
+    client_id = secret_value(settings.naver_client_id)
+    client_secret = secret_value(settings.naver_client_secret)
 
     if not client_id or not client_secret:
         return _failure(
@@ -49,7 +51,11 @@ def search_naver(
             warning="Naver API credentials are missing.",
         )
 
-    safe_limit = _bounded_limit(limit)
+    safe_limit = bounded_limit(
+        limit,
+        default_limit=settings.search_default_limit,
+        max_limit=settings.search_max_limit,
+    )
     safe_start = max(int(start), 1)
     url = f"{_NAVER_SEARCH_BASE_URL}/{category}.json"
 
@@ -77,7 +83,8 @@ def search_naver(
 
         payload = response.json()
 
-    except Exception as exc:  # noqa: BLE001
+    except httpx.HTTPError as exc:
+        logger.warning("Naver search failed: %s", exc)
         return _failure(
             query=normalized_query,
             category=category,
@@ -90,6 +97,7 @@ def search_naver(
         for index, item in enumerate(payload.get("items") or [], start=1)
         if isinstance(item, dict)
     ]
+    warnings = [] if results else ["No Naver search results found."]
 
     return {
         "provider": "naver",
@@ -99,27 +107,8 @@ def search_naver(
         "count": len(results),
         "queried_at": queried_at,
         "results": results,
-        "warnings": [],
+        "warnings": warnings,
     }
-
-
-# Pydantic SecretStr에서 실제 문자열 값을 꺼내되 빈 값은 None으로 처리한다.
-def _secret_value(value: SecretStr | None) -> str | None:
-    if value is None:
-        return None
-
-    secret = value.get_secret_value().strip()
-    return secret or None
-
-
-# 요청 결과 개수를 기본값과 최대값 범위 안으로 맞춘다.
-def _bounded_limit(limit: int | None) -> int:
-    default_limit = min(settings.search_default_limit, settings.search_max_limit)
-
-    if limit is None:
-        return default_limit
-
-    return min(max(int(limit), 1), settings.search_max_limit)
 
 
 # 네이버 API item 하나를 공통 검색 결과 dict로 변환한다.
