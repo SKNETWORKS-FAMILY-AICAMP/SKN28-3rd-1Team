@@ -160,7 +160,8 @@
   color: #91d7ad;
 }
 
-.chat-trace-scroll {
+.chat-trace-scroll,
+.chat-trace-lane-scroll {
   scrollbar-color: var(--chat-trace-scrollbar) transparent;
   scrollbar-width: thin;
 }

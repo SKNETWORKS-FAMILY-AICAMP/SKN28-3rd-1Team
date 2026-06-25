@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  ChevronDownIcon,
   CpuChipIcon,
   SpeakerWaveIcon,
   WrenchScrewdriverIcon,
@@ -10,6 +11,7 @@ import type {
   CSSProperties,
   PointerEvent as ReactPointerEvent,
 } from "react";
+import { useState } from "react";
 
 import type { ChatMessageData, LegalChatMessage } from "@/bff/chat/contract";
 import type { TtsPlaybackStatus } from "@/page/chat/hooks/use-tts-streaming-playback";
@@ -83,6 +85,18 @@ export function AgentTraceDrawer({
   onResizePointerDown,
 }: AgentTraceDrawerProps) {
   const hasItems = lanes.some((lane) => lane.items.length > 0);
+  const [collapsedLaneIds, setCollapsedLaneIds] = useState<Set<string>>(
+    () => new Set()
+  );
+
+  function toggleLane(laneId: string) {
+    setCollapsedLaneIds((current) => {
+      const next = new Set(current);
+      if (next.has(laneId)) next.delete(laneId);
+      else next.add(laneId);
+      return next;
+    });
+  }
 
   return (
     <section
@@ -108,14 +122,19 @@ export function AgentTraceDrawer({
         </button>
       </div>
 
-      <div className="chat-trace-scroll min-h-0 flex-1 space-y-4 overflow-y-auto px-3 py-3">
+      <div className="chat-trace-scroll min-h-0 flex-1 space-y-3 overflow-y-auto px-3 py-3">
         {!hasItems ? (
           <div className="rounded-[8px] border border-white/10 px-3 py-2.5 text-xs leading-5 text-white/45">
             아직 수신된 internal stream이 없어요.
           </div>
         ) : null}
         {lanes.map((lane) => (
-          <AgentTraceLaneSection key={lane.id} lane={lane} />
+          <AgentTraceLaneSection
+            key={lane.id}
+            collapsed={collapsedLaneIds.has(lane.id)}
+            lane={lane}
+            onToggle={() => toggleLane(lane.id)}
+          />
         ))}
       </div>
 
@@ -248,46 +267,72 @@ export function collectAgentTraceLanes(
   }));
 }
 
-function AgentTraceLaneSection({ lane }: { lane: AgentTraceLane }) {
+function AgentTraceLaneSection({
+  collapsed,
+  lane,
+  onToggle,
+}: {
+  collapsed: boolean;
+  lane: AgentTraceLane;
+  onToggle: () => void;
+}) {
+  const contentId = `agent-trace-lane-${lane.id}`;
+
   return (
-    <section>
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-1.5">
+    <section className="rounded-[9px] border border-white/10 bg-white/[0.035]">
+      <button
+        type="button"
+        aria-controls={contentId}
+        aria-expanded={!collapsed}
+        className="flex h-10 w-full items-center justify-between gap-2 px-2.5 text-left transition hover:bg-white/[0.045]"
+        onClick={onToggle}
+      >
+        <span className="flex min-w-0 items-center gap-1.5">
+          <ChevronDownIcon
+            className={cn(
+              "size-3.5 shrink-0 text-white/35 transition-transform",
+              collapsed && "-rotate-90"
+            )}
+          />
           <AgentTraceLaneIcon agent={lane.id} />
-          <h3 className="truncate text-[11px] font-extrabold uppercase tracking-normal text-white/55">
+          <span className="truncate text-[11px] font-extrabold uppercase tracking-normal text-white/65">
             {lane.label}
-          </h3>
-        </div>
-        <span className="font-mono text-[10px] text-white/35">
+          </span>
+        </span>
+        <span className="inline-flex h-5 min-w-7 shrink-0 items-center justify-center rounded-full border border-white/10 px-1.5 font-mono text-[10px] text-white/45">
           {lane.items.length}
         </span>
-      </div>
+      </button>
 
-      <ol className="space-y-2">
-        {lane.items.length === 0 ? (
-          <li className="rounded-[7px] border border-white/10 px-3 py-2 text-xs text-white/35">
-            No stream
-          </li>
-        ) : (
-          lane.items.map((item) => (
-            <li
-              key={item.id}
-              className={cn(
-                "rounded-[7px] border px-3 py-2 text-xs",
-                agentTraceToneClassName(item.tone)
-              )}
-            >
-              <div className="mb-1 font-bold uppercase tracking-normal opacity-70">
-                {item.title}
-              </div>
-              <MessageResponse className="max-h-36 overflow-y-auto whitespace-pre-wrap break-words text-xs leading-5">
-                {item.text}
-              </MessageResponse>
-              <TraceTimestamp timestamp={item.timestamp} />
-            </li>
-          ))
-        )}
-      </ol>
+      {!collapsed ? (
+        <div id={contentId} className="border-t border-white/10 px-2.5 py-2">
+          <ol className="chat-trace-lane-scroll max-h-[min(34vh,320px)] space-y-2 overflow-y-auto pr-1">
+            {lane.items.length === 0 ? (
+              <li className="rounded-[7px] border border-white/10 px-3 py-2 text-xs text-white/35">
+                No stream
+              </li>
+            ) : (
+              lane.items.map((item) => (
+                <li
+                  key={item.id}
+                  className={cn(
+                    "rounded-[7px] border px-3 py-2 text-xs",
+                    agentTraceToneClassName(item.tone)
+                  )}
+                >
+                  <div className="mb-1 font-bold uppercase tracking-normal opacity-70">
+                    {item.title}
+                  </div>
+                  <MessageResponse className="max-h-36 overflow-y-auto whitespace-pre-wrap break-words text-xs leading-5">
+                    {item.text}
+                  </MessageResponse>
+                  <TraceTimestamp timestamp={item.timestamp} />
+                </li>
+              ))
+            )}
+          </ol>
+        </div>
+      ) : null}
     </section>
   );
 }
