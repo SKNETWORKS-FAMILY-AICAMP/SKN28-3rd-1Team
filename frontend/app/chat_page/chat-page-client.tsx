@@ -27,8 +27,11 @@ import { Button } from "@/components/ui/button"
 import { useBrowserSpeechDictation } from "@/components/voice/hooks/use-browser-speech-dictation"
 import { VoiceInputButton } from "@/components/voice/surfaces/voice-input-button/surface"
 import type { DictationStatus, DictationTranscript } from "@/components/voice/types"
+import { AnswerShareButton } from "@/features/chat/components/answer-share-button"
+import { MaterialShareButton } from "@/features/chat/components/material-share-button"
 import { useChatSession } from "@/features/chat/hooks/use-chat-session"
 import type { TtsPlaybackStatus } from "@/features/chat/services/tts-streaming-audio-player"
+import type { MaterialsSharePayload } from "@/features/chat/share-materials"
 import type { ChatMessageData, LegalChatMessage } from "@/features/chat/types"
 import { cn } from "@/lib/utils"
 
@@ -230,6 +233,50 @@ export function ChatPageClient() {
   const started = messages.some((message) => message.role === "user")
   const messageTimestamps = useMemo(() => getMessageTimestampMap(messages, messageTimestampCacheRef.current), [messages])
   const agentTraceLanes = useMemo(() => collectAgentTraceLanes(messages, ttsPlaybackStatus), [messages, ttsPlaybackStatus])
+  const latestShareableMessage = useMemo(() => {
+    for (let index = messages.length - 1; index >= 0; index--) {
+      const message = messages[index]
+      if (message.role === "assistant" && getMessageText(message).trim()) return message
+    }
+
+    return null
+  }, [messages])
+  const materialSharePayload = useMemo<MaterialsSharePayload | null>(() => {
+    if (!started) return null
+
+    if (showDocuments) {
+      if (showDocumentDetail) {
+        return {
+          type: "materials",
+          view: "document-detail",
+          title: "상담 근거 문서",
+          description: "추천 결과에 활용한 문서와 확인 포인트입니다.",
+          selectedDocumentId,
+          selectedDocument,
+          documents: documentSources,
+        }
+      }
+
+      return {
+        type: "materials",
+        view: "document-list",
+        title: "상담 근거 문서",
+        description: "추천 결과에 활용한 문서 목록입니다.",
+        selectedDocumentId,
+        documents: documentSources,
+      }
+    }
+
+    return {
+      type: "materials",
+      view: tab === "map" ? "institution-map" : "institution-list",
+      title: "강남구 노인일자리 신청 가능 기관",
+      description: "상담 결과로 추천된 신청 가능 기관과 상세 정보입니다.",
+      selectedInstitutionId: selectedId,
+      selectedInstitution: selected,
+      institutions,
+    }
+  }, [selected, selectedDocument, selectedDocumentId, selectedId, showDocumentDetail, showDocuments, started, tab])
   const agentTraceItemCount = agentTraceLanes.reduce((count, lane) => count + lane.items.length, 0)
   const totalSidebarWidth = chatSidebarWidth + (isTraceExpanded ? traceDrawerWidth : 0)
   const chatSidebarStyle = {
@@ -431,31 +478,37 @@ export function ChatPageClient() {
             <div className="relative flex shrink-0 flex-col" style={chatSidebarStyle}>
               <div className="flex h-12 shrink-0 items-center justify-between border-b border-[#efe7da] dark:border-border px-4">
                 <span className="text-xs font-extrabold uppercase tracking-[0.08em] text-[#9a8f82]">상담</span>
-                <button
-                  type="button"
-                  onClick={() => setIsTraceExpanded((current) => !current)}
-                  className={cn(
-                     "inline-flex h-8 items-center gap-1.5 rounded-[9px] border px-2.5 text-xs font-bold transition",
-                     isTraceExpanded
-                       ? "border-[#ef8b54] bg-[#ef8b54] text-white"
-                       : "border-[#ead9c6] dark:border-border bg-white dark:bg-card text-[#6c6359] dark:text-muted-foreground hover:border-[#f0b88e]",
-                  )}
-                  aria-expanded={isTraceExpanded}
-                  aria-label={isTraceExpanded ? "에이전트 trace 닫기" : "에이전트 trace 열기"}
-                >
-                  {isTraceExpanded ? <PanelRightClose className="size-3.5" /> : <PanelRightOpen className="size-3.5" />}
-                  Trace
-                  {agentTraceItemCount > 0 ? (
-                    <span
-                      className={cn(
-                        "rounded-full px-1.5 py-0.5 text-[10px]",
-                        isTraceExpanded ? "bg-white/18 text-white" : "bg-[#f4ecdf] dark:bg-muted text-[#8a7c69] dark:text-muted-foreground",
-                      )}
-                    >
-                      {agentTraceItemCount}
-                    </span>
-                  ) : null}
-                </button>
+                <div className="flex items-center gap-2">
+                  <AnswerShareButton
+                    answer={latestShareableMessage ? getMessageText(latestShareableMessage) : ""}
+                    sources={latestShareableMessage?.metadata?.sources}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setIsTraceExpanded((current) => !current)}
+                    className={cn(
+                      "inline-flex h-8 items-center gap-1.5 rounded-[9px] border px-2.5 text-xs font-bold transition",
+                      isTraceExpanded
+                        ? "border-[#ef8b54] bg-[#ef8b54] text-white"
+                        : "border-[#ead9c6] dark:border-border bg-white dark:bg-card text-[#6c6359] dark:text-muted-foreground hover:border-[#f0b88e]",
+                    )}
+                    aria-expanded={isTraceExpanded}
+                    aria-label={isTraceExpanded ? "에이전트 trace 닫기" : "에이전트 trace 열기"}
+                  >
+                    {isTraceExpanded ? <PanelRightClose className="size-3.5" /> : <PanelRightOpen className="size-3.5" />}
+                    Trace
+                    {agentTraceItemCount > 0 ? (
+                      <span
+                        className={cn(
+                          "rounded-full px-1.5 py-0.5 text-[10px]",
+                          isTraceExpanded ? "bg-white/18 text-white" : "bg-[#f4ecdf] dark:bg-muted text-[#8a7c69] dark:text-muted-foreground",
+                        )}
+                      >
+                        {agentTraceItemCount}
+                      </span>
+                    ) : null}
+                  </button>
+                </div>
               </div>
 
               <div
@@ -586,22 +639,25 @@ export function ChatPageClient() {
                       </button>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowDocuments((current) => !current)
-                        setShowDocumentDetail(false)
-                      }}
-                      className={cn(
-                        "inline-flex h-10 items-center gap-2 rounded-[10px] border px-4 text-sm font-bold transition",
-                        showDocuments
-                          ? "border-[#ef8b54] bg-[#ef8b54] text-white shadow-[0_3px_10px_rgba(239,139,84,.24)]"
-                          : "border-[#ead9c6] bg-white text-[#6c6359]",
-                      )}
-                    >
-                      <FileText className="size-4" />
-                      {showDocuments ? "기관 보기" : "문서 레퍼런스"}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <MaterialShareButton payload={materialSharePayload} />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowDocuments((current) => !current)
+                          setShowDocumentDetail(false)
+                        }}
+                        className={cn(
+                          "inline-flex h-10 items-center gap-2 rounded-[10px] border px-4 text-sm font-bold transition",
+                          showDocuments
+                            ? "border-[#ef8b54] bg-[#ef8b54] text-white shadow-[0_3px_10px_rgba(239,139,84,.24)]"
+                            : "border-[#ead9c6] bg-white text-[#6c6359]",
+                        )}
+                      >
+                        <FileText className="size-4" />
+                        {showDocuments ? "기관 보기" : "문서 레퍼런스"}
+                      </button>
+                    </div>
                   </div>
 
                   {showDocuments ? (
@@ -1008,6 +1064,7 @@ function MessageTimestamp({ className, timestamp }: { className?: string; timest
 function SidebarChatMessage({ message, timestamp }: { message: LegalChatMessage; timestamp?: string }) {
   const isUser = message.role === "user"
   const textParts = message.parts.filter((part) => part.type === "text")
+  const messageText = getMessageText(message)
 
   if (isUser) {
     return (
@@ -1015,7 +1072,7 @@ function SidebarChatMessage({ message, timestamp }: { message: LegalChatMessage;
         <SidebarAvatar isUser />
         <div className="min-w-0">
           <div className="max-w-[calc(var(--chat-sidebar-width)-112px)] whitespace-pre-wrap rounded-[4px_14px_14px_14px] bg-[#f7e7d8] px-3.5 py-3 text-sm leading-relaxed text-[#4a4038]">
-            {getMessageText(message)}
+            {messageText}
             <MessageTimestamp timestamp={timestamp} className="text-[#a59889]" />
           </div>
         </div>
@@ -1026,7 +1083,7 @@ function SidebarChatMessage({ message, timestamp }: { message: LegalChatMessage;
   return (
     <div className="flex items-start gap-2">
       <SidebarAvatar />
-      <div className="min-w-0 space-y-2">
+      <div className="min-w-0">
         {textParts.length > 0 ? (
           <div className="max-w-[calc(var(--chat-sidebar-width)-112px)] rounded-[4px_14px_14px_14px] border border-[#eee3d6] bg-white px-3.5 py-3 text-sm leading-relaxed text-[#403a33]">
             {textParts.map((part, index) => (
