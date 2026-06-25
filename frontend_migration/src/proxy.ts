@@ -1,12 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server";
 
-const ACCESS_COOKIE_NAME = "skn28_demo_access";
-const ACCESS_QUERY_PARAM = "demo_key";
-const ACCESS_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 6;
+import {
+  DEMO_ACCESS_COOKIE_NAME,
+  isDemoAccessCookieValid,
+  isDemoAccessEnabled,
+} from "@/bff/demo-access/session";
 
-function getDemoAccessKey() {
-  return process.env.DEMO_ACCESS_KEY?.trim() ?? "";
-}
+const PUBLIC_PATHS = new Set(["/demo-access", "/api/demo-access"]);
 
 function createUnauthorizedResponse(request: NextRequest) {
   if (request.nextUrl.pathname.startsWith("/api/")) {
@@ -25,33 +25,26 @@ function createUnauthorizedResponse(request: NextRequest) {
   });
 }
 
-function createAccessCookieResponse(request: NextRequest, accessKey: string) {
-  const redirectUrl = request.nextUrl.clone();
-  redirectUrl.searchParams.delete(ACCESS_QUERY_PARAM);
-
-  const response = NextResponse.redirect(redirectUrl);
-  response.cookies.set(ACCESS_COOKIE_NAME, accessKey, {
-    httpOnly: true,
-    maxAge: ACCESS_COOKIE_MAX_AGE_SECONDS,
-    path: "/",
-    sameSite: "lax",
-    secure: request.nextUrl.protocol === "https:",
-  });
-
-  return response;
+function createLoginRedirect(request: NextRequest) {
+  const loginUrl = new URL("/demo-access", request.url);
+  loginUrl.searchParams.set(
+    "next",
+    `${request.nextUrl.pathname}${request.nextUrl.search}`
+  );
+  return NextResponse.redirect(loginUrl);
 }
 
 export function proxy(request: NextRequest) {
-  const accessKey = getDemoAccessKey();
-  if (!accessKey) return NextResponse.next();
+  if (!isDemoAccessEnabled()) return NextResponse.next();
 
-  const queryAccessKey = request.nextUrl.searchParams.get(ACCESS_QUERY_PARAM);
-  if (queryAccessKey && queryAccessKey === accessKey) {
-    return createAccessCookieResponse(request, accessKey);
+  if (PUBLIC_PATHS.has(request.nextUrl.pathname)) return NextResponse.next();
+
+  const cookieAccessKey = request.cookies.get(DEMO_ACCESS_COOKIE_NAME)?.value;
+  if (isDemoAccessCookieValid(cookieAccessKey)) return NextResponse.next();
+
+  if (!request.nextUrl.pathname.startsWith("/api/")) {
+    return createLoginRedirect(request);
   }
-
-  const cookieAccessKey = request.cookies.get(ACCESS_COOKIE_NAME)?.value;
-  if (cookieAccessKey === accessKey) return NextResponse.next();
 
   return createUnauthorizedResponse(request);
 }

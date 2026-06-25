@@ -90,7 +90,8 @@ frontend_migration:
   BFF_BACKEND_BASE_URL=http://backend:8000
   BFF_BACKEND_CHAT_STREAM_PATH=/chat/stream
   DEMO_ACCESS_KEY=<stored in Secrets Manager>
-  DEMO_CHAT_RATE_LIMIT_PER_MINUTE=20
+  DEMO_ACCESS_MAX_FAILURES=5
+  DEMO_ACCESS_LOCKOUT_SECONDS=600
 
 backend:
   RAG_TOOLS_ENABLED=false

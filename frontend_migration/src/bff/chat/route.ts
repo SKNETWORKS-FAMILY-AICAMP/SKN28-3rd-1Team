@@ -5,7 +5,6 @@ import type { LegalChatMessage } from "./contract"
 
 import { createBackendChatStream, getLatestUserText } from "./backend-chat-stream-adapter"
 import type { ChatWorkspaceSnapshot } from "@/ui/components/chat/workspace_root/workspace-state"
-import { checkDemoChatRateLimit } from "./rate-limit"
 
 type ChatRouteRequest = {
   id?: string
@@ -59,19 +58,6 @@ function createBackendMessage(message: string, profile?: ChatRouteRequest["profi
 }
 
 export async function handleChatPost(request: Request) {
-  const rateLimit = checkDemoChatRateLimit(request)
-  if (!rateLimit.allowed) {
-    return Response.json(
-      { error: "rate_limited" },
-      {
-        status: 429,
-        headers: {
-          "Retry-After": String(rateLimit.retryAfterSeconds),
-        },
-      },
-    )
-  }
-
   let body: ChatRouteRequest
 
   try {
