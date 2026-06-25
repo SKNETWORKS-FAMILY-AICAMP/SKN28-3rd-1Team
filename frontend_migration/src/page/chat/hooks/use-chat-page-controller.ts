@@ -57,6 +57,7 @@ export function useChatPageController() {
     (command: ChatMessageData["workspaceCommand"]) => void
   >(() => undefined);
   const executedWorkspaceCommandIdsRef = useRef<Set<string>>(new Set());
+  const [ttsEnabled, setTtsEnabled] = useState(true);
   const {
     messages,
     input,
@@ -71,6 +72,7 @@ export function useChatPageController() {
   } = useChatSession({
     getApplicationState: () => workspaceSnapshotRef.current(),
     onWorkspaceCommand: (command) => workspaceCommandHandlerRef.current(command),
+    ttsEnabled,
   });
   const [isTraceExpanded, setIsTraceExpanded] = useState(false);
   const [toast, setToast] = useState("");
@@ -121,6 +123,8 @@ export function useChatPageController() {
   });
   const { applyCommand: applyWorkspaceCommand, state: workspaceState } =
     workspace;
+  const canUseVoiceInput =
+    !isBusy && canToggleSpeechStatus(dictationStatus);
 
   useLayoutEffect(() => {
     workspaceSnapshotRef.current = () =>
@@ -211,19 +215,16 @@ export function useChatPageController() {
       onResizePointerDown: handleChatSidebarResizePointerDown,
       onSubmit: handleChatSubmit,
       onToggleTrace: () => setIsTraceExpanded((current) => !current),
+      onToggleTtsPlayback: () => setTtsEnabled((current) => !current),
       onVoiceClick: toggleSpeechInput,
       status,
       traceExpanded: isTraceExpanded,
       traceItemCount: agentTraceItemCount,
+      ttsEnabled,
       width: chatSidebarWidth,
     },
     header: {
-      canShowDocuments: false,
       onNewChat: resetChat,
-      onSaveSummary: () => showToast("상담 요약을 저장했어요."),
-      onShowDocuments: () => {
-        showToast("근거 문서는 상담 결과가 준비되면 열 수 있어요.");
-      },
     },
     sidebarLayout: {
       isTraceExpanded,
@@ -240,8 +241,10 @@ export function useChatPageController() {
       : null,
     workspace: {
       consultationBusy: isBusy,
+      onVoiceClick: canUseVoiceInput ? toggleSpeechInput : undefined,
       onStartConsultation: handleWorkspaceConsultationStart,
       state: workspaceState,
+      voiceInputActive: dictationStatus === "listening",
     },
   };
 }

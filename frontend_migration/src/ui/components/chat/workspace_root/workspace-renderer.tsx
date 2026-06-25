@@ -8,18 +8,28 @@ import type { ChatWorkspaceState } from "@/ui/components/chat/workspace_root/wor
 
 type ChatWorkspaceRendererProps = {
   consultationBusy?: boolean;
+  onVoiceClick?: () => void;
   onStartConsultation?: (prompt: string) => void;
   state: ChatWorkspaceState;
+  voiceInputActive?: boolean;
 };
 
 export function ChatWorkspaceRenderer({
   consultationBusy,
+  onVoiceClick,
   onStartConsultation,
   state,
+  voiceInputActive,
 }: ChatWorkspaceRendererProps) {
   switch (state.surface.type) {
     case "default":
-      return <DefaultWorkspaceSurface surface={state.surface} />;
+      return (
+        <DefaultWorkspaceSurface
+          onVoiceClick={onVoiceClick}
+          surface={state.surface}
+          voiceInputActive={voiceInputActive}
+        />
+      );
     case "profile-intake":
       return (
         <ProfileIntakeSurface

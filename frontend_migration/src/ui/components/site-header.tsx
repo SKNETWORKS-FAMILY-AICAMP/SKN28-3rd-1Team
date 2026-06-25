@@ -19,43 +19,37 @@ export function SiteHeader() {
               className="size-9 object-cover"
             />
           </span>
-          <span className="font-heading text-xl text-foreground">로디</span>
+          <span className="font-heading text-2xl text-foreground">로디</span>
         </Link>
 
         <nav className="hidden items-center gap-8 md:flex">
           <Link
             href="/#features"
-            className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            className="text-base font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
             기능 소개
           </Link>
           <Link
             href="/#how"
-            className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            className="text-base font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
             이용 방법
           </Link>
           <Link
             href="/#categories"
-            className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            className="text-base font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
             상담 주제
-          </Link>
-          <Link
-            href="/mocks"
-            className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-          >
-            디자인
           </Link>
         </nav>
 
         <Link
           href="/chat"
           className={buttonVariants({
-            className: "rounded-full px-4 py-2 font-heading whitespace-nowrap",
+            className: "h-auto rounded-full px-5 py-2.5 font-heading text-xl leading-none whitespace-nowrap",
           })}
         >
-          <Scale className="size-4" />
+          <Scale className="size-5" />
           상담 시작
         </Link>
       </div>

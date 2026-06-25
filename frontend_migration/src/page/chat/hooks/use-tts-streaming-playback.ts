@@ -33,6 +33,10 @@ type TtsDebugDetails = Record<
   boolean | number | string | null | undefined
 >;
 
+type UseTtsStreamingPlaybackOptions = {
+  enabled?: boolean;
+};
+
 export function createInitialTtsPlaybackStatus(): TtsPlaybackStatus {
   return {
     chunks: 0,
@@ -42,7 +46,9 @@ export function createInitialTtsPlaybackStatus(): TtsPlaybackStatus {
   };
 }
 
-export function useTtsStreamingPlayback() {
+export function useTtsStreamingPlayback({
+  enabled = true,
+}: UseTtsStreamingPlaybackOptions = {}) {
   const [ttsPlaybackStatus, setTtsPlaybackStatus] =
     useState<TtsPlaybackStatus>(() => createInitialTtsPlaybackStatus());
   const ttsPlayerRef = useRef<TtsStreamingAudioPlayer | null>(null);
@@ -72,6 +78,13 @@ export function useTtsStreamingPlayback() {
 
   const handleTtsData = useCallback(
     (dataPart: DataUIPart<ChatMessageData>) => {
+      if (!enabled) {
+        if (dataPart.type === "data-audioInterrupted") {
+          disposeTtsPlayer(dataPart.data.reason);
+        }
+        return;
+      }
+
       if (dataPart.type === "data-audio") {
         getTtsPlayer().append(decodeBase64Bytes(dataPart.data.audioBase64));
         return;
@@ -86,8 +99,13 @@ export function useTtsStreamingPlayback() {
         disposeTtsPlayer(dataPart.data.reason);
       }
     },
-    [disposeTtsPlayer, getTtsPlayer]
+    [disposeTtsPlayer, enabled, getTtsPlayer]
   );
+
+  useEffect(() => {
+    if (enabled) return;
+    disposeTtsPlayer("tts playback disabled");
+  }, [disposeTtsPlayer, enabled]);
 
   useEffect(() => {
     return () => {

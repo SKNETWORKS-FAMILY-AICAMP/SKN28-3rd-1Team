@@ -3,14 +3,18 @@ import type { ChatWorkspaceState } from "@/ui/components/chat/workspace_root/wor
 
 type ChatWorkspaceProps = {
   consultationBusy?: boolean;
+  onVoiceClick?: () => void;
   onStartConsultation?: (prompt: string) => void;
   state: ChatWorkspaceState;
+  voiceInputActive?: boolean;
 };
 
 export function ChatWorkspace({
   consultationBusy,
+  onVoiceClick,
   onStartConsultation,
   state,
+  voiceInputActive,
 }: ChatWorkspaceProps) {
   return (
     <section
@@ -19,8 +23,10 @@ export function ChatWorkspace({
     >
       <ChatWorkspaceRenderer
         consultationBusy={consultationBusy}
+        onVoiceClick={onVoiceClick}
         onStartConsultation={onStartConsultation}
         state={state}
+        voiceInputActive={voiceInputActive}
       />
     </section>
   );

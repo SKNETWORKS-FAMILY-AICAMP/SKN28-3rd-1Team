@@ -31,7 +31,8 @@ export function CtaSection() {
               className={buttonVariants({
                 size: "lg",
                 variant: "secondary",
-                className: "rounded-full px-6 py-3 font-heading text-base whitespace-nowrap",
+                className:
+                  "h-auto min-h-9 rounded-full px-6 py-5 font-heading text-[2rem] leading-none whitespace-nowrap",
               })}
             >
               <MessageCircleQuestion className="size-5" />

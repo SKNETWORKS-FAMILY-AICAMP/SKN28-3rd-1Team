@@ -1,5 +1,6 @@
 import { PaperAirplaneIcon } from "@heroicons/react/24/outline";
-import type { FormEvent } from "react";
+import { useLayoutEffect, useRef } from "react";
+import type { FormEvent, KeyboardEvent } from "react";
 
 import type { DictationStatus } from "@/page/chat/hooks/use-browser-speech-dictation";
 import { Button } from "@/ui/primitives/button";
@@ -31,22 +32,48 @@ export function ChatComposer({
   onSubmit,
   onVoiceClick,
 }: ChatComposerProps) {
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  useLayoutEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    textarea.style.height = "0px";
+    textarea.style.height = `${Math.min(textarea.scrollHeight, 160)}px`;
+  }, [input]);
+
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     onSubmit();
   };
 
+  const handleTextareaKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (
+      event.key !== "Enter" ||
+      event.shiftKey ||
+      event.nativeEvent.isComposing
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    if (!isBusy && input.trim()) onSubmit();
+  };
+
   return (
     <form className="p-4 pt-0" onSubmit={handleSubmit}>
-      <div className="flex items-center gap-2 rounded-[14px] border border-[var(--chat-border-strong)] bg-[var(--chat-panel)] py-2.5 pl-4 pr-2">
-        <input
+      <div className="flex items-end gap-2 rounded-[14px] border border-[var(--chat-border-strong)] bg-[var(--chat-panel)] py-2.5 pl-4 pr-2">
+        <textarea
+          ref={textareaRef}
           id="chat-composer-input"
           name="message"
           value={input}
           onChange={(event) => onInputChange(event.target.value)}
+          onKeyDown={handleTextareaKeyDown}
           disabled={isBusy}
           placeholder="메시지를 입력하세요..."
-          className="chat-composer-input min-w-0 flex-1 bg-transparent text-sm text-[var(--chat-text)] outline-none placeholder:text-[var(--chat-text-soft)]"
+          rows={1}
+          className="chat-composer-input max-h-40 min-h-10 min-w-0 flex-1 resize-none overflow-y-auto bg-transparent py-2 text-sm text-[var(--chat-text)] outline-none placeholder:text-[var(--chat-text-soft)]"
         />
         <VoiceInputButton
           ariaKeyShortcuts={dictationShortcut.ariaKeyShortcuts}

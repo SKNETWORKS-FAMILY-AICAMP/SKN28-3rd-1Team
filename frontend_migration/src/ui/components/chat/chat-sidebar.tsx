@@ -8,6 +8,10 @@ import { useEffect, useRef } from "react";
 
 import type { LegalChatMessage } from "@/bff/chat/contract";
 import type { DictationStatus } from "@/page/chat/hooks/use-browser-speech-dictation";
+import {
+  SpeakerWaveIcon,
+  SpeakerXMarkIcon,
+} from "@heroicons/react/24/outline";
 import { MessageResponse } from "@/ui/ai-elements/message";
 import { cn } from "@/lib/utils";
 import { ChatComposer } from "@/ui/components/chat/chat-composer";
@@ -27,6 +31,7 @@ type ChatSidebarProps = {
   width?: number;
   traceExpanded: boolean;
   traceItemCount: number;
+  ttsEnabled: boolean;
   dictationShortcut: {
     ariaKeyShortcuts: string;
     label: string;
@@ -35,6 +40,7 @@ type ChatSidebarProps = {
   dictationError?: string;
   onInputChange: (value: string) => void;
   onSubmit: () => void;
+  onToggleTtsPlayback: () => void;
   onVoiceClick: () => void;
   onToggleTrace: () => void;
   onResizePointerDown: (event: ReactPointerEvent<HTMLButtonElement>) => void;
@@ -50,11 +56,13 @@ export function ChatSidebar({
   width,
   traceExpanded,
   traceItemCount,
+  ttsEnabled,
   dictationShortcut,
   dictationStatus,
   dictationError,
   onInputChange,
   onSubmit,
+  onToggleTtsPlayback,
   onVoiceClick,
   onToggleTrace,
   onResizePointerDown,
@@ -82,32 +90,54 @@ export function ChatSidebar({
         <span className="text-xs font-extrabold uppercase tracking-normal text-[var(--chat-text-muted)]">
           상담
         </span>
-        <button
-          type="button"
-          onClick={onToggleTrace}
-          className={cn(
-            "inline-flex h-8 items-center gap-1.5 rounded-[9px] border px-2.5 text-xs font-bold transition",
-            traceExpanded
-              ? "border-[var(--chat-primary)] bg-[var(--chat-primary)] text-white"
-              : "border-[var(--chat-border-strong)] bg-[var(--chat-panel)] text-[var(--chat-text-muted)] hover:border-[var(--chat-primary-border)]"
-          )}
-          aria-expanded={traceExpanded}
-          aria-label={traceExpanded ? "에이전트 trace 닫기" : "에이전트 trace 열기"}
-        >
-          Trace
-          {traceItemCount > 0 ? (
-            <span
-              className={cn(
-                "rounded-full px-1.5 py-0.5 text-[10px]",
-                traceExpanded
-                  ? "bg-white/20 text-white"
-                  : "bg-[var(--chat-sidebar-muted)] text-[var(--chat-text-muted)]"
-              )}
-            >
-              {traceItemCount}
-            </span>
-          ) : null}
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={onToggleTtsPlayback}
+            className={cn(
+              "inline-flex h-8 items-center gap-1.5 rounded-[9px] border px-2.5 text-xs font-bold transition",
+              ttsEnabled
+                ? "border-[var(--chat-primary)] bg-[var(--chat-primary)] text-white"
+                : "border-[var(--chat-border-strong)] bg-[var(--chat-panel)] text-[var(--chat-text-muted)] hover:border-[var(--chat-primary-border)]"
+            )}
+            aria-pressed={ttsEnabled}
+            aria-label={ttsEnabled ? "음성 답변 재생 끄기" : "음성 답변 재생 켜기"}
+            title={ttsEnabled ? "음성 답변 재생 끄기" : "음성 답변 재생 켜기"}
+          >
+            {ttsEnabled ? (
+              <SpeakerWaveIcon className="size-3.5" />
+            ) : (
+              <SpeakerXMarkIcon className="size-3.5" />
+            )}
+            {ttsEnabled ? "음성 On" : "음성 Off"}
+          </button>
+          <button
+            type="button"
+            onClick={onToggleTrace}
+            className={cn(
+              "inline-flex h-8 items-center gap-1.5 rounded-[9px] border px-2.5 text-xs font-bold transition",
+              traceExpanded
+                ? "border-[var(--chat-primary)] bg-[var(--chat-primary)] text-white"
+                : "border-[var(--chat-border-strong)] bg-[var(--chat-panel)] text-[var(--chat-text-muted)] hover:border-[var(--chat-primary-border)]"
+            )}
+            aria-expanded={traceExpanded}
+            aria-label={traceExpanded ? "에이전트 trace 닫기" : "에이전트 trace 열기"}
+          >
+            Trace
+            {traceItemCount > 0 ? (
+              <span
+                className={cn(
+                  "rounded-full px-1.5 py-0.5 text-[10px]",
+                  traceExpanded
+                    ? "bg-white/20 text-white"
+                    : "bg-[var(--chat-sidebar-muted)] text-[var(--chat-text-muted)]"
+                )}
+              >
+                {traceItemCount}
+              </span>
+            ) : null}
+          </button>
+        </div>
       </div>
 
       <div
@@ -214,10 +244,9 @@ function SidebarChatMessage({
 
   if (isUser) {
     return (
-      <div className="flex items-start gap-2">
-        <SidebarAvatar isUser />
+      <div className="flex items-start justify-end gap-2">
         <div className="min-w-0">
-          <div className="chat-sidebar-message-bubble max-w-[calc(var(--chat-sidebar-width)-112px)] whitespace-pre-wrap rounded-[4px_14px_14px_14px] bg-[var(--chat-user-bubble)] px-3.5 py-3 text-sm leading-relaxed text-[var(--chat-text)]">
+          <div className="chat-sidebar-message-bubble max-w-[calc(var(--chat-sidebar-width)-112px)] whitespace-pre-wrap rounded-[14px_4px_14px_14px] bg-[var(--chat-user-bubble)] px-3.5 py-3 text-left text-sm leading-relaxed text-[var(--chat-text)]">
             {getMessageText(message)}
             <MessageTimestamp
               timestamp={timestamp}
@@ -225,6 +254,7 @@ function SidebarChatMessage({
             />
           </div>
         </div>
+        <SidebarAvatar isUser />
       </div>
     );
   }
