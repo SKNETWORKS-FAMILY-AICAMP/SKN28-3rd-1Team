@@ -15,6 +15,7 @@
 | `no-tool-benchmark/tools/analyze_no_tool_results.py` | raw CSV에서 artifacts/charts를 재생성하는 분석 스크립트 |
 | `no-tool-benchmark/tools/run_qwen37_max_no_tool_benchmark.py` | Qwen3.7 Max / Alibaba no-tool raw CSV 생성 스크립트. 기본값은 1건 smoke |
 | `llm-as-a-judge/` | no-tool raw answer의 LLM judge 판정 결과, checkpoint, web cache, 관련 보조 파일 |
+| `external-mcp-blackbox/` | RAG를 제외한 External MCP 4개 tool의 fake API 기반 black-box 테스트 계획과 결과 보고서 |
 
 LLM judge 산출물:
 

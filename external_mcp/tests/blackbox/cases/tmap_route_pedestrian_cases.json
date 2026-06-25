@@ -1,0 +1,122 @@
+[
+  {
+    "id": "TMAP-ROUTE-001",
+    "tool": "tmap.route_pedestrian",
+    "description": "강남구청에서 강남노인종합복지관까지 보행자 길찾기 요약과 안내 단계를 반환하는지 확인한다.",
+    "arguments": {
+      "start_lon": 127.0473,
+      "start_lat": 37.5172,
+      "end_lon": 127.0519,
+      "end_lat": 37.516,
+      "start_name": "강남구청",
+      "end_name": "강남노인종합복지관"
+    },
+    "fake_api": {
+      "response": "tmap.route.gangnam_office_to_senior_center",
+      "status_code": 200
+    },
+    "expected": {
+      "success": true,
+      "distance_meters": 610,
+      "duration_seconds": 481,
+      "min_steps": 2,
+      "required_paths": [
+        "steps.0.description",
+        "steps.0.distance_meters"
+      ],
+      "contains": [
+        {
+          "path": "steps.0.description",
+          "text": "강남구청"
+        }
+      ]
+    }
+  },
+  {
+    "id": "TMAP-ROUTE-002",
+    "tool": "tmap.route_pedestrian",
+    "description": "해운대구청에서 해운대구노인복지관까지 도보 경로를 반환하는지 확인한다.",
+    "arguments": {
+      "start_lon": 129.1636,
+      "start_lat": 35.1631,
+      "end_lon": 129.1672,
+      "end_lat": 35.1704,
+      "start_name": "해운대구청",
+      "end_name": "해운대구노인복지관"
+    },
+    "fake_api": {
+      "response": "tmap.route.haeundae_office_to_senior_center",
+      "status_code": 200
+    },
+    "expected": {
+      "success": true,
+      "distance_meters": 920,
+      "duration_seconds": 742,
+      "min_steps": 2,
+      "contains": [
+        {
+          "path": "steps.1.description",
+          "text": "노인복지관"
+        }
+      ]
+    }
+  },
+  {
+    "id": "TMAP-ROUTE-003",
+    "tool": "tmap.route_pedestrian",
+    "description": "대전 서구청에서 서구보건소까지 도보 경로를 반환하는지 확인한다.",
+    "arguments": {
+      "start_lon": 127.3848,
+      "start_lat": 36.3554,
+      "end_lon": 127.3811,
+      "end_lat": 36.354,
+      "start_name": "대전 서구청",
+      "end_name": "서구보건소"
+    },
+    "fake_api": {
+      "response": "tmap.route.daejeon_office_to_health_center",
+      "status_code": 200
+    },
+    "expected": {
+      "success": true,
+      "distance_meters": 540,
+      "duration_seconds": 430,
+      "min_steps": 2,
+      "contains": [
+        {
+          "path": "steps.0.description",
+          "text": "서구청"
+        }
+      ]
+    }
+  },
+  {
+    "id": "TMAP-ROUTE-EDGE-004",
+    "tool": "tmap.route_pedestrian",
+    "description": "길찾기 API가 실패하면 success false와 warning을 반환하는지 확인한다.",
+    "arguments": {
+      "start_lon": 0,
+      "start_lat": 0,
+      "end_lon": 127.0519,
+      "end_lat": 37.516,
+      "start_name": "잘못된 출발지",
+      "end_name": "강남노인종합복지관"
+    },
+    "fake_api": {
+      "response": "tmap.route.bad_request",
+      "status_code": 400
+    },
+    "expected": {
+      "success": false,
+      "distance_meters": null,
+      "duration_seconds": null,
+      "required_paths": [
+        "start",
+        "end"
+      ],
+      "warnings_contain": [
+        "TMAP pedestrian route failed"
+      ]
+    }
+  }
+]

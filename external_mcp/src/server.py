@@ -4,7 +4,7 @@ from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
-from external.firecrawl import search_firecrawl
+from external.firecrawl import FirecrawlSource, FirecrawlTimeRange, search_firecrawl
 from external.naver import NaverSearchCategory, search_naver
 from external.tmap import route_tmap_pedestrian, search_tmap_poi
 
@@ -67,6 +67,7 @@ def _register_tools(mcp: FastMCP) -> None:
         description=(
             "Firecrawl로 공개 웹을 검색합니다. "
             "최신 웹 근거, 공식 URL, 기관 안내 페이지, 복지 정책 페이지, 검색 결과 요약이 필요할 때 사용합니다. "
+            "뉴스 검색은 sources에 news를 넣고, 특정 사이트만 보거나 제외하려면 include_domains/exclude_domains를 사용합니다. "
             "긴 원문 미리보기가 필요할 때만 include_markdown을 true로 설정합니다."
         ),
     )
@@ -74,14 +75,20 @@ def _register_tools(mcp: FastMCP) -> None:
     def web_search(
         query: str,
         limit: int | None = None,
+        sources: list[FirecrawlSource] | None = None,
         include_markdown: bool = False,
+        include_domains: list[str] | None = None,
+        exclude_domains: list[str] | None = None,
         location: str | None = None,
-        time_range: str = "any",
+        time_range: FirecrawlTimeRange = "any",
     ) -> dict[str, Any]:
         return search_firecrawl(
             query=query,
             limit=limit,
+            sources=sources,
             include_markdown=include_markdown,
+            include_domains=include_domains,
+            exclude_domains=exclude_domains,
             location=location,
             time_range=time_range,
         )
@@ -90,7 +97,9 @@ def _register_tools(mcp: FastMCP) -> None:
         name="tmap.search_poi",
         description=(
             "TMAP 장소 검색 API로 복지센터, 노인복지관, 주민센터, 병원 등 장소 후보를 찾습니다. "
-            "결과에는 장소명, 주소, 전화번호, 카테고리, 경도(lon), 위도(lat)가 포함됩니다. "
+            "결과에는 장소명, 주소, 전화번호, 카테고리, 경도(lon), 위도(lat), "
+            "네이버지도 웹 위치 링크(naver_map_place_url), 네이버지도 웹 검색 링크(naver_map_search_url)가 포함됩니다. "
+            "사용자에게 장소를 안내할 때는 길찾기 링크가 아니라 naver_map_place_url을 위치 확인 링크로 함께 보여줍니다. "
             "길찾기 전에 목적지 좌표를 찾을 때 먼저 사용합니다."
         ),
     )
@@ -115,6 +124,7 @@ def _register_tools(mcp: FastMCP) -> None:
         description=(
             "TMAP 보행자 길찾기 API로 출발 좌표에서 도착 좌표까지의 도보 경로를 조회합니다. "
             "거리, 예상 시간, 길 안내 단계가 필요할 때 사용합니다. "
+            "결과에는 네이버지도 웹 길찾기 링크(naver_map_route_url)가 포함됩니다. "
             "먼저 tmap.search_poi로 목적지 좌표를 찾은 뒤 사용하는 것을 권장합니다."
         ),
     )
