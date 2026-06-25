@@ -66,6 +66,7 @@ export function useChatPageController() {
     error,
     isBusy,
     ttsPlaybackStatus,
+    empty: conversationEmpty,
     reset,
   } = useChatSession({
     getApplicationState: () => workspaceSnapshotRef.current(),
@@ -114,6 +115,7 @@ export function useChatPageController() {
   );
   const workspace = useChatWorkspaceController({
     chatStatus: status,
+    conversationEmpty,
     dictationStatus,
     ttsPlaybackStatus,
   });

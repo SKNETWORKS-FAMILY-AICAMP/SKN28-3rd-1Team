@@ -163,7 +163,7 @@ function SidebarGreeting() {
   return (
     <div className="flex items-start gap-2">
       <SidebarAvatar />
-      <div className="max-w-[calc(var(--chat-sidebar-width)-112px)] rounded-[4px_14px_14px_14px] border border-[var(--chat-border)] bg-[var(--chat-panel)] px-3.5 py-3 text-sm leading-relaxed text-[var(--chat-text)]">
+      <div className="chat-sidebar-message-bubble max-w-[calc(var(--chat-sidebar-width)-112px)] rounded-[4px_14px_14px_14px] border border-[var(--chat-border)] bg-[var(--chat-panel)] px-3.5 py-3 text-sm leading-relaxed text-[var(--chat-text)]">
         안녕하세요, 로디에요!
         <br />
         궁금한 점을 편하게 물어보세요.
@@ -217,7 +217,7 @@ function SidebarChatMessage({
       <div className="flex items-start gap-2">
         <SidebarAvatar isUser />
         <div className="min-w-0">
-          <div className="max-w-[calc(var(--chat-sidebar-width)-112px)] whitespace-pre-wrap rounded-[4px_14px_14px_14px] bg-[var(--chat-user-bubble)] px-3.5 py-3 text-sm leading-relaxed text-[var(--chat-text)]">
+          <div className="chat-sidebar-message-bubble max-w-[calc(var(--chat-sidebar-width)-112px)] whitespace-pre-wrap rounded-[4px_14px_14px_14px] bg-[var(--chat-user-bubble)] px-3.5 py-3 text-sm leading-relaxed text-[var(--chat-text)]">
             {getMessageText(message)}
             <MessageTimestamp
               timestamp={timestamp}
@@ -234,7 +234,7 @@ function SidebarChatMessage({
       <SidebarAvatar />
       <div className="min-w-0 space-y-2">
         {textParts.length > 0 ? (
-          <div className="max-w-[calc(var(--chat-sidebar-width)-112px)] rounded-[4px_14px_14px_14px] border border-[var(--chat-border)] bg-[var(--chat-assistant-bubble)] px-3.5 py-3 text-sm leading-relaxed text-[var(--chat-text)]">
+          <div className="chat-sidebar-message-bubble max-w-[calc(var(--chat-sidebar-width)-112px)] rounded-[4px_14px_14px_14px] border border-[var(--chat-border)] bg-[var(--chat-assistant-bubble)] px-3.5 py-3 text-sm leading-relaxed text-[var(--chat-text)]">
             {textParts.map((part, index) => (
               <MessageResponse
                 key={`${message.id}-text-${index}`}

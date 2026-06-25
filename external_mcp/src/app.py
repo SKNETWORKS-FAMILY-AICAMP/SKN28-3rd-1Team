@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from typing import Any
 
+from logger import configure_logging, get_logger
 from settings import settings
+
+logger = get_logger(__name__)
 
 
 # FastMCP 서버를 ASGI 앱으로 바꿔서 uvicorn이 실행할 수 있게 만든다.
@@ -21,6 +24,16 @@ def main() -> None:
 
     import uvicorn
 
+    configure_logging()
+    logger.info(
+        "external MCP service starting",
+        extra={
+            "event": "external_mcp.service.starting",
+            "host": settings.host,
+            "port": settings.port,
+            "path": settings.path,
+        },
+    )
     app = create_app()
     uvicorn.run(
         app,

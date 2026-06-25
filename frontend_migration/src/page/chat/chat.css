@@ -38,9 +38,9 @@
   --chat-trace-bg: #171b18;
   --chat-trace-border: #2a241f;
   --chat-trace-scrollbar: #594a3e;
-  --chat-sidebar-width-default: 540px;
-  --chat-sidebar-width-min: 420px;
-  --chat-sidebar-width-max: 640px;
+  --chat-sidebar-width-default: 600px;
+  --chat-sidebar-width-min: 460px;
+  --chat-sidebar-width-max: 760px;
   --chat-trace-drawer-width-default: 320px;
   --chat-trace-drawer-width-min: 260px;
   --chat-trace-drawer-width-max: 460px;
@@ -74,6 +74,20 @@
 
 .chat-sidebar-shell {
   width: var(--chat-sidebar-width, var(--chat-sidebar-current-width));
+}
+
+.chat-sidebar-message-bubble {
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+.chat-sidebar-message-bubble :where(p, li, blockquote) {
+  line-height: 1.7;
+}
+
+.chat-composer-input {
+  font-size: 16px;
+  line-height: 1.5;
 }
 
 .chat-trace-drawer {

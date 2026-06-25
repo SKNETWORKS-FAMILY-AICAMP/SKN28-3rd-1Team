@@ -4,8 +4,10 @@ import asyncio
 import json
 from dataclasses import dataclass
 from pathlib import Path
+from time import perf_counter
+from typing import Any
 
-from langchain_core.tools import BaseTool
+from langchain_core.tools import BaseTool, StructuredTool
 
 from logger import get_logger
 from tools.from_mcp import load_external_mcp_tools, load_rag_mcp_tools
@@ -81,6 +83,242 @@ def _tool_names(tools: list[BaseTool]) -> list[str]:
     return [tool.name for tool in tools]
 
 
+def _tool_arg_keys(payload: dict[str, Any]) -> list[str]:
+    return sorted(str(key) for key in payload)
+
+
+def _tool_result_summary(result: Any) -> dict[str, Any]:
+    summary: dict[str, Any] = {"result_type": type(result).__name__}
+
+    if isinstance(result, dict):
+        if "success" in result:
+            summary["tool_success"] = bool(result.get("success"))
+        if isinstance(result.get("count"), int):
+            summary["result_count"] = result.get("count")
+        if isinstance(result.get("results"), list):
+            summary["result_items"] = len(result["results"])
+        if isinstance(result.get("warnings"), list):
+            summary["warning_count"] = len(result["warnings"])
+        return summary
+
+    if isinstance(result, str):
+        summary["result_chars"] = len(result)
+        return summary
+
+    if isinstance(result, (list, tuple)):
+        summary["result_items"] = len(result)
+        return summary
+
+    return summary
+
+
+def _tool_returned_failure(result: Any) -> bool:
+    if not isinstance(result, dict):
+        return False
+
+    if result.get("success") is False:
+        return True
+
+    status = result.get("status")
+    if isinstance(status, str) and status.lower() in {"error", "failed", "failure"}:
+        return True
+
+    return False
+
+
+def _duration_ms(started_at: float) -> int:
+    return round((perf_counter() - started_at) * 1000)
+
+
+def _tool_log_context(
+    *,
+    source: str,
+    profile: str,
+    tool_name: str,
+    payload: dict[str, Any],
+) -> dict[str, Any]:
+    return {
+        "source": source,
+        "profile": profile,
+        "tool_name": tool_name,
+        "arg_count": len(payload),
+        "arg_keys": _tool_arg_keys(payload),
+    }
+
+
+def _log_tool_started(
+    *,
+    source: str,
+    profile: str,
+    tool_name: str,
+    payload: dict[str, Any],
+) -> None:
+    logger.info(
+        "backend tool invocation started",
+        extra={
+            "event": "tool.invocation.started",
+            **_tool_log_context(
+                source=source,
+                profile=profile,
+                tool_name=tool_name,
+                payload=payload,
+            ),
+        },
+    )
+
+
+def _log_tool_completed(
+    *,
+    source: str,
+    profile: str,
+    tool_name: str,
+    payload: dict[str, Any],
+    started_at: float,
+    result: Any,
+) -> None:
+    returned_failure = _tool_returned_failure(result)
+    event = "tool.invocation.failed" if returned_failure else "tool.invocation.succeeded"
+    message = (
+        "backend tool invocation failed"
+        if returned_failure
+        else "backend tool invocation succeeded"
+    )
+    extra = {
+        "event": event,
+        **_tool_log_context(
+            source=source,
+            profile=profile,
+            tool_name=tool_name,
+            payload=payload,
+        ),
+        "duration_ms": _duration_ms(started_at),
+        **_tool_result_summary(result),
+    }
+    if returned_failure:
+        extra["failure_kind"] = "returned_failure"
+
+    logger.info(message, extra=extra)
+
+
+def _log_tool_exception(
+    *,
+    source: str,
+    profile: str,
+    tool_name: str,
+    payload: dict[str, Any],
+    started_at: float,
+) -> None:
+    logger.exception(
+        "backend tool invocation failed",
+        extra={
+            "event": "tool.invocation.failed",
+            **_tool_log_context(
+                source=source,
+                profile=profile,
+                tool_name=tool_name,
+                payload=payload,
+            ),
+            "duration_ms": _duration_ms(started_at),
+            "failure_kind": "exception",
+        },
+    )
+
+
+def _instrument_tool(tool: BaseTool, *, source: str, profile: str) -> BaseTool:
+    tool_name = tool.name
+
+    def _run(**payload: Any) -> Any:
+        started_at = perf_counter()
+        _log_tool_started(
+            source=source,
+            profile=profile,
+            tool_name=tool_name,
+            payload=payload,
+        )
+        try:
+            result = tool.invoke(payload)
+        except Exception:
+            _log_tool_exception(
+                source=source,
+                profile=profile,
+                tool_name=tool_name,
+                payload=payload,
+                started_at=started_at,
+            )
+            raise
+
+        _log_tool_completed(
+            source=source,
+            profile=profile,
+            tool_name=tool_name,
+            payload=payload,
+            started_at=started_at,
+            result=result,
+        )
+        return result
+
+    async def _arun(**payload: Any) -> Any:
+        started_at = perf_counter()
+        _log_tool_started(
+            source=source,
+            profile=profile,
+            tool_name=tool_name,
+            payload=payload,
+        )
+        try:
+            result = await tool.ainvoke(payload)
+        except Exception:
+            _log_tool_exception(
+                source=source,
+                profile=profile,
+                tool_name=tool_name,
+                payload=payload,
+                started_at=started_at,
+            )
+            raise
+
+        _log_tool_completed(
+            source=source,
+            profile=profile,
+            tool_name=tool_name,
+            payload=payload,
+            started_at=started_at,
+            result=result,
+        )
+        return result
+
+    instrumented = StructuredTool.from_function(
+        func=_run,
+        coroutine=_arun,
+        name=tool.name,
+        description=tool.description or f"{tool.name} tool.",
+        return_direct=tool.return_direct,
+        args_schema=tool.args_schema,
+    )
+    instrumented.handle_tool_error = tool.handle_tool_error
+    instrumented.handle_validation_error = tool.handle_validation_error
+    instrumented.tags = tool.tags
+    instrumented.metadata = {
+        **(tool.metadata or {}),
+        "tool_source": source,
+        "tool_profile": profile,
+    }
+    return instrumented
+
+
+def _instrument_tools(
+    tool_entries: list[tuple[BaseTool, str]],
+    *,
+    profile: str,
+) -> list[BaseTool]:
+    source_by_id = {id(tool): source for tool, source in tool_entries}
+    deduped_tools = _deduplicate_tool_names([tool for tool, _ in tool_entries])
+    return [
+        _instrument_tool(tool, source=source_by_id[id(tool)], profile=profile)
+        for tool in deduped_tools
+    ]
+
+
 # agent profile 이름을 파일 경로로 바꾸되 이상한 문자는 막는다.
 def _profile_path(agent_name: str) -> Path:
     if not agent_name.replace("_", "").replace("-", "").isalnum():
@@ -132,7 +370,7 @@ def clear_tool_profile_cache() -> None:
 
 # profile 설정에 따라 RAG MCP, External MCP, local tool을 실제로 로드한다.
 async def _load_tools(profile: ToolProfile) -> list[BaseTool]:
-    tools: list[BaseTool] = []
+    tool_entries: list[tuple[BaseTool, str]] = []
 
     if profile.rag_mcp_enabled:
         mcp_tools = await load_rag_mcp_tools()
@@ -154,7 +392,7 @@ async def _load_tools(profile: ToolProfile) -> list[BaseTool]:
                 "tools": _tool_names(mcp_tools),
             },
         )
-        tools.extend(mcp_tools)
+        tool_entries.extend((tool, "rag_mcp") for tool in mcp_tools)
     else:
         logger.debug(
             "tool registry source skipped",
@@ -186,7 +424,7 @@ async def _load_tools(profile: ToolProfile) -> list[BaseTool]:
                 "tools": _tool_names(external_tools),
             },
         )
-        tools.extend(external_tools)
+        tool_entries.extend((tool, "external_mcp") for tool in external_tools)
     else:
         logger.debug(
             "tool registry source skipped",
@@ -218,7 +456,7 @@ async def _load_tools(profile: ToolProfile) -> list[BaseTool]:
                 "tools": _tool_names(local_tools),
             },
         )
-        tools.extend(local_tools)
+        tool_entries.extend((tool, "local") for tool in local_tools)
     else:
         logger.debug(
             "tool registry source skipped",
@@ -230,7 +468,7 @@ async def _load_tools(profile: ToolProfile) -> list[BaseTool]:
             },
         )
 
-    return _deduplicate_tool_names(tools)
+    return _instrument_tools(tool_entries, profile=profile.name)
 
 
 # agent 이름에 맞는 tool 목록을 캐시와 함께 반환한다.

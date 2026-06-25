@@ -74,7 +74,16 @@ EXTERNAL_MCP_PATH
 cd external_mcp
 make sync
 make test
-make start
+make env-check
+make dev
+```
+
+`make env-check`, `make start`, `make dev`는 Infisical CLI로 값을 주입한 뒤 Varlock
+schema를 검증합니다. 기본 Infisical project는 `main_mcp_agent`이고, 기본 환경은
+`dev`입니다.
+
+```bash
+make start INFISICAL_PROJECT_ID=<external-mcp-project-id> INFISICAL_ENV=dev
 ```
 
 MCP Inspector로 확인할 때는 Streamable HTTP URL에 아래 주소를 넣습니다.

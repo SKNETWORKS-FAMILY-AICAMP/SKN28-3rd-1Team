@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from time import perf_counter
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
@@ -8,12 +9,119 @@ from external.firecrawl import search_firecrawl
 from external.naver import NaverSearchCategory, search_naver
 from external.tmap import route_tmap_pedestrian, search_tmap_poi
 
+from logger import get_logger
 from settings import settings
+
+logger = get_logger(__name__)
 
 MCP_INSTRUCTIONS = (
     "복지 상담 agent가 외부 정보를 확인하기 위한 MCP 도구 서버입니다. "
     "네이버 검색, Firecrawl 웹 검색, TMAP 장소 검색, TMAP 보행자 길찾기 도구를 제공합니다."
 )
+
+
+def _query_summary(query: str) -> dict[str, Any]:
+    return {"query_chars": len(query)}
+
+
+def _keyword_summary(keyword: str) -> dict[str, Any]:
+    return {"keyword_chars": len(keyword)}
+
+
+def _result_summary(result: Any) -> dict[str, Any]:
+    summary: dict[str, Any] = {"result_type": type(result).__name__}
+
+    if isinstance(result, dict):
+        if "success" in result:
+            summary["tool_success"] = bool(result.get("success"))
+        if isinstance(result.get("count"), int):
+            summary["result_count"] = result.get("count")
+        if isinstance(result.get("results"), list):
+            summary["result_items"] = len(result["results"])
+        if isinstance(result.get("warnings"), list):
+            summary["warning_count"] = len(result["warnings"])
+        if isinstance(result.get("provider"), str):
+            summary["provider"] = result.get("provider")
+        return summary
+
+    if isinstance(result, str):
+        summary["result_chars"] = len(result)
+        return summary
+
+    if isinstance(result, (list, tuple)):
+        summary["result_items"] = len(result)
+        return summary
+
+    return summary
+
+
+def _returned_failure(result: Any) -> bool:
+    if not isinstance(result, dict):
+        return False
+
+    if result.get("success") is False:
+        return True
+
+    status = result.get("status")
+    if isinstance(status, str) and status.lower() in {"error", "failed", "failure"}:
+        return True
+
+    return False
+
+
+def _duration_ms(started_at: float) -> int:
+    return round((perf_counter() - started_at) * 1000)
+
+
+def _log_tool_started(tool_name: str, **fields: Any) -> float:
+    logger.info(
+        "external MCP tool invocation started",
+        extra={
+            "event": "external_mcp.tool_invocation.started",
+            "source": "external_mcp",
+            "tool_name": tool_name,
+            **fields,
+        },
+    )
+    return perf_counter()
+
+
+def _log_tool_completed(tool_name: str, started_at: float, result: Any) -> None:
+    returned_failure = _returned_failure(result)
+    event = (
+        "external_mcp.tool_invocation.failed"
+        if returned_failure
+        else "external_mcp.tool_invocation.succeeded"
+    )
+    message = (
+        "external MCP tool invocation failed"
+        if returned_failure
+        else "external MCP tool invocation succeeded"
+    )
+    extra = {
+        "event": event,
+        "source": "external_mcp",
+        "tool_name": tool_name,
+        "duration_ms": _duration_ms(started_at),
+        **_result_summary(result),
+    }
+    if returned_failure:
+        extra["failure_kind"] = "returned_failure"
+
+    logger.info(message, extra=extra)
+
+
+def _log_tool_exception(tool_name: str, started_at: float) -> None:
+    logger.exception(
+        "external MCP tool invocation failed",
+        extra={
+            "event": "external_mcp.tool_invocation.failed",
+            "source": "external_mcp",
+            "tool_name": tool_name,
+            "duration_ms": _duration_ms(started_at),
+            "failure_kind": "exception",
+        },
+    )
 
 
 # External API MCP 서버를 만들고 tool 등록까지 끝낸다.
@@ -54,13 +162,28 @@ def _register_tools(mcp: FastMCP) -> None:
         start: int = 1,
         sort: str | None = None,
     ) -> dict[str, Any]:
-        return search_naver(
-            query=query,
+        started_at = _log_tool_started(
+            "naver.search",
             category=category,
             limit=limit,
             start=start,
-            sort=sort,
+            has_sort=sort is not None,
+            **_query_summary(query),
         )
+        try:
+            result = search_naver(
+                query=query,
+                category=category,
+                limit=limit,
+                start=start,
+                sort=sort,
+            )
+        except Exception:
+            _log_tool_exception("naver.search", started_at)
+            raise
+
+        _log_tool_completed("naver.search", started_at, result)
+        return result
 
     @mcp.tool(
         name="web.search",
@@ -78,13 +201,28 @@ def _register_tools(mcp: FastMCP) -> None:
         location: str | None = None,
         time_range: str = "any",
     ) -> dict[str, Any]:
-        return search_firecrawl(
-            query=query,
+        started_at = _log_tool_started(
+            "web.search",
             limit=limit,
             include_markdown=include_markdown,
-            location=location,
+            has_location=location is not None,
             time_range=time_range,
+            **_query_summary(query),
         )
+        try:
+            result = search_firecrawl(
+                query=query,
+                limit=limit,
+                include_markdown=include_markdown,
+                location=location,
+                time_range=time_range,
+            )
+        except Exception:
+            _log_tool_exception("web.search", started_at)
+            raise
+
+        _log_tool_completed("web.search", started_at, result)
+        return result
 
     @mcp.tool(
         name="tmap.search_poi",
@@ -102,13 +240,27 @@ def _register_tools(mcp: FastMCP) -> None:
         center_lat: float | None = None,
         radius_km: int | None = None,
     ) -> dict[str, Any]:
-        return search_tmap_poi(
-            keyword=keyword,
+        started_at = _log_tool_started(
+            "tmap.search_poi",
             limit=limit,
-            center_lon=center_lon,
-            center_lat=center_lat,
-            radius_km=radius_km,
+            has_center=center_lon is not None and center_lat is not None,
+            has_radius=radius_km is not None,
+            **_keyword_summary(keyword),
         )
+        try:
+            result = search_tmap_poi(
+                keyword=keyword,
+                limit=limit,
+                center_lon=center_lon,
+                center_lat=center_lat,
+                radius_km=radius_km,
+            )
+        except Exception:
+            _log_tool_exception("tmap.search_poi", started_at)
+            raise
+
+        _log_tool_completed("tmap.search_poi", started_at, result)
+        return result
 
     @mcp.tool(
         name="tmap.route_pedestrian",
@@ -127,11 +279,23 @@ def _register_tools(mcp: FastMCP) -> None:
         start_name: str = "출발지",
         end_name: str = "도착지",
     ) -> dict[str, Any]:
-        return route_tmap_pedestrian(
-            start_lon=start_lon,
-            start_lat=start_lat,
-            end_lon=end_lon,
-            end_lat=end_lat,
-            start_name=start_name,
-            end_name=end_name,
+        started_at = _log_tool_started(
+            "tmap.route_pedestrian",
+            start_name_chars=len(start_name),
+            end_name_chars=len(end_name),
         )
+        try:
+            result = route_tmap_pedestrian(
+                start_lon=start_lon,
+                start_lat=start_lat,
+                end_lon=end_lon,
+                end_lat=end_lat,
+                start_name=start_name,
+                end_name=end_name,
+            )
+        except Exception:
+            _log_tool_exception("tmap.route_pedestrian", started_at)
+            raise
+
+        _log_tool_completed("tmap.route_pedestrian", started_at, result)
+        return result

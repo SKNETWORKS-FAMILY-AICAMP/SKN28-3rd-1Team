@@ -8,6 +8,7 @@ export type MascotAnimationClip = {
   frameDurationMs: number;
   frames: readonly MascotFrame[];
   label: string;
+  loopPauseMs?: number;
 };
 
 export const MASCOT_SPRITE = {
@@ -40,6 +41,7 @@ const mascotAnimationClips = {
     label: "인사",
     description: "상담 시작 전 로디가 손을 들어 반응하는 상태",
     frameDurationMs: 210,
+    loopPauseMs: 2400,
     frames: [
       frame(0, 3),
       frame(1, 3),

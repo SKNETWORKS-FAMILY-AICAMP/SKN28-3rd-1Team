@@ -46,7 +46,7 @@ export function ChatComposer({
           onChange={(event) => onInputChange(event.target.value)}
           disabled={isBusy}
           placeholder="메시지를 입력하세요..."
-          className="min-w-0 flex-1 bg-transparent text-sm text-[var(--chat-text)] outline-none placeholder:text-[var(--chat-text-soft)]"
+          className="chat-composer-input min-w-0 flex-1 bg-transparent text-sm text-[var(--chat-text)] outline-none placeholder:text-[var(--chat-text-soft)]"
         />
         <VoiceInputButton
           ariaKeyShortcuts={dictationShortcut.ariaKeyShortcuts}

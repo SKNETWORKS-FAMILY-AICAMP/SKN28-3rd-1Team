@@ -14,12 +14,14 @@ import {
 
 type UseChatWorkspaceControllerOptions = {
   chatStatus: "submitted" | "streaming" | "ready" | "error";
+  conversationEmpty: boolean;
   dictationStatus: DictationStatus;
   ttsPlaybackStatus: TtsPlaybackStatus;
 };
 
 export function useChatWorkspaceController({
   chatStatus,
+  conversationEmpty,
   dictationStatus,
   ttsPlaybackStatus,
 }: UseChatWorkspaceControllerOptions) {
@@ -28,6 +30,7 @@ export function useChatWorkspaceController({
   );
   const runtimeMascotAnimation = resolveRuntimeMascotAnimation({
     chatStatus,
+    conversationEmpty,
     dictationStatus,
     ttsPlaybackStatus,
   });
@@ -47,6 +50,7 @@ export function useChatWorkspaceController({
 
 function resolveRuntimeMascotAnimation({
   chatStatus,
+  conversationEmpty,
   dictationStatus,
   ttsPlaybackStatus,
 }: UseChatWorkspaceControllerOptions): MascotAnimationName {
@@ -70,6 +74,8 @@ function resolveRuntimeMascotAnimation({
   if (chatStatus === "submitted" || chatStatus === "streaming") {
     return "thinking";
   }
+
+  if (conversationEmpty) return "greeting";
 
   return "idle";
 }

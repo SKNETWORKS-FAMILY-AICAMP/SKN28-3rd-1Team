@@ -42,9 +42,14 @@ def create_chat_cerebras(
     extra_body: dict[str, Any] = {}
     if reasoning_format is not None:
         extra_body["reasoning_format"] = reasoning_format
-    if clear_thinking is not None:
+    if clear_thinking is not None and _supports_clear_thinking(model):
         extra_body["clear_thinking"] = clear_thinking
     if extra_body:
         kwargs["extra_body"] = extra_body
 
     return ChatCerebras(**kwargs)
+
+
+def _supports_clear_thinking(model: str) -> bool:
+    normalized_model = model.strip().lower()
+    return "glm" in normalized_model

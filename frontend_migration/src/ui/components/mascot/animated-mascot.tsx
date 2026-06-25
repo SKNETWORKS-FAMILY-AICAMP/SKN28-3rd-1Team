@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import {
   MASCOT_ANIMATION_CLIPS,
   MASCOT_SPRITE,
+  type MascotAnimationClip,
   type MascotAnimationName,
 } from "@/ui/components/mascot/mascot-animation-data";
 
@@ -32,7 +33,7 @@ export function AnimatedMascot({
     frameIndex: number;
   }>({ animation, frameIndex: 0 });
   const prefersReducedMotion = usePrefersReducedMotion();
-  const clip = MASCOT_ANIMATION_CLIPS[animation];
+  const clip: MascotAnimationClip = MASCOT_ANIMATION_CLIPS[animation];
   const frameIndex = playback.animation === animation ? playback.frameIndex : 0;
   const frame = clip.frames[frameIndex % clip.frames.length];
   const x = toBackgroundPosition(frame.column, MASCOT_SPRITE.columns);
@@ -42,23 +43,29 @@ export function AnimatedMascot({
   useEffect(() => {
     if (prefersReducedMotion || clip.frames.length <= 1) return;
 
-    const intervalId = window.setInterval(() => {
-      setPlayback((current) => {
-        const currentFrameIndex =
-          current.animation === animation ? current.frameIndex : 0;
+    let timeoutId: number;
+    let currentFrameIndex = 0;
 
-        return {
-          animation,
-          frameIndex: (currentFrameIndex + 1) % clip.frames.length,
-        };
-      });
-    }, clip.frameDurationMs);
+    const advanceFrame = () => {
+      currentFrameIndex = (currentFrameIndex + 1) % clip.frames.length;
+      setPlayback({ animation, frameIndex: currentFrameIndex });
 
-    return () => window.clearInterval(intervalId);
+      const nextDelay =
+        currentFrameIndex === 0
+          ? clip.loopPauseMs ?? clip.frameDurationMs
+          : clip.frameDurationMs;
+
+      timeoutId = window.setTimeout(advanceFrame, nextDelay);
+    };
+
+    timeoutId = window.setTimeout(advanceFrame, clip.frameDurationMs);
+
+    return () => window.clearTimeout(timeoutId);
   }, [
     animation,
     clip.frameDurationMs,
     clip.frames.length,
+    clip.loopPauseMs,
     prefersReducedMotion,
   ]);
 

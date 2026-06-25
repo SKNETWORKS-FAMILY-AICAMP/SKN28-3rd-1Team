@@ -491,7 +491,7 @@ make fe-check
 
 `.env.example`은 active env 계약으로 사용하지 않습니다. 새 env field 변경은 해당 서비스의 `.env.schema`를 먼저 수정합니다.
 
-Backend는 `make env-check`와 `make start`에서 Infisical CLI로 provider 값을 주입하고 Varlock으로 schema 계약을 검증합니다. 다른 서비스도 provider 연결 시 같은 흐름을 따릅니다.
+Backend와 External MCP는 `make env-check`와 `make start`에서 Infisical CLI로 provider 값을 주입하고 Varlock으로 schema 계약을 검증합니다. 다른 서비스도 provider 연결 시 같은 흐름을 따릅니다.
 
 Python 가상환경은 서비스별 `.venv`만 사용합니다. `backend/`와 `rag/be/`에서
 `make start`, `make test`, `make check`를 실행하면 필요한 경우 `uv sync`가

@@ -18,6 +18,7 @@ def create_screen_control_agent_node(screen_control_agent: Any) -> Any:
         if not final_response:
             final_response = final_message_text(state)
 
+        message_turns = _raw_message_turns(state.get("messages") or [])
         instruction = _screen_control_instruction(state, final_response)
         logger.debug(
             "screen control agent input prepared",
@@ -32,10 +33,16 @@ def create_screen_control_agent_node(screen_control_agent: Any) -> Any:
                     state.get("application_state")
                 ),
                 "user_input_state": _state_key_summary(state.get("user_input_state")),
+                "message_turn_count": len(message_turns),
+                "message_turn_types": [
+                    message.get("type") or message.get("role")
+                    for message in message_turns
+                ],
                 "instruction_text": instruction,
                 "final_response_text": final_response,
                 "application_state_payload": state.get("application_state") or {},
                 "user_input_state_payload": state.get("user_input_state") or {},
+                "message_turns_payload": message_turns,
             },
         )
         _emit_screen_control_input(state, instruction)
@@ -71,7 +78,7 @@ def create_screen_control_agent_node(screen_control_agent: Any) -> Any:
                     "agent": "screen_control_agent",
                 },
             )
-            raise
+            return {}
 
         if isinstance(result, dict):
             final_text = final_message_text(result)
@@ -105,13 +112,15 @@ def create_screen_control_agent_node(screen_control_agent: Any) -> Any:
 
 
 def _screen_control_instruction(state: ChatTurnState, final_response: str) -> str:
+    message_turns = _raw_message_turns(state.get("messages") or [])
     payload = {
         "final_response": final_response,
+        "message_turns": message_turns,
         "user_input_state": state.get("user_input_state") or {},
         "application_state": state.get("application_state") or {},
     }
     return (
-        "아래 JSON은 이번 턴의 main agent 답변과 현재 UI 상태입니다. "
+        "아래 JSON은 이번 턴의 main agent 답변, raw message turns, 현재 UI 상태입니다. "
         "화면 제어가 필요하면 제공된 tool만 호출하고, 최종 상담 답변은 작성하지 마세요.\n\n"
         f"{json.dumps(payload, ensure_ascii=False, default=str)}"
     )
@@ -163,6 +172,54 @@ def _state_key_summary(value: Any) -> dict[str, Any]:
         "key_count": len(keys),
         "keys": keys,
     }
+
+
+def _raw_message_turns(messages: Any) -> list[dict[str, Any]]:
+    if not isinstance(messages, list):
+        return []
+    return [_message_payload(message) for message in _current_turn_messages(messages)]
+
+
+def _current_turn_messages(messages: list[Any]) -> list[Any]:
+    last_user_index = -1
+    for index, message in enumerate(messages):
+        if _message_type(message) in {"human", "user"}:
+            last_user_index = index
+    return messages[last_user_index:] if last_user_index >= 0 else messages
+
+
+def _message_payload(message: Any) -> dict[str, Any]:
+    if isinstance(message, dict):
+        return {
+            str(key): value
+            for key, value in message.items()
+            if value is not None
+        }
+
+    payload: dict[str, Any] = {
+        "type": _message_type(message),
+        "class_name": type(message).__name__,
+        "content": getattr(message, "content", None),
+    }
+    for attr in (
+        "name",
+        "id",
+        "tool_call_id",
+        "tool_calls",
+        "invalid_tool_calls",
+        "additional_kwargs",
+        "response_metadata",
+    ):
+        value = getattr(message, attr, None)
+        if value is not None and value != [] and value != {}:
+            payload[attr] = value
+    return payload
+
+
+def _message_type(message: Any) -> str:
+    if isinstance(message, dict):
+        return str(message.get("type") or message.get("role") or "")
+    return str(getattr(message, "type", "") or getattr(message, "role", ""))
 
 
 def _application_state_summary(value: Any) -> dict[str, Any]:
