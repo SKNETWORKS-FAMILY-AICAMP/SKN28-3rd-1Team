@@ -1,0 +1,11 @@
+.venv
+.env
+.env.*
+!.env.schema
+.pytest_cache
+__pycache__
+*.pyc
+coverage
+.coverage
+htmlcov
+.DS_Store

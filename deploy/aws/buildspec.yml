@@ -1,0 +1,43 @@
+version: 0.2
+
+env:
+  variables:
+    BACKEND_ECR_REPOSITORY: skn28/backend
+    FRONTEND_MIGRATION_ECR_REPOSITORY: skn28/frontend-migration
+    EXTERNAL_MCP_ECR_REPOSITORY: skn28/external-mcp
+    NEXT_PUBLIC_CHAT_API_PATH: /api/chat
+    NEXT_PUBLIC_NAVER_MAP_NCP_KEY_ID: ""
+    NEXT_PUBLIC_NAVER_MAP_CLIENT_ID: ""
+
+phases:
+  pre_build:
+    commands:
+      - set -eu
+      - export AWS_ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
+      - export AWS_REGION="${AWS_DEFAULT_REGION:-${AWS_REGION:-us-east-1}}"
+      - export ECR_REGISTRY="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+      - export IMAGE_TAG="$(printf '%s' "${CODEBUILD_RESOLVED_SOURCE_VERSION:-manual}" | cut -c1-12)"
+      - if [ -z "$IMAGE_TAG" ]; then IMAGE_TAG="$(date +%Y%m%d%H%M%S)"; fi
+      - export IMAGE_TAG
+      - aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$ECR_REGISTRY"
+      - mkdir -p deploy/aws/imagedefinitions
+  build:
+    commands:
+      - export BACKEND_IMAGE_URI="${ECR_REGISTRY}/${BACKEND_ECR_REPOSITORY}:${IMAGE_TAG}"
+      - export FRONTEND_MIGRATION_IMAGE_URI="${ECR_REGISTRY}/${FRONTEND_MIGRATION_ECR_REPOSITORY}:${IMAGE_TAG}"
+      - export EXTERNAL_MCP_IMAGE_URI="${ECR_REGISTRY}/${EXTERNAL_MCP_ECR_REPOSITORY}:${IMAGE_TAG}"
+      - DOCKER_BUILDKIT=1 docker build -t "$BACKEND_IMAGE_URI" backend
+      - DOCKER_BUILDKIT=1 docker build -t "$FRONTEND_MIGRATION_IMAGE_URI" --build-arg NEXT_PUBLIC_CHAT_API_PATH="$NEXT_PUBLIC_CHAT_API_PATH" --build-arg NEXT_PUBLIC_NAVER_MAP_NCP_KEY_ID="$NEXT_PUBLIC_NAVER_MAP_NCP_KEY_ID" --build-arg NEXT_PUBLIC_NAVER_MAP_CLIENT_ID="$NEXT_PUBLIC_NAVER_MAP_CLIENT_ID" frontend_migration
+      - DOCKER_BUILDKIT=1 docker build -t "$EXTERNAL_MCP_IMAGE_URI" external_mcp
+  post_build:
+    commands:
+      - docker push "$BACKEND_IMAGE_URI"
+      - docker push "$FRONTEND_MIGRATION_IMAGE_URI"
+      - docker push "$EXTERNAL_MCP_IMAGE_URI"
+      - printf '[{"name":"backend","imageUri":"%s"}]\n' "$BACKEND_IMAGE_URI" > deploy/aws/imagedefinitions/backend.json
+      - printf '[{"name":"frontend-migration","imageUri":"%s"}]\n' "$FRONTEND_MIGRATION_IMAGE_URI" > deploy/aws/imagedefinitions/frontend-migration.json
+      - printf '[{"name":"external-mcp","imageUri":"%s"}]\n' "$EXTERNAL_MCP_IMAGE_URI" > deploy/aws/imagedefinitions/external-mcp.json
+
+artifacts:
+  files:
+    - deploy/aws/imagedefinitions/*.json

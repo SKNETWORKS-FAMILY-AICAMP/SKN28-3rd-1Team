@@ -1,14 +1,35 @@
 # Deploy
 
-통합 실행 Makefile과 Docker Compose 설정을 관리합니다. 현재 기본 개발 흐름은 frontend와 backend를 로컬에서 빠르게 띄우는 것이며, Docker Compose 전체 stack은 명시적으로 필요할 때 사용하는 보조 흐름입니다.
+통합 실행 Makefile, Docker Compose 설정, AWS 배포 준비 파일을 관리합니다. 현재 기본 개발 흐름은 frontend와 backend를 로컬에서 빠르게 띄우는 것이며, Docker Compose 전체 stack은 명시적으로 필요할 때 사용하는 보조 흐름입니다.
 
 ## Layout
 
 ```text
 deploy/
+├── aws/         # ECR, CodeBuild, CodePipeline, ECS 배포 준비 파일
 ├── docker/      # docker-compose.yml, deploy 전용 .env.schema, local .env*
 └── makefile/    # 통합 실행 Makefile
 ```
+
+## AWS Deploy
+
+`deploy/aws/`는 GitHub repository source를 AWS CodePipeline에 연결하고, CodeBuild가 세 개 서비스 이미지를 Amazon ECR에 push한 뒤 ECS Fargate service를 갱신하는 배포 흐름을 준비합니다.
+
+현재 대상 이미지는 다음과 같습니다.
+
+| source | ECR repository |
+| --- | --- |
+| `frontend_migration/` | `skn28/frontend-migration` |
+| `backend/` | `skn28/backend` |
+| `external_mcp/` | `skn28/external-mcp` |
+
+ECR repository 생성은 아래 스크립트를 사용합니다.
+
+```bash
+AWS_PROFILE=sknetworksTeam3 AWS_REGION=us-east-1 ./deploy/aws/scripts/create-ecr-repositories.sh
+```
+
+CodeBuild buildspec은 `deploy/aws/buildspec.yml`입니다. Docker build는 로컬 macOS가 아니라 AWS CodeBuild의 privileged Linux 환경에서 실행합니다.
 
 ## Compose Services
 

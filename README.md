@@ -269,6 +269,7 @@ SKN28-3rd-1Team/
 │   ├── test-data/           # benchmark, LLM-as-a-judge 결과
 │   └── marking_criteria/    # 프로젝트 평가 기준 정리
 ├── deploy/                  # 통합 배포 실행 설정
+│   ├── aws/                 # ECR/CodeBuild/CodePipeline/ECS 배포 준비 파일
 │   ├── docker/              # Docker Compose와 deploy env 파일
 │   └── makefile/            # 통합 실행 Makefile
 ├── .agents/                 # repo-scoped agent skill과 작업 규칙
@@ -286,7 +287,7 @@ SKN28-3rd-1Team/
 | `rag/be/README.md` | RAG Backend API, MCP endpoint, 환경 변수 |
 | `rag/fe/README.md` | RAG 운영 UI 실행 방법 |
 | `external_mcp/README.md` | Naver / Firecrawl / TMAP MCP tool 서버와 환경 변수 |
-| `deploy/README.md` | local dev 통합 Makefile, Docker Compose, 포트 정보 |
+| `deploy/README.md` | local dev 통합 Makefile, Docker Compose, AWS 배포 준비 정보 |
 | `docs/README.md` | agent guideline, 온보딩, 도구 설정 등 팀 문서 |
 | `docs/legacy/llm_env_naming_convention.md` | LLM agent/provider/model env naming과 Infisical 동기화 기준 |
 | `presentation/test-data/README.md` | 발표용 평가 데이터, benchmark, judge 결과 구조 |
@@ -514,6 +515,7 @@ make check
 | Backend | `backend/.env.schema` | LLM provider API key, CORS, RAG MCP URL |
 | External MCP | `external_mcp/.env.schema` | Naver/Firecrawl/TMAP API key, External MCP endpoint |
 | Deploy | `deploy/docker/.env.schema` | 통합 Docker Compose host 포트, public build args |
+| AWS Deploy | `deploy/aws/buildspec.yml` | backend, frontend_migration, external_mcp ECR image build/push와 ECS image definition artifact |
 | RAG Backend | `rag/be/.env.schema` | Memgraph 연결, MCP endpoint, 외부 API key |
 | RAG Frontend | `rag/fe/.env.schema` | RAG API base URL |
 | RAG Infra | `rag/infra/.env.schema` | Memgraph 포트, Lab 포트 |
