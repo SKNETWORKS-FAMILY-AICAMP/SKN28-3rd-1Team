@@ -1,0 +1,136 @@
+[
+  {
+    "id": "WEB-SEARCH-001",
+    "tool": "web.search",
+    "description": "강남구 노인복지 정책 검색이 공식 구청/복지관 페이지 후보를 반환하는지 확인한다.",
+    "arguments": {
+      "query": "강남구 노인복지 정책 공식",
+      "limit": 3,
+      "sources": [
+        "web"
+      ],
+      "include_markdown": false,
+      "include_domains": [
+        "gangnam.go.kr"
+      ],
+      "location": "Seoul, South Korea",
+      "time_range": "any"
+    },
+    "fake_api": {
+      "response": "firecrawl.gangnam_elderly_policy",
+      "status_code": 200
+    },
+    "expected": {
+      "success": true,
+      "min_count": 2,
+      "required_paths": [
+        "results.0.title",
+        "results.0.url",
+        "results.0.description"
+      ],
+      "contains": [
+        {
+          "path": "results.0.title",
+          "text": "강남구"
+        },
+        {
+          "path": "results.0.description",
+          "text": "어르신"
+        }
+      ]
+    }
+  },
+  {
+    "id": "WEB-SEARCH-002",
+    "tool": "web.search",
+    "description": "대전 서구청 노인복지 검색이 구청 정책 안내 후보를 반환하는지 확인한다.",
+    "arguments": {
+      "query": "대전 서구청 노인복지",
+      "limit": 3,
+      "include_markdown": true,
+      "location": "Daejeon, South Korea",
+      "time_range": "any"
+    },
+    "fake_api": {
+      "response": "firecrawl.daejeon_seogu_senior_welfare",
+      "status_code": 200
+    },
+    "expected": {
+      "success": true,
+      "min_count": 2,
+      "required_paths": [
+        "results.0.title",
+        "results.0.url",
+        "results.0.markdown_preview"
+      ],
+      "contains": [
+        {
+          "path": "results.0.title",
+          "text": "대전광역시 서구"
+        },
+        {
+          "path": "results.0.markdown_preview",
+          "text": "노인복지"
+        }
+      ]
+    }
+  },
+  {
+    "id": "WEB-SEARCH-003",
+    "tool": "web.search",
+    "description": "광주 북구 치매안심센터 검색이 노인 돌봄 관련 기관 후보를 반환하는지 확인한다.",
+    "arguments": {
+      "query": "광주 북구 치매안심센터 노인 돌봄",
+      "limit": 3,
+      "include_markdown": false,
+      "location": "Gwangju, South Korea",
+      "time_range": "any"
+    },
+    "fake_api": {
+      "response": "firecrawl.gwangju_bukgu_dementia_center",
+      "status_code": 200
+    },
+    "expected": {
+      "success": true,
+      "min_count": 2,
+      "required_paths": [
+        "results.0.title",
+        "results.0.url",
+        "results.0.description"
+      ],
+      "contains": [
+        {
+          "path": "results.0.title",
+          "text": "광주 북구"
+        },
+        {
+          "path": "results.0.description",
+          "text": "치매"
+        }
+      ]
+    }
+  },
+  {
+    "id": "WEB-EDGE-004",
+    "tool": "web.search",
+    "description": "검색 결과가 없는 경우 count 0과 warning을 반환하는지 확인한다.",
+    "arguments": {
+      "query": "없는지역 노인복지 지원",
+      "limit": 3,
+      "include_markdown": false,
+      "location": "South Korea",
+      "time_range": "any"
+    },
+    "fake_api": {
+      "response": "firecrawl.no_results",
+      "status_code": 200
+    },
+    "expected": {
+      "success": true,
+      "count": 0,
+      "warnings_contain": [
+        "No Firecrawl search results found"
+      ]
+    }
+  }
+]

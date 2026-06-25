@@ -1,0 +1,68 @@
+{
+  "naver.gangnam_senior_welfare_center": {
+    "items": [
+      {
+        "title": "<b>강남노인종합복지관</b>",
+        "link": "https://www.gnsenior.org",
+        "category": "사회,복지>노인복지",
+        "description": "강남구 어르신 복지 상담, 평생교육, 건강증진 프로그램 안내",
+        "telephone": "02-549-7070",
+        "address": "서울특별시 강남구 삼성동 66",
+        "roadAddress": "서울특별시 강남구 삼성로 628",
+        "mapx": "1270519324",
+        "mapy": "375160447"
+      },
+      {
+        "title": "강남구립논현노인종합복지관",
+        "link": "https://example.org/nonhyeon-senior",
+        "category": "사회,복지>노인복지",
+        "description": "논현권역 어르신 복지관",
+        "telephone": "02-541-0226",
+        "address": "서울특별시 강남구 논현동 125",
+        "roadAddress": "서울특별시 강남구 논현로 60길",
+        "mapx": "1270345000",
+        "mapy": "375119000"
+      }
+    ]
+  },
+  "naver.busan_haeundae_senior_welfare": {
+    "items": [
+      {
+        "title": "해운대구노인복지관",
+        "link": "https://www.haeundaesenior.or.kr",
+        "description": "부산 해운대구 어르신 복지관 공식 홈페이지. 상담, 급식, 평생교육, 노인사회활동 안내."
+      },
+      {
+        "title": "부산광역시 해운대구청 어르신 복지",
+        "link": "https://www.haeundae.go.kr",
+        "description": "부산광역시 해운대구 노인복지 정책과 복지시설 안내."
+      }
+    ]
+  },
+  "naver.incheon_yeonsu_nursing_home": {
+    "items": [
+      {
+        "title": "연수실버요양원",
+        "link": "https://example.org/yeonsu-silver-care",
+        "category": "건강,의료>요양원",
+        "description": "인천 연수구 장기요양기관",
+        "telephone": "032-811-1004",
+        "address": "인천광역시 연수구 연수동 534",
+        "roadAddress": "인천광역시 연수구 원인재로 115",
+        "mapx": "1266837000",
+        "mapy": "374103000"
+      },
+      {
+        "title": "송도노인요양공동생활가정",
+        "link": "https://example.org/songdo-care",
+        "category": "건강,의료>노인요양시설",
+        "description": "인천 연수구 송도동 노인요양시설",
+        "telephone": "032-833-2000",
+        "address": "인천광역시 연수구 송도동 20",
+        "roadAddress": "인천광역시 연수구 컨벤시아대로 165",
+        "mapx": "1266454000",
+        "mapy": "373889000"
+      }
+    ]
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "firecrawl.gangnam_elderly_policy": {
+    "data": {
+      "web": [
+        {
+          "url": "https://www.gangnam.go.kr/contents/welfare_elderly",
+          "title": "강남구 어르신 복지",
+          "description": "강남구 어르신 복지 정책, 노인복지관, 돌봄 서비스, 신청 안내를 확인할 수 있습니다."
+        },
+        {
+          "url": "https://www.gnsenior.org/program",
+          "title": "강남노인종합복지관 프로그램",
+          "description": "상담, 건강, 평생교육 등 강남구 어르신 대상 프로그램 안내입니다."
+        }
+      ],
+      "news": []
+    }
+  },
+  "firecrawl.daejeon_seogu_senior_welfare": {
+    "data": {
+      "web": [
+        {
+          "url": "https://www.seogu.go.kr/kor/contents.do?key=senior",
+          "title": "대전광역시 서구 노인복지",
+          "description": "대전광역시 서구청의 노인복지, 경로당, 노인돌봄, 복지시설 안내입니다.",
+          "markdown": "# 대전광역시 서구 노인복지\n\n노인복지 상담, 경로당 지원, 돌봄 서비스, 복지시설 안내를 제공합니다."
+        },
+        {
+          "url": "https://www.seogu.go.kr/kor/sub06_01.do",
+          "title": "대전 서구 복지시설 현황",
+          "description": "서구 관내 복지시설과 담당 부서 정보를 제공합니다.",
+          "markdown": "복지시설 현황에는 노인복지관, 경로당, 주간보호시설 등이 포함됩니다."
+        }
+      ]
+    }
+  },
+  "firecrawl.gwangju_bukgu_dementia_center": {
+    "data": {
+      "web": [
+        {
+          "url": "https://bukgu.gwangju.kr/health/dementia",
+          "title": "광주 북구 치매안심센터",
+          "description": "광주 북구 치매안심센터는 치매 조기검진, 상담, 가족지원 등 노인 돌봄 관련 서비스를 안내합니다."
+        },
+        {
+          "url": "https://bukgu.gwangju.kr/welfare/senior-care",
+          "title": "광주 북구 노인돌봄 서비스",
+          "description": "광주 북구 어르신 돌봄과 치매 예방 프로그램 정보를 제공합니다."
+        }
+      ],
+      "news": [
+        {
+          "url": "https://news.example.org/gwangju-bukgu-dementia",
+          "title": "광주 북구 치매 예방 프로그램 운영",
+          "description": "광주 북구 치매안심센터의 지역 노인 대상 프로그램 소개.",
+          "date": "2026-06-20"
+        }
+      ]
+    }
+  },
+  "firecrawl.no_results": {
+    "data": {
+      "web": [],
+      "news": []
+    }
+  }
+}
