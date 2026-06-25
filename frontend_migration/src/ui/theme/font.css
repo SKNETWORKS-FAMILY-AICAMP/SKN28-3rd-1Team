@@ -1,0 +1,15 @@
+@theme inline {
+  --font-heading: var(--font-jua, "Jua"),
+    var(--font-noto-kr, "Noto Sans KR"),
+    "Noto Sans KR Fallback",
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
+  --font-sans: var(--font-noto-kr, "Noto Sans KR"),
+    "Noto Sans KR Fallback",
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", "SF Mono", Consolas,
+    "Liberation Mono", monospace;
+}

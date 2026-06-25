@@ -7,6 +7,7 @@ This repository is a monorepo for the bootcamp project. The current active scope
 ```txt
 bootcamp-project/
 ├── frontend/      # 실제 프론트엔드
+├── frontend_migration/ # Next.js App Router 기반 프론트엔드 마이그레이션
 ├── backend/       # 메인 백엔드 서비스
 ├── rag/           # RAG / 문서 파싱 / MCP 관련 작업
 │   └── related/   # 이전 RAG 관련 자료와 보조 프로젝트
@@ -26,6 +27,7 @@ Directories with the `_3rd` postfix, such as `streamlit_3rd/`, are legacy/non-cu
 ## Shared Rules
 
 - Read the relevant code, README, docs, and skill files before changing behavior.
+- For `frontend_migration` workspace-command/BFF/backend integration work, check the active GitHub issue first with `gh issue view 96 --comments` and keep follow-up planning in GitHub issues.
 - Prefer the smallest correct change.
 - Keep unrelated changes in separate branches and separate pull requests.
 - Do not edit generated build output unless explicitly requested.
@@ -65,6 +67,16 @@ Skill adapter directories for specific tools or agents are local-only unless the
 
 - For Figma-related design, UI, screen, component, or design-system work, use the team [`main`](https://www.figma.com/design/q4QlpCGwPqi0eTSRXGs54E/main) file as the default source of truth unless the user explicitly provides a different Figma file.
 - The default Figma file key is `q4QlpCGwPqi0eTSRXGs54E`.
+
+## Frontend Migration Workspace Command Workflow
+
+- Tracker: GitHub issue #96, `frontend_migration workspace command 연동 설계 및 구현`. Before implementing or changing this workflow, run `gh issue view 96 --comments` and use the issue for updated checklist, decisions, and follow-up tasks.
+- Active frontend scope is `frontend_migration/`, especially `src/bff`, `src/page/chat`, `src/page/mocks`, and `src/ui/components/chat/workspace_root`.
+- Active backend scope is `backend/src/agents/screen_control_agent`, `backend/src/nodes/agent_wrappers/screen_control.py`, and backend stream emission code related to screen control.
+- The intended contract is controlled frontend state mutation: backend agents emit serializable workspace commands based on compact frontend state snapshots; the BFF validates/maps backend stream events; `/chat` page orchestration applies typed commands to `ChatWorkspaceState`; UI surfaces only render typed frontend state.
+- Do not let backend events, endpoint names, JSX, arbitrary component strings, or raw provider responses leak into `frontend_migration/src/ui/components/chat/workspace_root` or `workspace_surface`.
+- Use `frontend_migration/src/page/mocks` as the full-size state/fixture verification surface. Do not fork separate ad hoc mock JSX when the same state can render through `ChatWorkspace`.
+- Reference `reference/2026_seoul_big_data/agent/tools/ui-state-read`, `reference/2026_seoul_big_data/agent/tools/ui-modification`, and architectural decisions 03/05/07 before designing state snapshot, frontend command, or agent-control contracts.
 
 ## Infisical Workflow
 

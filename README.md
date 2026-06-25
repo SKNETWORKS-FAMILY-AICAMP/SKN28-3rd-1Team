@@ -288,7 +288,7 @@ SKN28-3rd-1Team/
 | `external_mcp/README.md` | Naver / Firecrawl / TMAP MCP tool 서버와 환경 변수 |
 | `deploy/README.md` | local dev 통합 Makefile, Docker Compose, 포트 정보 |
 | `docs/README.md` | agent guideline, 온보딩, 도구 설정 등 팀 문서 |
-| `docs/llm_env_naming_convention.md` | LLM agent/provider/model env naming과 Infisical 동기화 기준 |
+| `docs/legacy/llm_env_naming_convention.md` | LLM agent/provider/model env naming과 Infisical 동기화 기준 |
 | `presentation/test-data/README.md` | 발표용 평가 데이터, benchmark, judge 결과 구조 |
 
 ### 3) 발표 및 시연 산출물
@@ -503,7 +503,7 @@ make check
 - 환경별로 달라지는 non-secret runtime config도 active service가 실제로 읽는 값이면 Infisical plain config로 중앙 관리할 수 있습니다.
 - env를 직접 확인해야 할 때는 local `.env`를 읽지 말고 `varlock load --agent`로 redacted 상태만 확인합니다.
 - Makefile target이 Infisical/Varlock을 지원하는 경우 `make env-check`로 provider 주입과 schema 계약을 검증합니다.
-- env var, Infisical, Varlock, LLM provider/model 이름을 바꿀 때는 `AGENTS.md`의 `env-var-governance` skill과 `docs/llm_env_naming_convention.md`를 먼저 확인합니다.
+- env var, Infisical, Varlock, LLM provider/model 이름을 바꿀 때는 `AGENTS.md`의 `env-var-governance` skill과 `docs/legacy/llm_env_naming_convention.md`를 먼저 확인합니다.
 
 ### 2) 서비스별 환경 파일
 

@@ -1,0 +1,83 @@
+import { createUIMessageStream, createUIMessageStreamResponse } from "ai"
+import type { UIMessageStreamWriter } from "ai"
+
+import type { LegalChatMessage } from "@/features/chat/types"
+
+import { createBackendChatStream, getLatestUserText } from "./_lib/backend-chat-stream-adapter"
+
+export const runtime = "nodejs"
+export const maxDuration = 60
+
+type ChatRouteRequest = {
+  id?: string
+  messages?: LegalChatMessage[]
+  profile?: {
+    birthYear?: string
+    location?: string
+  }
+}
+
+const INTERNAL_STREAM_METADATA = {
+  client: "chat_page",
+  streamReasoningTokens: true,
+  streamScreenControlAgent: true,
+  streamSpeechAgent: true,
+}
+
+function writeAssistantText(writer: UIMessageStreamWriter<LegalChatMessage>, text: string, finishReason: "stop" | "error") {
+  const textPartId = "answer"
+
+  writer.write({ type: "start" })
+  writer.write({ type: "text-start", id: textPartId })
+  writer.write({ type: "text-delta", id: textPartId, delta: text })
+  writer.write({ type: "text-end", id: textPartId })
+  writer.write({ type: "finish", finishReason })
+}
+
+function createBackendMessage(message: string, profile?: ChatRouteRequest["profile"]) {
+  const birthYear = typeof profile?.birthYear === "string" ? profile.birthYear.trim() : ""
+  const location = typeof profile?.location === "string" ? profile.location.trim() : ""
+  const profileLines = [
+    birthYear ? `태어난 년도: ${birthYear}` : "",
+    location ? `사는 곳: ${location}` : "",
+  ].filter(Boolean)
+
+  if (profileLines.length === 0) return message
+
+  return `상담자 정보:\n${profileLines.join("\n")}\n\n질문:\n${message}`
+}
+
+export async function POST(request: Request) {
+  let body: ChatRouteRequest
+
+  try {
+    body = (await request.json()) as ChatRouteRequest
+  } catch {
+    body = {}
+  }
+
+  const messages = Array.isArray(body.messages) ? body.messages : []
+  const message = getLatestUserText(messages)
+
+  const stream = createUIMessageStream<LegalChatMessage>({
+    originalMessages: messages,
+    execute: async ({ writer }) => {
+      if (!message) {
+        writeAssistantText(writer, "질문 내용을 찾지 못했어요. 다시 입력해 주세요.", "error")
+        return
+      }
+
+      const backendStream = await createBackendChatStream({
+        sessionId: body.id,
+        message: createBackendMessage(message, body.profile),
+        metadata: INTERNAL_STREAM_METADATA,
+        signal: request.signal,
+      })
+
+      writer.merge(backendStream)
+    },
+    onError: () => "Agent 응답을 처리하지 못했어요.",
+  })
+
+  return createUIMessageStreamResponse({ stream })
+}
