@@ -25,11 +25,45 @@
 ## 1. 👥 팀 소개 및 일정 계획
 
 ### 1) 팀 소개
-| 구분 | 이원빈 | 김지효 | 송윤경 | 전하영 | 양도영 |
-|---|---|---|---|---|---|
-|사진|<img width="120" height="120" alt="이원빈" src="https://github.com/user-attachments/assets/1d55d805-ca88-4045-870c-efcf3cd093cd" />|<img width="120" height="120" alt="김지효" src="https://github.com/user-attachments/assets/e80bef47-6176-41c2-8471-28b5c4d14d00" />|<img width="80" height="120" alt="송윤경" src="https://github.com/user-attachments/assets/eff9d9d9-f08c-4648-8435-0079015314b9" />|<img width="120" height="120" alt="전하영" src="https://github.com/user-attachments/assets/6f58acc9-b043-4a64-8387-3f2d78465fda" />|<img width="120" height="120" alt="양도영" src="https://github.com/user-attachments/assets/369cd18c-71bd-40b8-b035-70873142869c" />|
-| 역할 | 팀장 | RAG | 프론트엔드 | 백엔드 | 기획·문서 |
-| 한 일 | 전체 일정 관리, 작업 방향 컨펌, 파트별 진행 상황 확인 | 노인·고령층 관련 법령 데이터 확인, 문서 전처리와 임베딩 흐름 정리 | 사용자 질문 화면 구성, API 연결 흐름 설계, 결과 화면 UX 정리, RAG 기반 테스트 케이스 설계 | Django Channels `/chat` 구성, LangGraph Agent 실행 구조 정리, MCP tool 연동 준비 | 전체 서비스 흐름 정리, README와 발표 자료 구성, 팀 산출물 내용 정리 |
+
+<table>
+  <thead>
+    <tr>
+      <th width="8%">구분</th>
+      <th width="18.4%">이원빈</th>
+      <th width="18.4%">김지효</th>
+      <th width="18.4%">송윤경</th>
+      <th width="18.4%">전하영</th>
+      <th width="18.4%">양도영</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th width="8%">사진</th>
+      <td width="18.4%" align="center"><img width="90" alt="이원빈" src="https://github.com/user-attachments/assets/1d55d805-ca88-4045-870c-efcf3cd093cd" /></td>
+      <td width="18.4%" align="center"><img width="100" alt="김지효" src="https://github.com/user-attachments/assets/e80bef47-6176-41c2-8471-28b5c4d14d00" /></td>
+      <td width="18.4%" align="center"><img width="60" alt="송윤경" src="https://github.com/user-attachments/assets/eff9d9d9-f08c-4648-8435-0079015314b9" /></td>
+      <td width="18.4%" align="center"><img width="87" alt="전하영" src="https://github.com/user-attachments/assets/6f58acc9-b043-4a64-8387-3f2d78465fda" /></td>
+      <td width="18.4%" align="center"><img width="60" alt="양도영" src="https://github.com/user-attachments/assets/369cd18c-71bd-40b8-b035-70873142869c" /></td>
+    </tr>
+    <tr>
+      <th width="8%">역할</th>
+      <td width="18.4%" align="center">팀장</td>
+      <td width="18.4%" align="center">RAG</td>
+      <td width="18.4%" align="center">프론트엔드</td>
+      <td width="18.4%" align="center">백엔드</td>
+      <td width="18.4%" align="center">기획·문서</td>
+    </tr>
+    <tr>
+      <th width="8%">한 일</th>
+      <td width="18.4%">전체 일정 관리, 작업 방향 컨펌, 파트별 진행 상황 확인</td>
+      <td width="18.4%">노인·고령층 관련 법령 데이터 확인, 문서 전처리와 임베딩 흐름 정리</td>
+      <td width="18.4%">사용자 질문 화면 구성, API 연결 흐름 설계, 결과 화면 UX 정리, RAG 기반 테스트 케이스 설계</td>
+      <td width="18.4%">Django Channels <code>/chat</code> 구성, LangGraph Agent 실행 구조 정리, MCP tool 연동 준비</td>
+      <td width="18.4%">전체 서비스 흐름 정리, README와 발표 자료 구성, 팀 산출물 내용 정리</td>
+    </tr>
+  </tbody>
+</table>
 
 ### 2) 일정 계획
 
@@ -223,6 +257,11 @@ SKN28-3rd-1Team/
 │   └── docs/                # RAG 설계 문서
 ├── external_mcp/            # Naver / Firecrawl / TMAP FastMCP provider tools
 ├── frontend/                # Next.js 기반 최종 프론트엔드
+│   ├── app/                 # App Router pages, /chat_page, /api/chat, /mocks
+│   ├── features/chat/       # 상담 세션, 스트림 처리, 채팅 UI 단위
+│   ├── components/          # 공통 UI, landing section, voice, ai-elements
+│   ├── lib/                 # frontend utility와 mock data
+│   └── public/              # mascot, icon, placeholder image assets
 ├── docs/                    # 회의록, 온보딩, 개발 문서
 ├── presentation/            # 발표 스크립트, PPT/PDF, 평가 데이터 산출물
 │   ├── ppt/                 # 발표 자료, 스크립트, Memgraph Lab 시연 캡처
