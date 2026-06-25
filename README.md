@@ -29,7 +29,7 @@
 |---|---|---|---|---|---|
 |사진|<img width="120" height="120" alt="이원빈" src="https://github.com/user-attachments/assets/1d55d805-ca88-4045-870c-efcf3cd093cd" />|<img width="120" height="120" alt="김지효" src="https://github.com/user-attachments/assets/e80bef47-6176-41c2-8471-28b5c4d14d00" />|<img width="120" height="120" alt="송윤경" src="https://github.com/user-attachments/assets/eff9d9d9-f08c-4648-8435-0079015314b9" />|<img width="120" height="120" alt="전하영" src="https://github.com/user-attachments/assets/6f58acc9-b043-4a64-8387-3f2d78465fda" />|<img width="120" height="120" alt="양도영" src="https://github.com/user-attachments/assets/369cd18c-71bd-40b8-b035-70873142869c" />|
 | 역할 | 팀장 | RAG | 프론트엔드 | 백엔드 | 기획·문서 |
-| 한 일 | 전체 일정 관리, 작업 방향 컨펌, 파트별 진행 상황 확인 | 노인·고령층 관련 법령 데이터 확인, 문서 전처리와 임베딩 흐름 정리 | Next.js 기반 상담 화면, 사용자 플로우, 목업, 문서 근거 UI, 음성 입력 UI, backend streaming 연동 구현 | Django Channels `/chat/stream` 구성, LangGraph Agent 실행 구조 정리, MCP tool 연동 준비 | 전체 서비스 흐름 정리, README와 발표 자료 구성, 팀 산출물 내용 정리 |
+| 한 일 | 전체 일정 관리, 작업 방향 컨펌, 파트별 진행 상황 확인 | 노인·고령층 관련 법령 데이터 확인, 문서 전처리와 임베딩 흐름 정리 | 사용자 질문 화면 구성, API 연결 흐름 설계, 결과 화면 UX 정리, RAG 기반 테스트 케이스 설계 | Django Channels `/chat` 구성, LangGraph Agent 실행 구조 정리, MCP tool 연동 준비 | 전체 서비스 흐름 정리, README와 발표 자료 구성, 팀 산출물 내용 정리 |
 
 ### 2) 일정 계획
 
