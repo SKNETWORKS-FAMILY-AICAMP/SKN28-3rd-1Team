@@ -29,8 +29,9 @@ frontend_migration:  http://127.0.0.1:3005
 | --- | --- |
 | `/` | 로디 랜딩/시작 페이지 |
 | `/chat` | canonical 상담 workspace |
-| `/mocks` | 마이그레이션 목업 확인 |
-| `/mocks/[scene]` | 장면별 목업 확인 |
+| `/mocks` | full-size 마이그레이션 목업 viewer |
+| `/mocks?scene=...` | 목업 viewer의 scene 선택 상태 |
+| `/mocks/[scene]` | legacy scene URL redirect |
 
 `src/app`은 Next.js 라우팅 경계로만 유지하고, 화면 구성은 `src/page` 아래에 둡니다.
 
@@ -50,6 +51,8 @@ make lint
 | 변수 | 노출 범위 | 기본값 | 설명 |
 | --- | --- | --- | --- |
 | `NEXT_PUBLIC_CHAT_API_PATH` | browser | `/api/chat` | `/chat` 화면에서 호출할 Next.js BFF route |
+| `NEXT_PUBLIC_NAVER_MAP_NCP_KEY_ID` | browser | 빈 값 | workspace 지도에 사용할 Naver Cloud Platform Maps Web Dynamic Map key ID |
+| `NEXT_PUBLIC_NAVER_MAP_CLIENT_ID` | browser | 빈 값 | 이전 Naver Maps client id alias. 신규 설정은 `NEXT_PUBLIC_NAVER_MAP_NCP_KEY_ID`를 우선 사용 |
 | `BFF_BACKEND_BASE_URL` | server only | `http://127.0.0.1:8000` | BFF가 호출할 backend base URL |
 | `BFF_BACKEND_CHAT_STREAM_PATH` | server only | `/chat/stream` | BFF가 호출할 backend chat stream path |
 | `BFF_ELEVENLABS_API_KEY` | server only, sensitive | 빈 값 | BFF 소유 음성 기능에서 사용할 ElevenLabs API key 주입 지점 |

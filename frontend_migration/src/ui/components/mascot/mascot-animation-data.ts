@@ -24,7 +24,7 @@ const mascotAnimationClips = {
   idle: {
     label: "대기",
     description: "기본 상태에서 작게 숨 쉬고 눈을 깜빡이는 상태",
-    frameDurationMs: 260,
+    frameDurationMs: 320,
     frames: [
       frame(0, 0),
       frame(0, 0),
@@ -39,7 +39,7 @@ const mascotAnimationClips = {
   greeting: {
     label: "인사",
     description: "상담 시작 전 로디가 손을 들어 반응하는 상태",
-    frameDurationMs: 160,
+    frameDurationMs: 210,
     frames: [
       frame(0, 3),
       frame(1, 3),
@@ -54,7 +54,7 @@ const mascotAnimationClips = {
   attentive: {
     label: "입력 감지",
     description: "사용자가 메시지를 작성하고 있어 로디가 집중하는 상태",
-    frameDurationMs: 190,
+    frameDurationMs: 240,
     frames: [
       frame(0, 6),
       frame(1, 6),
@@ -69,7 +69,7 @@ const mascotAnimationClips = {
   listening: {
     label: "듣는 중",
     description: "음성 입력을 기다리거나 받아쓰는 상태",
-    frameDurationMs: 170,
+    frameDurationMs: 220,
     frames: [
       frame(0, 7),
       frame(1, 7),
@@ -84,7 +84,7 @@ const mascotAnimationClips = {
   thinking: {
     label: "생각 중",
     description: "요청을 보낸 뒤 답변을 기다리는 상태",
-    frameDurationMs: 150,
+    frameDurationMs: 200,
     frames: [
       frame(0, 4),
       frame(1, 4),
@@ -99,7 +99,7 @@ const mascotAnimationClips = {
   speaking: {
     label: "답변 중",
     description: "답변 스트리밍이나 TTS 재생 중인 상태",
-    frameDurationMs: 170,
+    frameDurationMs: 220,
     frames: [
       frame(0, 8),
       frame(1, 8),
@@ -114,7 +114,7 @@ const mascotAnimationClips = {
   sad: {
     label: "오류",
     description: "요청 실패나 음성 입력 오류가 발생한 상태",
-    frameDurationMs: 210,
+    frameDurationMs: 260,
     frames: [
       frame(0, 5),
       frame(1, 5),

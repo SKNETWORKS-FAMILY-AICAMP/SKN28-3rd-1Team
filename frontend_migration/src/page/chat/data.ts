@@ -1,4 +1,8 @@
 export type Institution = {
+  coordinate: {
+    lat: number;
+    lng: number;
+  };
   name: string;
   x: number;
   y: number;
@@ -28,6 +32,7 @@ export type DocumentSource = {
 export const institutions: Institution[] = [
   {
     name: "강남시니어클럽",
+    coordinate: { lat: 37.5012, lng: 127.0385 },
     x: 54,
     y: 48,
     tier: 0,
@@ -42,6 +47,7 @@ export const institutions: Institution[] = [
   },
   {
     name: "역삼노인종합복지관",
+    coordinate: { lat: 37.4939, lng: 127.0333 },
     x: 40,
     y: 67,
     tier: 1,
@@ -55,6 +61,7 @@ export const institutions: Institution[] = [
   },
   {
     name: "신사종합사회복지관",
+    coordinate: { lat: 37.5172, lng: 127.0206 },
     x: 30,
     y: 38,
     tier: 2,

@@ -14,6 +14,7 @@ import {
   type DictationStatus,
   type DictationTranscript,
 } from "@/page/chat/hooks/use-browser-speech-dictation";
+import { useChatWorkspaceController } from "@/page/chat/hooks/use-chat-workspace-controller";
 import { getMessageTimestampMap } from "@/page/chat/message-utils";
 
 function mergeSpeechTranscript(baseInput: string, transcript: string) {
@@ -88,6 +89,11 @@ export function useChatPageController() {
     (count, lane) => count + lane.items.length,
     0
   );
+  const workspace = useChatWorkspaceController({
+    chatStatus: status,
+    dictationStatus,
+    ttsPlaybackStatus,
+  });
 
   const showToast = useCallback((message: string) => {
     setToast(message);
@@ -186,5 +192,8 @@ export function useChatPageController() {
           width: traceDrawerWidth,
         }
       : null,
+    workspace: {
+      state: workspace.state,
+    },
   };
 }

@@ -20,6 +20,12 @@ Frontend server boundary. Put server-only chat APIs, backend adapters, event con
 
 Route-level screen composition. Put route-specific client/server components, page state, and orchestration here. Page modules may compose `ui` components and call BFF routes, but they must not import backend adapters directly.
 
+For `/chat`, keep page aggregation and route-owned hooks in `src/page/chat`:
+
+- `src/page/chat/page.tsx` composes the chat page from `ui` components and page hooks.
+- `src/page/chat/hooks/` owns route-specific orchestration hooks such as chat session, panel resizing, dictation, TTS playback, and workspace state controllers.
+- Do not create chat workspace component directories under `src/page/chat`; workspace root components belong under `src/ui/components/chat/workspace_root`, and workspace surface implementations belong under `src/ui/components/chat/workspace_surface`.
+
 ## `ui/`
 
 Reusable UI only. Use these subdirectories by ownership:
@@ -30,6 +36,12 @@ Reusable UI only. Use these subdirectories by ownership:
 - `components/`: reusable product-facing web components composed from primitives, AI Elements, and icons.
 
 Keep UI free of backend endpoint names, backend event names, and environment variables. Use Heroicons for app icons.
+
+For chat UI, keep reusable component families under `src/ui/components/chat`:
+
+- Sidebar, composer, trace drawer, and message surfaces live directly under `src/ui/components/chat`.
+- The right-side chat workspace root component family lives under `src/ui/components/chat/workspace_root`; concrete surface implementations live under `src/ui/components/chat/workspace_surface`.
+- Workspace rendering should consume typed frontend state/commands and render prebuilt frontend surfaces. Agents or BFF events should not inject JSX, arbitrary component names, backend endpoint names, or backend event shapes into UI components.
 
 ## `lib/`
 

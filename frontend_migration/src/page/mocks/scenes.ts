@@ -22,18 +22,23 @@ export const mockScenes: MockScene[] = [
   },
   {
     slug: "map-results",
-    title: "기관 지도 결과",
-    description: "상담 이후 추천 기관 지도 상태를 확인하는 장면",
-  },
-  {
-    slug: "list-results",
-    title: "기관 목록 결과",
-    description: "추천 기관 목록 상태를 확인하는 장면",
+    title: "기관 추천",
+    description: "추천 기관을 지도 중심으로 확인하는 workspace 상태",
   },
   {
     slug: "document-references",
-    title: "문서 레퍼런스",
-    description: "답변 근거 문서와 인용 상태를 확인하는 장면",
+    title: "근거 문서 분석",
+    description: "답변 근거 문서와 원문 일부를 보고서처럼 확인하는 상태",
+  },
+  {
+    slug: "action-checklist",
+    title: "실행 체크리스트",
+    description: "신청 전 확인 항목과 준비 서류를 정리하는 상태",
+  },
+  {
+    slug: "access-summary",
+    title: "기관 접근 요약",
+    description: "선택 기관의 위치와 예상 이동 정보를 확인하는 상태",
   },
 ];
 

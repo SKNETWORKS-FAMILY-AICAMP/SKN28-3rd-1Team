@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
-import { MockScenePage } from "@/page/mocks/scene-page";
 import { getMockScene, mockScenes } from "@/page/mocks/scenes";
 
 type PageProps = {
@@ -31,5 +30,5 @@ export default async function Page({ params }: PageProps) {
 
   if (!scene) notFound();
 
-  return <MockScenePage scene={scene} />;
+  redirect(`/mocks?scene=${scene.slug}`);
 }

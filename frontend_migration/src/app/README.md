@@ -8,4 +8,4 @@ Current route policy:
 
 - `/`: product landing/start page.
 - `/chat`: canonical chat workspace.
-- `/mocks`: design/development surface for chat mock states and future AG-UI/A2UI component inspection.
+- `/mocks`: full-size design/development surface for chat mock states and future AG-UI/A2UI component inspection. Scene selection is handled inside the page; legacy `/mocks/[scene]` URLs redirect to `/mocks?scene=...`.

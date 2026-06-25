@@ -3,8 +3,8 @@
 import { AgentTraceDrawer } from "@/ui/components/chat/agent-trace-drawer";
 import { ChatHeader } from "@/ui/components/chat/chat-header";
 import { ChatSidebar } from "@/ui/components/chat/chat-sidebar";
-import { ChatWorkspace } from "@/ui/components/chat/chat-workspace";
 import { useChatPageController } from "@/page/chat/hooks/use-chat-page-controller";
+import { ChatWorkspace } from "@/ui/components/chat/workspace_root/chat-workspace";
 import "./chat.css";
 
 export function ChatPage() {
@@ -29,7 +29,7 @@ export function ChatPage() {
           </div>
         </aside>
 
-        <ChatWorkspace />
+        <ChatWorkspace state={chatPage.workspace.state} />
       </div>
 
       {chatPage.toast ? (

@@ -8,5 +8,5 @@ This directory should not contain backend endpoint names, backend event names, o
 
 Current component scopes:
 
-- `chat/`: chat workspace layout, composer, messages, trace drawer, and chat-only surfaces.
+- `chat/`: chat sidebar, composer, messages, trace drawer, workspace frame, reusable workspace surfaces, and chat-only field/control components.
 - `mascot/`: product-wide 로디 avatar and animation renderers shared by chat, mocks, and future agent-rendered surfaces.

@@ -30,6 +30,10 @@ src/
 - `src/ui`: reusable visual components only. Split theme tokens into `theme/`, shadcn primitives into `primitives/`, AI Elements registry source into `ai-elements/`, and product-facing reusable components into `components/`. UI code must not know backend endpoint names.
 - `src/lib`: generic utilities such as `cn`, formatting, validation helpers, and small pure functions. Keep it independent of `app`, `page`, and `bff`.
 
+For `/chat`, `src/page/chat` is the aggregation layer for the route. Keep `page.tsx` and route-owned hooks such as chat session, dictation, TTS playback, panel resizing, and workspace state controllers there. Chat visual components, including the right-side workspace frame and its surface renderers, belong under `src/ui/components/chat`; the workspace root component family specifically belongs under `src/ui/components/chat/workspace_root`, and surface implementations belong under `src/ui/components/chat/workspace_surface`.
+
+Agent-driven workspace updates must cross this boundary as typed frontend state or commands. Do not let backend events, backend endpoint names, arbitrary component strings, or generated JSX leak directly into `src/ui/components/chat/workspace_root` or `src/ui/components/chat/workspace_surface`.
+
 ## Dependency And Component Policy
 
 - Use the installed AI SDK packages for chat and streaming behavior.
