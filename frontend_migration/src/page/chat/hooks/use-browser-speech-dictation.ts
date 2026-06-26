@@ -198,7 +198,8 @@ export function useBrowserSpeechDictation({
 
       if (
         statusRef.current === "requesting-permission" ||
-        statusRef.current === "listening"
+        statusRef.current === "listening" ||
+        statusRef.current === "transcribing"
       ) {
         const nextStatus = transcriptTextRef.current ? "ready" : "idle";
 
@@ -224,12 +225,10 @@ export function useBrowserSpeechDictation({
 
     if (!recognition) return;
 
-    recognitionRef.current = null;
     recognition.stop();
 
-    const nextStatus = transcriptTextRef.current ? "ready" : "idle";
-    statusRef.current = nextStatus;
-    setStatus(nextStatus);
+    statusRef.current = "transcribing";
+    setStatus("transcribing");
   }, []);
 
   return {
