@@ -205,7 +205,7 @@ function InstitutionMap({
           >
             <span
               className={cn(
-                "chat-map-pin flex items-center justify-center rounded-full border-2 border-white text-sm font-bold text-white shadow-[var(--chat-map-pin-shadow)]",
+                "chat-map-pin flex items-center justify-center rounded-full border-2 border-[var(--chat-map-pin-border)] text-sm font-bold text-white shadow-[var(--chat-map-pin-shadow)]",
                 isSelected ? "size-9 ring-[5px] ring-[var(--chat-primary-ring)]" : "size-7"
               )}
               data-tier={isSelected ? undefined : institution.tier}
@@ -221,7 +221,7 @@ function InstitutionMap({
         );
       })}
 
-      <div className="absolute bottom-3 left-3 flex gap-4 rounded-[9px] bg-white/80 px-3 py-2 text-xs text-[var(--chat-text-muted)] backdrop-blur">
+      <div className="absolute bottom-3 left-3 flex gap-4 rounded-[9px] bg-[var(--chat-map-legend)] px-3 py-2 text-xs text-[var(--chat-text-muted)] backdrop-blur">
         {[0, 1, 2].map((tier) => (
           <span key={tier} className="flex items-center gap-1.5">
             <span

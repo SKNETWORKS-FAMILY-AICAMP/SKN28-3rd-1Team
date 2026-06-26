@@ -122,7 +122,7 @@ export function EvidenceDocumentReport({
         </div>
       </WorkspacePanel>
 
-      <WorkspacePanel className="min-h-0 overflow-y-auto bg-[#fffdf8] px-5 py-5">
+      <WorkspacePanel className="min-h-0 overflow-y-auto bg-[var(--chat-document-bg)] px-5 py-5">
         <article className="max-w-none">
           <header className="border-b border-[var(--chat-border)] pb-4">
             <div className="flex flex-wrap items-center gap-2">

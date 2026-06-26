@@ -30,7 +30,7 @@ export function ChecklistStepGroup({
       className={cn(
         "group rounded-[18px] border border-[var(--chat-border)] bg-[var(--chat-panel)]",
         item.status === "warning" &&
-          "border-[color-mix(in_oklch,var(--chat-primary),#facc15_38%)]"
+          "border-[var(--chat-warning-border)]"
       )}
     >
       <summary className="flex cursor-pointer list-none items-start gap-4 p-5 [&::-webkit-details-marker]:hidden">
@@ -40,7 +40,7 @@ export function ChecklistStepGroup({
             item.status === "done"
               ? "border-[var(--chat-success-text)] bg-[var(--chat-success-bg)] text-[var(--chat-success-text)]"
               : item.status === "warning"
-                ? "border-[#f3c66d] bg-[#fff0cc] text-[#a76718]"
+                ? "border-[var(--chat-warning-border)] bg-[var(--chat-warning-bg)] text-[var(--chat-warning-text)]"
                 : "border-[var(--chat-primary-border)] bg-[var(--chat-primary-soft)] text-[var(--chat-primary-strong)]"
           )}
         >
@@ -165,7 +165,8 @@ function StepStatusDot({ status }: { status: WorkspaceChecklistItem["status"] })
         "mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full border-2 bg-[var(--chat-panel)]",
         status === "done" &&
           "border-[var(--chat-success-text)] bg-[var(--chat-success-bg)]",
-        status === "warning" && "border-[#f3c66d] bg-[#fff0cc]",
+        status === "warning" &&
+          "border-[var(--chat-warning-border)] bg-[var(--chat-warning-bg)]",
         (status === "todo" || status === "ready") &&
           "border-[var(--chat-primary-border)]"
       )}
