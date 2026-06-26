@@ -1,0 +1,47 @@
+flowchart-diagram
+
+direction right
+colorMode pastel
+styleMode plain
+typeface clean
+
+Developer [label: "Developer or reviewer", shape: oval, icon: user, color: blue]
+PullRequest [label: "GitHub PR", icon: git-pull-request, color: blue]
+MergeMain [label: "Merge to main", icon: git-merge, color: blue]
+Source [label: "CodePipeline Source GitHubSource main DetectChanges=true", icon: github, color: purple]
+ArtifactBucket [label: "S3 artifact bucket", icon: archive, color: gray]
+CodeBuild [label: "CodeBuild skn28-container-build", icon: hammer, color: purple]
+BackendBuild [label: "docker build backend", icon: box, color: orange]
+FrontendBuild [label: "docker build frontend_migration", icon: box, color: orange]
+ExternalBuild [label: "docker build external_mcp", icon: box, color: orange]
+BackendRepo [label: "ECR skn28/backend:<commit12>", icon: container, color: "#0f766e"]
+FrontendRepo [label: "ECR skn28/frontend-migration:<commit12>", icon: container, color: "#0f766e"]
+ExternalRepo [label: "ECR skn28/external-mcp:<commit12>", icon: container, color: "#0f766e"]
+ImageDefinitions [label: "imagedefinitions json artifacts", icon: file-json, color: gray]
+DeployExternal [label: "ECS deploy external MCP runOrder 1", icon: rocket, color: green]
+DeployBackend [label: "ECS deploy backend runOrder 2", icon: rocket, color: green]
+DeployFrontend [label: "ECS deploy frontend migration runOrder 3", icon: rocket, color: green]
+ExternalSvc [label: "skn28-demo-external-mcp task definition :9", icon: server, color: "#2563eb"]
+BackendSvc [label: "skn28-demo-backend task definition :9", icon: server, color: "#2563eb"]
+FrontendSvc [label: "skn28-demo-frontend-migration task definition :9", icon: server, color: "#2563eb"]
+
+Developer > PullRequest: review
+PullRequest > MergeMain: merge
+MergeMain > Source: main update
+Source > ArtifactBucket: SourceOutput
+ArtifactBucket > CodeBuild: BuildOutput input
+CodeBuild > BackendBuild: backend/Dockerfile
+CodeBuild > FrontendBuild: frontend_migration/Dockerfile
+CodeBuild > ExternalBuild: external_mcp/Dockerfile
+BackendBuild > BackendRepo: docker push
+FrontendBuild > FrontendRepo: docker push
+ExternalBuild > ExternalRepo: docker push
+BackendRepo > ImageDefinitions: backend.json
+FrontendRepo > ImageDefinitions: frontend-migration.json
+ExternalRepo > ImageDefinitions: external-mcp.json
+ImageDefinitions > DeployExternal: runOrder 1
+DeployExternal > ExternalSvc: update service
+DeployExternal > DeployBackend: then
+DeployBackend > BackendSvc: update service
+DeployBackend > DeployFrontend: then
+DeployFrontend > FrontendSvc: update service
