@@ -110,7 +110,6 @@ Status: draft for discussion
 | `EvidenceDocumentsSurface` | legacy `document-references`, RAG `SearchResult` | 답변 근거 문서, 원문 일부, 출처 확인 | 문서명, 원문 일부, 위치, 링크 |
 | `SelectionOptionsSurface` | 2026 `SelectionOption`, A2UI state flow | 여러 정책/기관/절차 후보 중 선택 | 선택 후보, 추천 이유, 출처 정보 |
 | `ActionChecklistSurface` | main agent 답변 원칙, 상담 도메인 | 신청 절차, 필요 서류, 확인 항목 정리 | checklist items, due/required flags |
-| `AccessSummarySurface` | legacy place detail, external MCP, map reference | 선택 기관의 위치와 접근 요약 확인 | 선택 기관, 예상 시간, 이동수단 힌트 |
 
 ## Surface Details
 
@@ -207,17 +206,6 @@ RAG 시스템은 문서를 파싱하고 chunking해 둔다. main agent는 질문
 
 레거시에 완성된 화면은 없지만, main agent가 다루는 상담 도메인과 잘 맞는다.
 
-### AccessSummarySurface
-
-선택한 기관의 위치와 접근성을 요약하는 surface다.
-
-역할:
-
-- 선택한 기관이 어디에 있는지 지도와 함께 보여주기
-- 대략적인 이동 시간 안내
-- 도보, 대중교통, 차량 등 추천 이동수단 힌트 제공
-- 전화/주소/방문 전 확인 같은 기관 detail과 자연스럽게 연결
-
 제외:
 
 - polyline 기반 길찾기
@@ -279,7 +267,6 @@ workspace를 바꾸는 지시는 React component 이름이나 JSX가 아니라 s
 
 - `selection-options`
 - `action-checklist`
-- `access-summary`
 
 단, 새 scene은 화면에 필요한 정보와 디자인 기준이 정리된 뒤 추가한다. 이름만 먼저 늘려서 placeholder를 만드는 것은 피한다.
 
@@ -289,7 +276,7 @@ workspace를 바꾸는 지시는 React component 이름이나 JSX가 아니라 s
 2. 원본 mockup의 지도 placeholder를 Naver Maps SDK 렌더링 영역으로 교체하는 화면 기준을 정한다.
 3. `ProfileIntakeSurface`는 원본 필드인 `태어난 년도`, `사는 곳`만 우선 사용한다.
 4. `EvidenceDocumentsSurface`는 RAG chunk의 원문 일부를 보여주는 방향으로 정한다.
-5. `InstitutionResultsSurface`, `SelectionOptionsSurface`, `ActionChecklistSurface`, `AccessSummarySurface`의 조합 순서를 정한다.
+5. `InstitutionResultsSurface`, `SelectionOptionsSurface`, `ActionChecklistSurface`의 조합 순서를 정한다.
 
 ## Confirmed Decisions
 

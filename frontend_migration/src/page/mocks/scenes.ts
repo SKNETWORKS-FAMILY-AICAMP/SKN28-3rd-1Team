@@ -35,11 +35,6 @@ export const mockScenes: MockScene[] = [
     title: "실행 체크리스트",
     description: "신청 전 확인 항목과 준비 서류를 정리하는 상태",
   },
-  {
-    slug: "access-summary",
-    title: "기관 접근 요약",
-    description: "선택 기관의 위치와 예상 이동 정보를 확인하는 상태",
-  },
 ];
 
 export function getMockScene(slug: string) {

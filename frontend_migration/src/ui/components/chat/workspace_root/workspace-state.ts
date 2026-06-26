@@ -176,36 +176,12 @@ export type ChatWorkspaceActionChecklistSurface = {
   nextActionPrompt?: string;
 };
 
-export type WorkspaceAccessTravel = {
-  modeLabel: string;
-  durationLabel: string;
-  distanceLabel: string;
-  summary: string;
-};
-
-export type ChatWorkspaceAccessSummarySurface = {
-  type: "access-summary";
-  title: string;
-  description: string;
-  copy: {
-    headerBadge: string;
-    visitNotesTitle: string;
-    callActionLabel: string;
-    directionsActionLabel: string;
-  };
-  map: WorkspaceMapSnapshot;
-  institution: WorkspaceInstitution;
-  travel: WorkspaceAccessTravel;
-  visitNotes: string[];
-};
-
 export type ChatWorkspaceSurface =
   | ChatWorkspaceDefaultSurface
   | ChatWorkspaceProfileIntakeSurface
   | ChatWorkspaceInstitutionResultsSurface
   | ChatWorkspaceEvidenceDocumentsSurface
-  | ChatWorkspaceActionChecklistSurface
-  | ChatWorkspaceAccessSummarySurface;
+  | ChatWorkspaceActionChecklistSurface;
 
 export type ChatWorkspaceState = {
   surface: ChatWorkspaceSurface;
@@ -226,8 +202,7 @@ export type ChatWorkspaceRemoteSurface =
   | ChatWorkspaceRemoteProfileIntakeSurface
   | ChatWorkspaceInstitutionResultsSurface
   | ChatWorkspaceEvidenceDocumentsSurface
-  | ChatWorkspaceActionChecklistSurface
-  | ChatWorkspaceAccessSummarySurface;
+  | ChatWorkspaceActionChecklistSurface;
 
 export type ChatWorkspaceCommand =
   | {
@@ -362,15 +337,6 @@ export function selectChatWorkspaceSnapshot(
           doneChecklistItemCount: surface.items.filter(
             (item) => item.status === "done"
           ).length,
-        },
-      };
-    case "access-summary":
-      return {
-        surface: {
-          type: surface.type,
-          title: surface.title,
-          description: surface.description,
-          selectedInstitutionId: surface.institution.id,
         },
       };
     default:

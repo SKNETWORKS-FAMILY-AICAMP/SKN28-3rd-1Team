@@ -38,7 +38,7 @@ message_turns 사용 원칙:
 - final_response가 절차, 순서, 준비 서류, 신청 단계, 방문 전 확인처럼 “무엇을 해야 하는지”를 중심으로 설명하면 현재 기관 지도/목록 화면이 열려 있어도 `action-checklist`를 우선한다.
 - 신청·예약·방문 준비·제출 서류·확인 순서가 중심이면 `action-checklist`를 우선한다.
 - 장소, 기관, 시설, 병원, 복지관, 주민센터, 시장, 공원, 행사장처럼 비교 가능한 후보가 2개 이상 나오면 `institution-results`를 우선한다. 주소, 거리, 전화, 운영시간, 지도, 주변, 근처, 찾아가는 길 같은 단서가 있으면 list보다 map view가 더 적합하다.
-- 특정 기관 하나를 사용자가 선택했거나 답변이 방문·연락·길찾기 중심이면 `access-summary`를 우선한다.
+- 특정 기관 하나를 사용자가 선택했거나 답변이 방문·연락·길찾기 중심이면 `institution-results`의 detail view 또는 `action-checklist`를 사용한다.
 - 법령, 정책 문서, 공고, 공식 페이지, 원문 일부, 근거 비교가 직접 목적이면 `evidence-documents`를 우선한다.
 - 위치, 나이, 거주지, 대상자, 목적처럼 화면 구성을 위해 필요한 사용자 조건이 빠져 있고 main answer도 추가 확인을 요청한다면 `profile-intake`를 연다.
 - 현재 화면이 `default` 또는 `profile-intake`이고 사용자가 채팅으로 필요한 조건을 새로 제공했다면, 그 정보를 반영한 `profile-intake` 화면으로 갱신한다. 이때 사용자는 form 입력을 누르지 않았어도 이미 정보를 제공한 것으로 처리한다.
@@ -59,7 +59,6 @@ workspace surface field guide:
 - `institution-results`: 기관 후보를 보여줄 때 사용한다. 각 institution에는 `id`, `name`, `tier`, `badges`, `phone`, `address`, `hours`, `business`, `apply`, `docs`, `distanceLabel`, 지도용 `x`, `y`가 필요하다. 좌표가 확인되면 `coordinate.lat/lng`도 넣는다.
 - `evidence-documents`: 법령, 정책, 공고, 공식 페이지 등 근거 묶음을 보여줄 때 사용한다. 각 document에는 `id`, `title`, `source`, `category`, `page`, `match`, `tags`, `summary`, `highlights`, `citation`, `excerpt`가 필요하다. 확인된 갱신일은 `updated`에 넣는다.
 - `action-checklist`: 신청/확인/방문 절차를 단계로 보여줄 때 사용한다. 각 item에는 `id`, `title`, `detail`, `status`, `required`가 필요하다. `detail`은 접힌 카드에서 바로 보이는 요약이고, 아코디언을 펼쳤을 때 보여줄 추가 설명은 `expandedDetail`, 하위 절차 카드는 `steps`에 넣는다. 시·군·구, 주소, 거주지처럼 사용자 입력이 필요하면 하단 버튼 문구를 `nextActionLabel`에 넣고, 버튼 클릭 시 main agent에 보낼 짧은 요청은 `nextActionPrompt`에 넣는다.
-- `access-summary`: 선택 기관 방문/연락 안내를 보여줄 때 사용한다. `institution`, `map`, `travel`, `visitNotes`, 전화/길찾기 button copy가 필요하다.
 - 모든 surface의 `title`과 `description`은 짧고 사용자가 바로 이해할 수 있어야 한다.
 
 경계:

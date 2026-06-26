@@ -217,17 +217,6 @@ function WorkspaceNaverMapCanvas({
 
     let cancelled = false;
     const previousAuthFailure = window.navermap_authFailure;
-    const handleNaverSdkError = (event: ErrorEvent | Event) => {
-      if (!isNaverMapsSdkError(event)) return;
-
-      event.preventDefault();
-      event.stopImmediatePropagation();
-
-      naverMapsRuntimeUnavailable = true;
-      if (!cancelled) onUnavailable();
-    };
-
-    window.addEventListener("error", handleNaverSdkError, true);
 
     window.navermap_authFailure = () => {
       previousAuthFailure?.();
@@ -244,7 +233,6 @@ function WorkspaceNaverMapCanvas({
 
     return () => {
       cancelled = true;
-      window.removeEventListener("error", handleNaverSdkError, true);
       window.navermap_authFailure = previousAuthFailure;
     };
   }, [mapKey, onUnavailable]);
@@ -497,23 +485,6 @@ function hasLoadedNaverMaps() {
 
   return Boolean(
     (globalThis as typeof globalThis & { naver?: Window["naver"] }).naver?.maps
-  );
-}
-
-function isNaverMapsSdkError(event: ErrorEvent | Event) {
-  const source =
-    event instanceof ErrorEvent
-      ? [event.filename, event.message].filter(Boolean).join(" ")
-      : "";
-  const targetSource =
-    event.target instanceof HTMLScriptElement ? event.target.src : "";
-  const combined = `${source} ${targetSource}`;
-
-  return (
-    combined.includes("oapi.map.naver.com") ||
-    combined.includes("nrbe.map.naver.net") ||
-    combined.includes("maps.js") ||
-    combined.includes("NAVER Maps JavaScript API")
   );
 }
 

@@ -1,4 +1,3 @@
-import { AccessSummarySurface } from "@/ui/components/chat/workspace_surface/access_summary/access-summary-surface";
 import { ActionChecklistSurface } from "@/ui/components/chat/workspace_surface/action_checklist/action-checklist-surface";
 import { DefaultWorkspaceSurface } from "@/ui/components/chat/workspace_surface/default/default-workspace-surface";
 import { EvidenceDocumentsSurface } from "@/ui/components/chat/workspace_surface/evidence_documents/evidence-documents-surface";
@@ -60,8 +59,6 @@ export function ChatWorkspaceRenderer({
           surface={state.surface}
         />
       );
-    case "access-summary":
-      return <AccessSummarySurface surface={state.surface} />;
     default:
       return assertNever(state.surface);
   }
