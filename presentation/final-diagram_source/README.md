@@ -14,6 +14,17 @@
 | `05-backend-agent-orchestrator-architecture.eraserdiagram` | `backend` L2 아키텍처. Django ASGI/SSE transport, LangGraph runtime, agent factories, tool registry/profile, provider layer를 표시합니다. |
 | `06-external-mcp-architecture.eraserdiagram` | `external_mcp` L2 아키텍처. FastMCP runtime, registered tools, provider adapters, Naver/Firecrawl/TMAP external APIs를 표시합니다. |
 
+## Rendered Image Files
+
+최종 발표 자료에 바로 삽입할 PNG export는 `../final_diagram_images/`에 보관합니다.
+
+| 파일 | 크기 | 용도 |
+| --- | --- | --- |
+| [`전체_다이어그램.png`](<../final_diagram_images/ 전체_다이어그램.png>) | 4547 x 1927 | 전체 통합 아키텍처 이미지. 상세한 end-to-end 구조를 한 장으로 보여줄 때 사용합니다. |
+| [`overall_simplified.png`](../final_diagram_images/overall_simplified.png) | 1161 x 1559 | 전체 구조 단순화 이미지. 슬라이드에서 요약 설명용으로 사용합니다. |
+| [`backend_simplified.png`](../final_diagram_images/backend_simplified.png) | 2005 x 2228 | backend agent/orchestrator 구조 단순화 이미지. backend 상세 설명 구간에 사용합니다. |
+| [`external_mcp_simplified.png`](../final_diagram_images/external_mcp_simplified.png) | 1083 x 2121 | External MCP 구조 단순화 이미지. 외부 검색/지도 API tool boundary 설명 구간에 사용합니다. |
+
 ## Mapping Depth
 
 - `01`은 L1 top-level component map입니다.
@@ -101,6 +112,7 @@
 2. Create a new diagram from code.
 3. Paste the contents of a `.eraserdiagram` file, including the first diagram type line.
 4. Export PNG/SVG for the final presentation if needed.
+5. 이미 export된 발표용 PNG가 필요하면 `../final_diagram_images/`의 파일을 사용합니다.
 
 ## Follow-up Deep Diagrams
 
