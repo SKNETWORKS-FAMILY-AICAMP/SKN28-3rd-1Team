@@ -126,20 +126,6 @@ class WorkspaceEvidenceDocumentsCopy(WorkspaceToolModel):
     relevanceLabel: str
 
 
-class WorkspaceAccessSummaryCopy(WorkspaceToolModel):
-    headerBadge: str
-    visitNotesTitle: str
-    callActionLabel: str
-    directionsActionLabel: str
-
-
-class WorkspaceAccessTravel(WorkspaceToolModel):
-    modeLabel: str
-    durationLabel: str
-    distanceLabel: str
-    summary: str
-
-
 class WorkspaceShowDefaultArgs(WorkspaceToolModel):
     title: str | None = Field(default=None, description="기본 화면 제목")
     description: str | None = Field(default=None, description="기본 화면 설명")
@@ -183,16 +169,6 @@ class WorkspaceShowActionChecklistArgs(WorkspaceToolModel):
     nextActionPrompt: str | None = None
 
 
-class WorkspaceShowAccessSummaryArgs(WorkspaceToolModel):
-    title: str
-    description: str
-    copy_: WorkspaceAccessSummaryCopy = Field(alias="copy")
-    map: WorkspaceMapSnapshot
-    institution: WorkspaceInstitution
-    travel: WorkspaceAccessTravel
-    visitNotes: list[str]
-
-
 def get_screen_control_workspace_tools() -> list[BaseTool]:
     return [
         _create_default_tool(),
@@ -230,15 +206,6 @@ def get_screen_control_workspace_tools() -> list[BaseTool]:
             description=(
                 "실행 체크리스트 surface로 전환합니다. "
                 "준비 항목, 단계, 다음 실행 안내를 full payload로 제공합니다."
-            ),
-        ),
-        _create_surface_tool(
-            name="workspace_show_access_summary",
-            surface_type="access-summary",
-            args_schema=WorkspaceShowAccessSummaryArgs,
-            description=(
-                "기관 접근 요약 surface로 전환합니다. "
-                "선택 기관, 지도, 이동 요약, 방문 전 확인사항을 full payload로 제공합니다."
             ),
         ),
     ]

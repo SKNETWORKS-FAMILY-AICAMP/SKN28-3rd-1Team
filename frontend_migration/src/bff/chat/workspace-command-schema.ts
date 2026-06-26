@@ -158,34 +158,12 @@ const actionChecklistSurfaceSchema = z.object({
   nextActionPrompt: z.string().optional(),
 })
 
-const accessSummarySurfaceSchema = z.object({
-  type: z.literal("access-summary"),
-  title: z.string(),
-  description: z.string(),
-  copy: z.object({
-    headerBadge: z.string(),
-    visitNotesTitle: z.string(),
-    callActionLabel: z.string(),
-    directionsActionLabel: z.string(),
-  }),
-  map: workspaceMapSnapshotSchema,
-  institution: workspaceInstitutionSchema,
-  travel: z.object({
-    modeLabel: z.string(),
-    durationLabel: z.string(),
-    distanceLabel: z.string(),
-    summary: z.string(),
-  }),
-  visitNotes: z.array(z.string()),
-})
-
 const remoteSurfaceSchema = z.discriminatedUnion("type", [
   defaultSurfaceSchema,
   profileIntakeSurfaceSchema,
   institutionResultsSurfaceSchema,
   evidenceDocumentsSurfaceSchema,
   actionChecklistSurfaceSchema,
-  accessSummarySurfaceSchema,
 ])
 
 export const workspaceCommandDataSchema = z.discriminatedUnion("type", [

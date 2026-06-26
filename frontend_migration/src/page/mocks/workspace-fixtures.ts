@@ -325,34 +325,6 @@ const workspaceMockStates: Record<string, ChatWorkspaceState> = {
       ],
     },
   },
-  "access-summary": {
-    surface: {
-      type: "access-summary",
-      title: "강남시니어클럽 접근 요약",
-      description:
-        "선택한 기관의 위치, 예상 이동 시간, 방문 전 확인 항목을 함께 봅니다.",
-      copy: {
-        headerBadge: "접근 요약",
-        visitNotesTitle: "방문 전 확인",
-        callActionLabel: "전화",
-        directionsActionLabel: "길찾기",
-      },
-      map: gangnamMapSnapshot,
-      institution: workspaceInstitutions[0],
-      travel: {
-        modeLabel: "대중교통 또는 도보",
-        durationLabel: "약 18분",
-        distanceLabel: workspaceInstitutions[0].distanceLabel,
-        summary:
-          "강남역 기준으로 비교적 가까운 기관입니다. 길찾기 상세 경로는 지도 앱에서 이어서 확인합니다.",
-      },
-      visitNotes: [
-        "방문 전 운영시간과 당일 상담 가능 여부를 전화로 확인하세요.",
-        "신분증, 주민등록등본, 통장사본을 기본 서류로 준비하세요.",
-        "모집 기간이 끝났다면 대기 접수 가능 여부를 물어보세요.",
-      ],
-    },
-  },
 };
 
 export function getWorkspaceMockState(slug: string) {
