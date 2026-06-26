@@ -23,7 +23,7 @@ Last reviewed: 2026-06-18
 | Base | `curl`, `wget`, `unzip` | official installer scripts and Bun install | Required |
 | Python | `uv` | `backend/`, `rag/be/` Python env, `.venv`, commands | Required |
 | JavaScript | `node`, `npm`, `npx` | MCP stdio servers, skills installer, JS tools | Required |
-| JavaScript | `bun` | `frontend/`, `rag/fe/` install/start/build | Required |
+| JavaScript | `bun` | `frontend_migration/`, `rag/fe/` install/start/build | Required |
 | Container | Docker Engine + Compose plugin | `deploy/docker`, `rag/infra` | Required when running Docker workflows |
 | Env | `varlock` CLI | `.env.schema` validation and `varlock run` Makefile targets | Required |
 | Secret provider | `infisical` CLI | provider-backed secret injection via `infisical run` | Required once Infisical is wired into Makefile flow |

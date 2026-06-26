@@ -77,6 +77,7 @@ export function useChatPageController() {
   const [isTraceExpanded, setIsTraceExpanded] = useState(false);
   const [toast, setToast] = useState("");
   const speechBaseInputRef = useRef("");
+  const voiceAutoSubmitPendingRef = useRef(false);
   const {
     chatSidebarWidth,
     handleChatSidebarResizePointerDown,
@@ -102,6 +103,7 @@ export function useChatPageController() {
     start: startDictation,
     status: dictationStatus,
     stop: stopDictation,
+    transcript: dictationTranscript,
   } = dictation;
   const messageTimestamps = useMemo(
     () => getMessageTimestampMap(messages, new Map<string, string>()),
@@ -157,13 +159,46 @@ export function useChatPageController() {
 
   const toggleSpeechInput = useCallback(() => {
     if (dictationStatus === "listening") {
+      voiceAutoSubmitPendingRef.current = true;
       stopDictation();
       return;
     }
 
+    voiceAutoSubmitPendingRef.current = true;
     speechBaseInputRef.current = input;
     startDictation();
   }, [dictationStatus, input, startDictation, stopDictation]);
+
+  useEffect(() => {
+    if (
+      !voiceAutoSubmitPendingRef.current ||
+      dictationStatus !== "ready" ||
+      isBusy
+    ) {
+      return;
+    }
+
+    const nextInput = mergeSpeechTranscript(
+      speechBaseInputRef.current,
+      dictationTranscript?.text ?? ""
+    );
+
+    if (!nextInput.trim()) return;
+
+    voiceAutoSubmitPendingRef.current = false;
+    resetDictation();
+    send(nextInput);
+  }, [dictationStatus, dictationTranscript, isBusy, resetDictation, send]);
+
+  useEffect(() => {
+    if (
+      dictationStatus === "idle" ||
+      dictationStatus === "error" ||
+      dictationStatus === "unsupported"
+    ) {
+      voiceAutoSubmitPendingRef.current = false;
+    }
+  }, [dictationStatus]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {

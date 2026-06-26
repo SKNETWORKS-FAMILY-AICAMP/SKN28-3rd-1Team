@@ -4,16 +4,16 @@ export type DictationShortcutPresentation = {
 };
 
 export const DICTATION_SHORTCUT = {
-  ariaKeyShortcuts: "Alt+M",
-  label: "Alt+M / Option+M",
+  ariaKeyShortcuts: "PageDown",
+  label: "PgDn / Page Down",
 } as const satisfies DictationShortcutPresentation;
 
 export function isDictationShortcut(event: KeyboardEvent) {
-  const isMKey = event.key.toLowerCase() === "m" || event.code === "KeyM";
+  const isPageDownKey = event.key === "PageDown" || event.code === "PageDown";
 
   return (
-    isMKey &&
-    event.altKey &&
+    isPageDownKey &&
+    !event.altKey &&
     !event.ctrlKey &&
     !event.metaKey &&
     !event.shiftKey &&
