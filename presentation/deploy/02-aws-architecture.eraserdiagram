@@ -1,0 +1,79 @@
+cloud-architecture-diagram
+
+direction right
+colorMode pastel
+styleMode plain
+typeface clean
+
+DemoUser [label: "Demo user browser", icon: user, color: blue]
+
+Edge [label: "Public demo entry", color: blue] {
+  CloudFront [label: "CloudFront HTTPS d2psjdqzzwvjpi.cloudfront.net", icon: cloud, color: blue]
+  Alb [label: "ALB skn28-demo-alb HTTP :80", icon: network, color: blue]
+  FrontendTargetGroup [label: "target group skn28-demo-frontend HTTP :3000", icon: crosshair, color: blue]
+}
+
+Vpc [label: "Default VPC vpc-016d30a173909810c us-east-1", color: gray] {
+  PublicSubnets [label: "3 public subnets assignPublicIp=ENABLED", icon: route, color: gray]
+
+  Runtime [label: "ECS Fargate cluster skn28-demo-cluster", color: "#2563eb"] {
+    FrontendService [label: "frontend-migration Next.js BFF :3000 task definition :9", icon: monitor, color: "#2563eb"]
+    BackendService [label: "backend API and agent runtime :8000 task definition :9", icon: server, color: purple]
+    ExternalMcpService [label: "external-mcp FastMCP :8020 task definition :9", icon: plug, color: green]
+  }
+
+  PrivateDns [label: "Cloud Map private DNS skn28.local", icon: compass, color: gray]
+
+  SecurityGroups [label: "Security group chain", color: orange] {
+    AlbSg [label: "alb-sg inbound 80 from 0.0.0.0/0", icon: shield, color: orange]
+    FrontendSg [label: "frontend-sg inbound 3000 from alb-sg", icon: shield, color: orange]
+    BackendSg [label: "backend-sg inbound 8000 from frontend-sg", icon: shield, color: orange]
+    ExternalSg [label: "external-mcp-sg inbound 8020 from backend-sg", icon: shield, color: orange]
+  }
+}
+
+PlatformServices [label: "AWS platform services", color: "#0f766e"] {
+  Ecr [label: "Amazon ECR service images", icon: container, color: "#0f766e"]
+  SecretsManager [label: "AWS Secrets Manager runtime secrets", icon: key-round, color: "#0f766e"]
+  CloudWatch [label: "CloudWatch Logs /ecs/skn28/demo/*", icon: scroll-text, color: "#0f766e"]
+}
+
+ExternalProviders [label: "External providers", color: red] {
+  LlmProviders [label: "Cerebras OpenRouter ElevenLabs LangSmith", icon: brain, color: red]
+  DataProviders [label: "Naver Firecrawl TMAP", icon: globe, color: red]
+}
+
+DemoUser > CloudFront: HTTPS
+CloudFront > Alb: origin HTTP
+Alb > FrontendTargetGroup: listener :80
+FrontendTargetGroup > FrontendService: HTTP :3000
+FrontendService > BackendService: http://backend.skn28.local:8000
+BackendService > ExternalMcpService: http://external-mcp.skn28.local:8020
+PrivateDns > BackendService: backend A record TTL 10
+PrivateDns > ExternalMcpService: external-mcp A record TTL 10
+AlbSg > Alb: allow public HTTP
+FrontendSg > FrontendService: allow ALB only
+BackendSg > BackendService: allow frontend only
+ExternalSg > ExternalMcpService: allow backend only
+Ecr > FrontendService: image pull
+Ecr > BackendService: image pull
+Ecr > ExternalMcpService: image pull
+SecretsManager > FrontendService: demo access key
+SecretsManager > BackendService: LLM and runtime secrets
+SecretsManager > ExternalMcpService: provider API secrets
+FrontendService > CloudWatch: app logs
+BackendService > CloudWatch: app logs
+ExternalMcpService > CloudWatch: app logs
+BackendService > LlmProviders: model TTS tracing calls
+ExternalMcpService > DataProviders: search map route calls
+PublicSubnets > Runtime: task placement
+
+legend [position: bottom-left] {
+  [color: blue, label: "Public entry"]
+  [color: "#2563eb", label: "Frontend runtime"]
+  [color: purple, label: "Backend runtime"]
+  [color: green, label: "MCP runtime"]
+  [color: orange, label: "Ingress controls"]
+  [color: "#0f766e", label: "AWS managed services"]
+  [color: red, label: "External providers"]
+}

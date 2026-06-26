@@ -1,0 +1,50 @@
+cloud-architecture-diagram
+
+direction right
+colorMode pastel
+styleMode plain
+typeface clean
+
+DemoUser [label: "Demo user browser", icon: user, color: blue]
+
+PublicEntry [label: "Public HTTPS entry", color: blue] {
+  CloudFront [label: "CloudFront HTTPS demo URL", icon: cloud, color: blue]
+  Alb [label: "Public ALB HTTP origin", icon: network, color: blue]
+}
+
+AwsRuntime [label: "AWS demo runtime us-east-1", color: gray] {
+  Frontend [label: "frontend_migration Next.js BFF and demo access gate", icon: monitor, color: "#2563eb"]
+  Backend [label: "backend chat stream API and agent runtime", icon: server, color: purple]
+  ExternalMcp [label: "external_mcp provider tool server", icon: plug, color: green]
+  PrivateBoundary [label: "Cloud Map private DNS and security group chain", icon: shield-check, color: orange]
+  Secrets [label: "Secrets Manager runtime config", icon: key-round, color: "#0f766e"]
+}
+
+Providers [label: "External provider layer", color: red] {
+  LlmProviders [label: "LLM TTS tracing providers", icon: brain, color: red]
+  DataProviders [label: "Naver Firecrawl TMAP APIs", icon: globe, color: red]
+}
+
+DemoUser > CloudFront: HTTPS
+CloudFront > Alb: HTTP origin
+Alb > Frontend: route browser traffic
+Frontend > Backend: internal HTTP /chat/stream
+Backend > ExternalMcp: internal MCP HTTP
+PrivateBoundary > Frontend: allow ALB only
+PrivateBoundary > Backend: allow frontend only
+PrivateBoundary > ExternalMcp: allow backend only
+Secrets > Frontend: demo key
+Secrets > Backend: LLM runtime config
+Secrets > ExternalMcp: provider config
+Backend > LlmProviders: model and TTS calls
+ExternalMcp > DataProviders: search map route calls
+
+legend [position: bottom-left] {
+  [color: blue, label: "Public entry"]
+  [color: "#2563eb", label: "Frontend"]
+  [color: purple, label: "Backend"]
+  [color: green, label: "External MCP"]
+  [color: orange, label: "Internal access control"]
+  [color: "#0f766e", label: "Runtime secrets"]
+  [color: red, label: "External providers"]
+}

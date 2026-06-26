@@ -294,6 +294,7 @@ SKN28-3rd-1Team/
 ├── docs/                    # 회의록, 온보딩, 개발 문서
 ├── presentation/            # 발표 스크립트, PPT/PDF, 평가 데이터 산출물
 │   ├── ppt/                 # 발표 자료, 스크립트, Memgraph Lab 시연 캡처
+│   ├── deploy/              # AWS 배포/CI-CD 발표용 Mermaid, Eraser 다이어그램
 │   ├── outputs/             # 발표 자료 생성/검증 산출물
 │   ├── test-data/           # benchmark, LLM-as-a-judge 결과
 │   └── marking_criteria/    # 프로젝트 평가 기준 정리
@@ -320,6 +321,7 @@ SKN28-3rd-1Team/
 | `deploy/README.md` | local dev 통합 Makefile, Docker Compose, AWS 배포 준비 정보 |
 | `docs/README.md` | agent guideline, 온보딩, 도구 설정 등 팀 문서 |
 | `docs/legacy/llm_env_naming_convention.md` | LLM agent/provider/model env naming과 Infisical 동기화 기준 |
+| `presentation/deploy/README.md` | AWS 배포/CI-CD 발표용 Mermaid, Eraser 다이어그램 원본 |
 | `presentation/test-data/README.md` | 발표용 평가 데이터, benchmark, judge 결과 구조 |
 
 ### 3) 발표 및 시연 산출물
