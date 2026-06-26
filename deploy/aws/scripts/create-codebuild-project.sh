@@ -5,6 +5,7 @@ AWS_PROFILE="${AWS_PROFILE:-sknetworksTeam3}"
 AWS_REGION="${AWS_REGION:-us-east-1}"
 PROJECT_NAME="${PROJECT_NAME:-skn28-container-build}"
 ROLE_NAME="${ROLE_NAME:-skn28-codebuild-service-role}"
+FRONTEND_ENV_FILE="${FRONTEND_ENV_FILE:-frontend_migration/.env}"
 
 AWS_ACCOUNT_ID="$(aws sts get-caller-identity \
   --profile "$AWS_PROFILE" \
@@ -13,6 +14,29 @@ AWS_ACCOUNT_ID="$(aws sts get-caller-identity \
 ARTIFACT_BUCKET="${ARTIFACT_BUCKET:-skn28-codepipeline-artifacts-${AWS_ACCOUNT_ID}-${AWS_REGION}}"
 ROLE_ARN="arn:aws:iam::${AWS_ACCOUNT_ID}:role/${ROLE_NAME}"
 TMP_DIR="$(mktemp -d)"
+
+read_frontend_env() {
+  name="$1"
+  if [ ! -f "$FRONTEND_ENV_FILE" ]; then
+    return 0
+  fi
+
+  awk -F= -v key="$name" '
+    $1 == key {
+      sub("^[^=]*=", "")
+      gsub(/^[[:space:]]+|[[:space:]]+$/, "")
+      gsub(/^"|"$/, "")
+      gsub(/^'\''|'\''$/, "")
+      print
+      exit
+    }
+  ' "$FRONTEND_ENV_FILE"
+}
+
+NEXT_PUBLIC_CHAT_API_PATH="${NEXT_PUBLIC_CHAT_API_PATH:-$(read_frontend_env NEXT_PUBLIC_CHAT_API_PATH)}"
+NEXT_PUBLIC_CHAT_API_PATH="${NEXT_PUBLIC_CHAT_API_PATH:-/api/chat}"
+NEXT_PUBLIC_NAVER_MAP_NCP_KEY_ID="${NEXT_PUBLIC_NAVER_MAP_NCP_KEY_ID:-$(read_frontend_env NEXT_PUBLIC_NAVER_MAP_NCP_KEY_ID)}"
+NEXT_PUBLIC_NAVER_MAP_CLIENT_ID="${NEXT_PUBLIC_NAVER_MAP_CLIENT_ID:-$(read_frontend_env NEXT_PUBLIC_NAVER_MAP_CLIENT_ID)}"
 
 cleanup() {
   rm -rf "$TMP_DIR"
@@ -161,7 +185,24 @@ create_or_update_project() {
     "type": "LINUX_CONTAINER",
     "image": "aws/codebuild/standard:7.0",
     "computeType": "BUILD_GENERAL1_MEDIUM",
-    "privilegedMode": true
+    "privilegedMode": true,
+    "environmentVariables": [
+      {
+        "name": "NEXT_PUBLIC_CHAT_API_PATH",
+        "value": "${NEXT_PUBLIC_CHAT_API_PATH}",
+        "type": "PLAINTEXT"
+      },
+      {
+        "name": "NEXT_PUBLIC_NAVER_MAP_NCP_KEY_ID",
+        "value": "${NEXT_PUBLIC_NAVER_MAP_NCP_KEY_ID}",
+        "type": "PLAINTEXT"
+      },
+      {
+        "name": "NEXT_PUBLIC_NAVER_MAP_CLIENT_ID",
+        "value": "${NEXT_PUBLIC_NAVER_MAP_CLIENT_ID}",
+        "type": "PLAINTEXT"
+      }
+    ]
   },
   "serviceRole": "${ROLE_ARN}",
   "timeoutInMinutes": 60,

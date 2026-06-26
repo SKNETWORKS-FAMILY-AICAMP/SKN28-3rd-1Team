@@ -6,8 +6,6 @@ env:
     FRONTEND_MIGRATION_ECR_REPOSITORY: skn28/frontend-migration
     EXTERNAL_MCP_ECR_REPOSITORY: skn28/external-mcp
     NEXT_PUBLIC_CHAT_API_PATH: /api/chat
-    NEXT_PUBLIC_NAVER_MAP_NCP_KEY_ID: ""
-    NEXT_PUBLIC_NAVER_MAP_CLIENT_ID: ""
 
 phases:
   pre_build:
@@ -19,6 +17,9 @@ phases:
       - export IMAGE_TAG="$(printf '%s' "${CODEBUILD_RESOLVED_SOURCE_VERSION:-manual}" | cut -c1-12)"
       - if [ -z "$IMAGE_TAG" ]; then IMAGE_TAG="$(date +%Y%m%d%H%M%S)"; fi
       - export IMAGE_TAG
+      - export NEXT_PUBLIC_CHAT_API_PATH="${NEXT_PUBLIC_CHAT_API_PATH:-/api/chat}"
+      - export NEXT_PUBLIC_NAVER_MAP_NCP_KEY_ID="${NEXT_PUBLIC_NAVER_MAP_NCP_KEY_ID:-}"
+      - export NEXT_PUBLIC_NAVER_MAP_CLIENT_ID="${NEXT_PUBLIC_NAVER_MAP_CLIENT_ID:-}"
       - aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$ECR_REGISTRY"
       - mkdir -p deploy/aws/imagedefinitions
   build:
