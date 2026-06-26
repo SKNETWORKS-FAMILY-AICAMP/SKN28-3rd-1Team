@@ -291,8 +291,11 @@ SKN28-3rd-1Team/
 ├── presentation/            # 발표 스크립트, PPT/PDF, 평가 데이터 산출물
 │   ├── ppt/                 # 발표 자료, 스크립트, Memgraph Lab 시연 캡처
 │   ├── deploy/              # AWS 배포/CI-CD 발표용 Mermaid, Eraser 다이어그램
+│   ├── final-diagram_source/ # 제출/발표용 최종 시스템 구성도 원본
+│   ├── final_diagram_images/ # 최종 시스템 구성도 PNG export
 │   ├── outputs/             # 발표 자료 생성/검증 산출물
 │   ├── test-data/           # benchmark, LLM-as-a-judge 결과
+│   ├── test_results/        # 제출용 단위/통합 테스트 계획 및 결과 보고서
 │   └── marking_criteria/    # 프로젝트 평가 기준 정리
 ├── deploy/                  # 통합 배포 실행 설정
 │   ├── aws/                 # ECR/CodeBuild/CodePipeline/ECS 배포 준비 파일
@@ -317,9 +320,21 @@ SKN28-3rd-1Team/
 | `docs/README.md` | agent guideline, 온보딩, 도구 설정 등 팀 문서 |
 | `docs/legacy/llm_env_naming_convention.md` | LLM agent/provider/model env naming과 Infisical 동기화 기준 |
 | `presentation/deploy/README.md` | AWS 배포/CI-CD 발표용 Mermaid, Eraser 다이어그램 원본 |
+| `presentation/final-diagram_source/README.md` | 최종 시스템 구성도 Eraser diagram-as-code 원본과 PNG export 안내 |
 | `presentation/test-data/README.md` | 발표용 평가 데이터, benchmark, judge 결과 구조 |
+| `presentation/test_results/` | 제출용 단위 테스트와 통합 테스트 계획 및 결과 보고서 PDF |
 
-### 3) 발표 및 시연 산출물
+### 3) 제출 산출물
+
+| 필수 산출물 | 제출 위치 |
+| --- | --- |
+| 요구사항 정의서 | [`presentation/ppt/reviewable-graphrag-service-presentation-v4.pptx`](presentation/ppt/reviewable-graphrag-service-presentation-v4.pptx) |
+| 화면설계서 | [`presentation/ppt/reviewable-graphrag-service-presentation-v4.pptx`](presentation/ppt/reviewable-graphrag-service-presentation-v4.pptx) |
+| 개발된 LLM 연동 웹 애플리케이션 | [배포 Application](https://d2psjdqzzwvjpi.cloudfront.net/) |
+| 시스템 구성도 | [Eraser 시스템 구성도](https://app.eraser.io/workspace/QaaF195Z5KgdFDGK7GiV) |
+| 테스트 계획 및 결과 보고서 | [`presentation/test_results/unit_test.pdf`](presentation/test_results/unit_test.pdf), [`presentation/test_results/integration_test.pdf`](presentation/test_results/integration_test.pdf) |
+
+### 4) 발표 및 시연 산출물
 
 | 산출물 | 설명 |
 | --- | --- |
