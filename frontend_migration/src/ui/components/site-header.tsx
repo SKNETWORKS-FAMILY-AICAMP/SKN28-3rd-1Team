@@ -22,7 +22,13 @@ export function SiteHeader() {
           <span className="font-heading text-2xl text-foreground">로디</span>
         </Link>
 
-        <nav className="hidden items-center gap-8 md:flex">
+        <nav className="hidden items-center gap-5 lg:gap-8 md:flex">
+          <Link
+            href="/#character"
+            className="text-base font-medium text-muted-foreground transition-colors hover:text-foreground"
+          >
+            캐릭터 소개
+          </Link>
           <Link
             href="/#features"
             className="text-base font-medium text-muted-foreground transition-colors hover:text-foreground"

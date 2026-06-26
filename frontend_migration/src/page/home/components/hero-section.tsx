@@ -1,8 +1,8 @@
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, MessageCircleQuestion, Sparkles } from "lucide-react";
 
 import { FadeIn } from "@/ui/components/fade-in";
+import { HeroMascotCard } from "@/page/home/components/hero-mascot-card";
 import { buttonVariants } from "@/ui/primitives/button";
 
 export function HeroSection() {
@@ -65,32 +65,7 @@ export function HeroSection() {
         </FadeIn>
 
         <FadeIn direction="right" delay={150} className="relative flex justify-center">
-          <Link
-            href="/chat"
-            aria-label="상담 화면으로 이동"
-            className="group relative flex aspect-square w-full max-w-md items-center justify-center rounded-[2.5rem] bg-gradient-to-b from-card to-secondary/60 shadow-xl ring-1 ring-border transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-          >
-            <Image
-              src="/mascots/mascot.png"
-              alt="법률 가이드 책을 든 법률 챗봇 마스코트 로디"
-              width={520}
-              height={520}
-              loading="eager"
-              priority
-              className="h-auto w-[90%] drop-shadow-2xl transition-opacity duration-300 group-hover:opacity-0"
-            />
-            <Image
-              src="/mascots/mascot2.png"
-              alt="법률 챗봇 마스코트 로디 호버"
-              width={520}
-              height={520}
-              priority
-              className="absolute h-auto w-[90%] opacity-0 drop-shadow-2xl transition-opacity duration-300 group-hover:opacity-100"
-            />
-            <span className="absolute -right-3 top-10 rounded-2xl bg-card px-4 py-2 text-sm font-medium text-foreground shadow-md ring-1 ring-border">
-              안녕하세요, 로디예요!
-            </span>
-          </Link>
+          <HeroMascotCard />
         </FadeIn>
       </div>
     </section>

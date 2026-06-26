@@ -1,4 +1,5 @@
 import { CategoriesSection } from "@/page/home/components/categories-section";
+import { CharacterSection } from "@/page/home/components/character-section";
 import { CtaSection } from "@/page/home/components/cta-section";
 import { FeaturesSection } from "@/page/home/components/features-section";
 import { HeroSection } from "@/page/home/components/hero-section";
@@ -12,6 +13,7 @@ export function HomePage() {
       <SiteHeader />
       <main className="flex-1">
         <HeroSection />
+        <CharacterSection />
         <FeaturesSection />
         <HowItWorks />
         <CategoriesSection />

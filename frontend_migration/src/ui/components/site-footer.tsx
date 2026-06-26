@@ -28,6 +28,9 @@ export function SiteFooter() {
             <Link href="/chat" className="transition-colors hover:text-foreground">
               상담 시작
             </Link>
+            <Link href="/#character" className="transition-colors hover:text-foreground">
+              캐릭터 소개
+            </Link>
             <Link href="/#features" className="transition-colors hover:text-foreground">
               기능 소개
             </Link>
