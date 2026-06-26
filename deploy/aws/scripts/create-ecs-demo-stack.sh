@@ -279,6 +279,15 @@ register_task_definitions() {
   backend_openrouter_arn="$(get_secret_arn skn28/backend/LLM_PROVIDER_OPENROUTER_API_KEY)"
   backend_elevenlabs_arn="$(get_secret_arn skn28/backend/ELEVENLABS_API_KEY)"
   backend_langsmith_arn="$(get_secret_arn skn28/backend/LANGSMITH_API_KEY)"
+  backend_elevenlabs_voice_arn="$(get_secret_arn skn28/backend/ELEVENLABS_VOICE_ID)"
+  backend_openrouter_app_title_arn="$(get_secret_arn skn28/backend/LLM_PROVIDER_OPENROUTER_APP_TITLE)"
+  backend_openrouter_app_url_arn="$(get_secret_arn skn28/backend/LLM_PROVIDER_OPENROUTER_APP_URL)"
+  backend_openrouter_base_url_arn="$(get_secret_arn skn28/backend/LLM_PROVIDER_OPENROUTER_BASE_URL)"
+  backend_openrouter_provider_order_arn="$(get_secret_arn skn28/backend/LLM_PROVIDER_OPENROUTER_PROVIDER_ORDER)"
+  backend_openrouter_allow_fallbacks_arn="$(get_secret_arn skn28/backend/LLM_PROVIDER_OPENROUTER_ALLOW_FALLBACKS)"
+  backend_openrouter_require_parameters_arn="$(get_secret_arn skn28/backend/LLM_PROVIDER_OPENROUTER_REQUIRE_PARAMETERS)"
+  backend_runtime_cors_origins_arn="$(get_secret_arn skn28/backend/RUNTIME_CORS_ORIGINS)"
+  backend_rag_tool_timeout_arn="$(get_secret_arn skn28/backend/RAG_TOOL_TIMEOUT_MS)"
   external_naver_id_arn="$(get_secret_arn skn28/external-mcp/EXTERNAL_MCP_NAVER_CLIENT_ID)"
   external_naver_secret_arn="$(get_secret_arn skn28/external-mcp/EXTERNAL_MCP_NAVER_CLIENT_SECRET)"
   external_firecrawl_arn="$(get_secret_arn skn28/external-mcp/EXTERNAL_MCP_FIRECRAWL_API_KEY)"
@@ -401,7 +410,16 @@ JSON
         {"name": "LLM_PROVIDER_CEREBRAS_API_KEY", "valueFrom": "${backend_cerebras_arn}"},
         {"name": "LLM_PROVIDER_OPENROUTER_API_KEY", "valueFrom": "${backend_openrouter_arn}"},
         {"name": "ELEVENLABS_API_KEY", "valueFrom": "${backend_elevenlabs_arn}"},
-        {"name": "LANGSMITH_API_KEY", "valueFrom": "${backend_langsmith_arn}"}
+        {"name": "LANGSMITH_API_KEY", "valueFrom": "${backend_langsmith_arn}"},
+        {"name": "ELEVENLABS_VOICE_ID", "valueFrom": "${backend_elevenlabs_voice_arn}"},
+        {"name": "LLM_PROVIDER_OPENROUTER_APP_TITLE", "valueFrom": "${backend_openrouter_app_title_arn}"},
+        {"name": "LLM_PROVIDER_OPENROUTER_APP_URL", "valueFrom": "${backend_openrouter_app_url_arn}"},
+        {"name": "LLM_PROVIDER_OPENROUTER_BASE_URL", "valueFrom": "${backend_openrouter_base_url_arn}"},
+        {"name": "LLM_PROVIDER_OPENROUTER_PROVIDER_ORDER", "valueFrom": "${backend_openrouter_provider_order_arn}"},
+        {"name": "LLM_PROVIDER_OPENROUTER_ALLOW_FALLBACKS", "valueFrom": "${backend_openrouter_allow_fallbacks_arn}"},
+        {"name": "LLM_PROVIDER_OPENROUTER_REQUIRE_PARAMETERS", "valueFrom": "${backend_openrouter_require_parameters_arn}"},
+        {"name": "RUNTIME_CORS_ORIGINS", "valueFrom": "${backend_runtime_cors_origins_arn}"},
+        {"name": "RAG_TOOL_TIMEOUT_MS", "valueFrom": "${backend_rag_tool_timeout_arn}"}
       ],
       "logConfiguration": {
         "logDriver": "awslogs",

@@ -12,6 +12,8 @@ AWS-native 배포 흐름은 GitHub source를 CodePipeline에 연결하고, CodeB
 
 `backend` and `external_mcp` should not be exposed directly to the public internet. Browser traffic enters through `frontend_migration`; its Next.js BFF calls the backend inside the ECS network, and the backend calls External MCP internally.
 
+For browser APIs that require a secure context, such as microphone access, use the CloudFront HTTPS domain in front of the public ALB instead of the raw `http://*.elb.amazonaws.com` URL.
+
 ## ECR
 
 Create repositories with:
@@ -73,6 +75,16 @@ Each ECS deploy action should use the corresponding image definitions file:
 | `skn28-backend` | `deploy/aws/imagedefinitions/backend.json` |
 | `skn28-frontend-migration` | `deploy/aws/imagedefinitions/frontend-migration.json` |
 | `skn28-external-mcp` | `deploy/aws/imagedefinitions/external-mcp.json` |
+
+## HTTPS Demo Entry
+
+The raw ALB demo URL is HTTP-only. Create a CloudFront distribution in front of the ALB for a valid default HTTPS domain:
+
+```bash
+AWS_PROFILE=sknetworksTeam3 ./deploy/aws/scripts/create-cloudfront-demo.sh
+```
+
+The distribution uses disabled caching and forwards viewer requests to the ALB so demo access cookies, Next.js routes, and BFF API requests remain dynamic.
 
 ## Runtime Configuration
 
