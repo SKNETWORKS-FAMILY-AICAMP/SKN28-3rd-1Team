@@ -108,4 +108,16 @@ Store real secret values in AWS Secrets Manager or SSM Parameter Store and refer
 
 `NEXT_PUBLIC_*` values are browser-public by design. Sensitive values must stay in ECS secrets.
 
-The current Infisical MCP identity can read the `backend` secret-manager project, but it cannot read the `external_mcp` project ID from `external_mcp/Makefile`. Add that machine identity to the External MCP Infisical project before automating secret sync for that service.
+Sync demo/runtime secrets into AWS Secrets Manager with:
+
+```bash
+AWS_PROFILE=sknetworksTeam3 AWS_REGION=us-east-1 ./deploy/aws/scripts/sync-demo-secrets.sh
+```
+
+Create or update the demo ECS/ALB stack with:
+
+```bash
+AWS_PROFILE=sknetworksTeam3 AWS_REGION=us-east-1 ./deploy/aws/scripts/create-ecs-demo-stack.sh
+```
+
+The current Infisical MCP/CLI identity can read both the `backend` and `external_mcp` secret-manager projects used by this demo stack.

@@ -6,6 +6,10 @@ AWS_REGION="${AWS_REGION:-us-east-1}"
 PIPELINE_NAME="${PIPELINE_NAME:-skn28-container-pipeline}"
 PIPELINE_ROLE_NAME="${PIPELINE_ROLE_NAME:-skn28-codepipeline-service-role}"
 CODEBUILD_PROJECT_NAME="${CODEBUILD_PROJECT_NAME:-skn28-container-build}"
+ECS_CLUSTER_NAME="${ECS_CLUSTER_NAME:-skn28-demo-cluster}"
+FRONTEND_SERVICE_NAME="${FRONTEND_SERVICE_NAME:-skn28-demo-frontend-migration}"
+BACKEND_SERVICE_NAME="${BACKEND_SERVICE_NAME:-skn28-demo-backend}"
+EXTERNAL_MCP_SERVICE_NAME="${EXTERNAL_MCP_SERVICE_NAME:-skn28-demo-external-mcp}"
 CONNECTION_ARN="${CONNECTION_ARN:-arn:aws:codeconnections:us-east-1:133946907234:connection/53fce0db-ae94-4b3f-baa7-781d8644b5bf}"
 FULL_REPOSITORY_ID="${FULL_REPOSITORY_ID:-SKNETWORKS-FAMILY-AICAMP/SKN28-3rd-1Team}"
 BRANCH_NAME="${BRANCH_NAME:-main}"
@@ -16,6 +20,8 @@ AWS_ACCOUNT_ID="$(aws sts get-caller-identity \
   --output text)"
 ARTIFACT_BUCKET="${ARTIFACT_BUCKET:-skn28-codepipeline-artifacts-${AWS_ACCOUNT_ID}-${AWS_REGION}}"
 PIPELINE_ROLE_ARN="arn:aws:iam::${AWS_ACCOUNT_ID}:role/${PIPELINE_ROLE_NAME}"
+ECS_EXECUTION_ROLE_ARN="arn:aws:iam::${AWS_ACCOUNT_ID}:role/skn28-demo-ecs-execution-role"
+ECS_TASK_ROLE_ARN="arn:aws:iam::${AWS_ACCOUNT_ID}:role/skn28-demo-ecs-task-role"
 TMP_DIR="$(mktemp -d)"
 
 cleanup() {
@@ -86,6 +92,31 @@ JSON
         "codebuild:StartBuild"
       ],
       "Resource": "arn:aws:codebuild:${AWS_REGION}:${AWS_ACCOUNT_ID}:project/${CODEBUILD_PROJECT_NAME}"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ecs:DescribeServices",
+        "ecs:DescribeTaskDefinition",
+        "ecs:DescribeTasks",
+        "ecs:ListTasks",
+        "ecs:RegisterTaskDefinition",
+        "ecs:UpdateService"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": "iam:PassRole",
+      "Resource": [
+        "${ECS_EXECUTION_ROLE_ARN}",
+        "${ECS_TASK_ROLE_ARN}"
+      ],
+      "Condition": {
+        "StringEqualsIfExists": {
+          "iam:PassedToService": "ecs-tasks.amazonaws.com"
+        }
+      }
     }
   ]
 }
@@ -162,6 +193,71 @@ create_or_update_pipeline() {
               }
             ],
             "outputArtifacts": [
+              {
+                "name": "BuildOutput"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Deploy",
+        "actions": [
+          {
+            "name": "DeployExternalMcp",
+            "actionTypeId": {
+              "category": "Deploy",
+              "owner": "AWS",
+              "provider": "ECS",
+              "version": "1"
+            },
+            "runOrder": 1,
+            "configuration": {
+              "ClusterName": "${ECS_CLUSTER_NAME}",
+              "ServiceName": "${EXTERNAL_MCP_SERVICE_NAME}",
+              "FileName": "deploy/aws/imagedefinitions/external-mcp.json"
+            },
+            "inputArtifacts": [
+              {
+                "name": "BuildOutput"
+              }
+            ]
+          },
+          {
+            "name": "DeployBackend",
+            "actionTypeId": {
+              "category": "Deploy",
+              "owner": "AWS",
+              "provider": "ECS",
+              "version": "1"
+            },
+            "runOrder": 2,
+            "configuration": {
+              "ClusterName": "${ECS_CLUSTER_NAME}",
+              "ServiceName": "${BACKEND_SERVICE_NAME}",
+              "FileName": "deploy/aws/imagedefinitions/backend.json"
+            },
+            "inputArtifacts": [
+              {
+                "name": "BuildOutput"
+              }
+            ]
+          },
+          {
+            "name": "DeployFrontendMigration",
+            "actionTypeId": {
+              "category": "Deploy",
+              "owner": "AWS",
+              "provider": "ECS",
+              "version": "1"
+            },
+            "runOrder": 3,
+            "configuration": {
+              "ClusterName": "${ECS_CLUSTER_NAME}",
+              "ServiceName": "${FRONTEND_SERVICE_NAME}",
+              "FileName": "deploy/aws/imagedefinitions/frontend-migration.json"
+            },
+            "inputArtifacts": [
               {
                 "name": "BuildOutput"
               }
