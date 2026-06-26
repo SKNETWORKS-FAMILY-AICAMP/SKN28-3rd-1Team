@@ -53,7 +53,7 @@ export function AccessMap({
       }}
       fallbackChildren={
         <WorkspaceMapMarker x={institution.x} y={institution.y}>
-          <span className="chat-map-pin flex size-10 items-center justify-center rounded-full border-2 border-white bg-[var(--chat-primary)] text-sm font-bold text-white shadow-[var(--chat-map-pin-shadow)] ring-[5px] ring-[var(--chat-primary-ring)]">
+          <span className="chat-map-pin flex size-10 items-center justify-center rounded-full border-2 border-[var(--chat-map-pin-border)] bg-[var(--chat-primary)] text-sm font-bold text-white shadow-[var(--chat-map-pin-shadow)] ring-[5px] ring-[var(--chat-primary-ring)]">
             1
           </span>
         </WorkspaceMapMarker>

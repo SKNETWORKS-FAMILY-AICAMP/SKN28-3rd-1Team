@@ -23,6 +23,8 @@
   --chat-map-road: #ffffff;
   --chat-map-road-soft: rgb(255 255 255 / 0.85);
   --chat-map-transit: #fbe0bf;
+  --chat-map-legend: rgb(255 255 255 / 0.85);
+  --chat-map-pin-border: #ffffff;
   --chat-tier-near: #5fb87f;
   --chat-tier-mid: #ef9a52;
   --chat-tier-far: #b3aaa0;
@@ -35,9 +37,12 @@
   --chat-purple-text: #7a64ad;
   --chat-warning-bg: #fff0cc;
   --chat-warning-text: #a76718;
+  --chat-warning-border: #f3c66d;
   --chat-trace-bg: #171b18;
   --chat-trace-border: #2a241f;
   --chat-trace-scrollbar: #594a3e;
+  --chat-document-bg: #fffdf8;
+  --chat-mascot-bg: #fff8ee;
   --chat-sidebar-width-default: 600px;
   --chat-sidebar-width-min: 460px;
   --chat-sidebar-width-max: 760px;
@@ -54,6 +59,117 @@
   font-size: 18px;
   color: var(--chat-text);
   background: var(--chat-bg);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.theme-white) .chat-page {
+    --chat-bg: #1f1d1a;
+    --chat-panel: #282520;
+    --chat-sidebar: #23211d;
+    --chat-sidebar-muted: #302b25;
+    --chat-surface: #2d2923;
+    --chat-surface-strong: #3a2f25;
+    --chat-border: #3a332b;
+    --chat-border-strong: #514437;
+    --chat-text: #ece5dc;
+    --chat-text-strong: #fff8ee;
+    --chat-text-muted: #b7aa9b;
+    --chat-text-soft: #82776b;
+    --chat-primary: #ef8b54;
+    --chat-primary-strong: #ffb07a;
+    --chat-primary-soft: #4a2d1f;
+    --chat-primary-border: #6d442d;
+    --chat-user-bubble: #3b2d24;
+    --chat-assistant-bubble: #2b2722;
+    --chat-map-bg: #222b29;
+    --chat-map-green: #263c32;
+    --chat-map-blue: #263544;
+    --chat-map-road: #38413d;
+    --chat-map-road-soft: rgb(77 87 80 / 0.65);
+    --chat-map-transit: #5d432d;
+    --chat-map-legend: rgb(40 37 32 / 0.84);
+    --chat-map-pin-border: #27231f;
+    --chat-tier-near: #63c184;
+    --chat-tier-mid: #ef9a52;
+    --chat-tier-far: #91877c;
+    --chat-primary-ring: rgb(239 139 84 / 0.26);
+    --chat-success-bg: #173624;
+    --chat-success-text: #7ed99c;
+    --chat-info-bg: #1d3148;
+    --chat-info-text: #8fb9ec;
+    --chat-purple-bg: #302747;
+    --chat-purple-text: #baa4ee;
+    --chat-warning-bg: #4a3519;
+    --chat-warning-text: #f3c66d;
+    --chat-warning-border: #7a5523;
+    --chat-trace-bg: #141614;
+    --chat-trace-border: #302b25;
+    --chat-trace-scrollbar: #6b5948;
+    --chat-document-bg: #24211d;
+    --chat-mascot-bg: #33271f;
+    --chat-shadow-soft: 0 3px 14px rgb(0 0 0 / 0.24);
+    --chat-shadow-primary: 0 2px 12px rgb(239 139 84 / 0.24);
+    --chat-map-pin-shadow: 0 6px 14px rgb(0 0 0 / 0.38);
+    --chat-mascot-shadow-lg: inset 0 0 0 2px var(--chat-primary-border),
+      0 24px 60px rgb(0 0 0 / 0.34);
+    --chat-mascot-shadow-md: inset 0 0 0 2px var(--chat-primary-border),
+      0 10px 26px rgb(0 0 0 / 0.28);
+  }
+}
+
+.dark .chat-page,
+.theme-dark .chat-page {
+  --chat-bg: #1f1d1a;
+  --chat-panel: #282520;
+  --chat-sidebar: #23211d;
+  --chat-sidebar-muted: #302b25;
+  --chat-surface: #2d2923;
+  --chat-surface-strong: #3a2f25;
+  --chat-border: #3a332b;
+  --chat-border-strong: #514437;
+  --chat-text: #ece5dc;
+  --chat-text-strong: #fff8ee;
+  --chat-text-muted: #b7aa9b;
+  --chat-text-soft: #82776b;
+  --chat-primary: #ef8b54;
+  --chat-primary-strong: #ffb07a;
+  --chat-primary-soft: #4a2d1f;
+  --chat-primary-border: #6d442d;
+  --chat-user-bubble: #3b2d24;
+  --chat-assistant-bubble: #2b2722;
+  --chat-map-bg: #222b29;
+  --chat-map-green: #263c32;
+  --chat-map-blue: #263544;
+  --chat-map-road: #38413d;
+  --chat-map-road-soft: rgb(77 87 80 / 0.65);
+  --chat-map-transit: #5d432d;
+  --chat-map-legend: rgb(40 37 32 / 0.84);
+  --chat-map-pin-border: #27231f;
+  --chat-tier-near: #63c184;
+  --chat-tier-mid: #ef9a52;
+  --chat-tier-far: #91877c;
+  --chat-primary-ring: rgb(239 139 84 / 0.26);
+  --chat-success-bg: #173624;
+  --chat-success-text: #7ed99c;
+  --chat-info-bg: #1d3148;
+  --chat-info-text: #8fb9ec;
+  --chat-purple-bg: #302747;
+  --chat-purple-text: #baa4ee;
+  --chat-warning-bg: #4a3519;
+  --chat-warning-text: #f3c66d;
+  --chat-warning-border: #7a5523;
+  --chat-trace-bg: #141614;
+  --chat-trace-border: #302b25;
+  --chat-trace-scrollbar: #6b5948;
+  --chat-document-bg: #24211d;
+  --chat-mascot-bg: #33271f;
+  --chat-shadow-soft: 0 3px 14px rgb(0 0 0 / 0.24);
+  --chat-shadow-primary: 0 2px 12px rgb(239 139 84 / 0.24);
+  --chat-map-pin-shadow: 0 6px 14px rgb(0 0 0 / 0.38);
+  --chat-mascot-shadow-lg: inset 0 0 0 2px var(--chat-primary-border),
+    0 24px 60px rgb(0 0 0 / 0.34);
+  --chat-mascot-shadow-md: inset 0 0 0 2px var(--chat-primary-border),
+    0 10px 26px rgb(0 0 0 / 0.28);
 }
 
 .chat-page :focus-visible {

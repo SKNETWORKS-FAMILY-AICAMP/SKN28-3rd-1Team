@@ -62,7 +62,7 @@ export function InstitutionMap({
           >
             <span
               className={cn(
-                "chat-map-pin flex items-center justify-center rounded-full border-2 border-white text-base font-bold text-white shadow-[var(--chat-map-pin-shadow)]",
+                "chat-map-pin flex items-center justify-center rounded-full border-2 border-[var(--chat-map-pin-border)] text-base font-bold text-white shadow-[var(--chat-map-pin-shadow)]",
                 isSelected
                   ? "size-10 ring-[5px] ring-[var(--chat-primary-ring)]"
                   : "size-8"
