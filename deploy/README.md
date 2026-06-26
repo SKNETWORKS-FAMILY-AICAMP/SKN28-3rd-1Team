@@ -1,6 +1,6 @@
 # Deploy
 
-통합 실행 Makefile, Docker Compose 설정, AWS 배포 준비 파일을 관리합니다. 현재 기본 개발 흐름은 frontend와 backend를 로컬에서 빠르게 띄우는 것이며, Docker Compose 전체 stack은 명시적으로 필요할 때 사용하는 보조 흐름입니다.
+통합 실행 Makefile, Docker Compose 설정, AWS 배포 준비 파일을 관리합니다. 현재 기본 개발 흐름은 frontend_migration과 backend를 로컬에서 빠르게 띄우는 것이며, Docker Compose 전체 stack은 명시적으로 필요할 때 사용하는 보조 흐름입니다.
 
 ## Layout
 
@@ -35,7 +35,7 @@ CodeBuild buildspec은 `deploy/aws/buildspec.yml`입니다. Docker build는 로�
 
 `deploy/docker/docker-compose.yml`은 compose 실행 시 아래 서비스를 같은 Docker network인 `deploy_default`에 올립니다.
 
-- `frontend`: Next.js 최종 프론트엔드
+- `frontend`: `frontend_migration/` 기반 현재 active Next.js 프론트엔드
 - `backend`: Main Agent Django Channels service
 - `rag-be`: RAG Backend + FastMCP Streamable HTTP endpoint
 - `rag-fe`: RAG 운영 UI
@@ -53,7 +53,7 @@ Make가 설치되어 있으면 raw `bun`, `uv`, `docker compose` 명령보다 Ma
 ```bash
 cd deploy/makefile
 make dev              # frontend + backend local dev 동시 실행
-make fe               # frontend local dev만 실행
+make fe               # frontend_migration local dev만 실행
 make be               # backend local dev만 실행
 
 make compose-up       # Docker Compose 전체 현재 scope 서비스 시작
@@ -72,7 +72,7 @@ make compose-clean    # 중지 + volume 제거
 
 ```bash
 cd deploy/makefile
-make fe   # frontend/Makefile dev
+make fe   # frontend_migration/Makefile dev
 make be   # backend/Makefile dev
 make dev  # fe + be 병렬 실행
 ```
@@ -81,7 +81,7 @@ make dev  # fe + be 병렬 실행
 
 | service | URL |
 | --- | --- |
-| Frontend | `http://127.0.0.1:3000` |
+| Frontend | `http://127.0.0.1:3005` |
 | Backend | `http://127.0.0.1:8000` |
 
 포트를 바꿔야 하면 통합 Makefile 변수로 지정합니다.

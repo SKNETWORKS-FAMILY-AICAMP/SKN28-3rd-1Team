@@ -287,10 +287,6 @@ SKN28-3rd-1Team/
 │   ├── src/page/mocks/      # full-size workspace scene fixture
 │   ├── src/ui/components/   # chat sidebar, workspace surface, mascot UI
 │   └── public/              # mascot sprite, static assets
-├── frontend/                # 기존 Next.js frontend. 비교·참고용으로 유지
-│   ├── app/                 # legacy App Router pages
-│   ├── features/chat/       # legacy chat feature 단위
-│   └── public/              # legacy static assets
 ├── docs/                    # 회의록, 온보딩, 개발 문서
 ├── presentation/            # 발표 스크립트, PPT/PDF, 평가 데이터 산출물
 │   ├── ppt/                 # 발표 자료, 스크립트, Memgraph Lab 시연 캡처
@@ -312,7 +308,6 @@ SKN28-3rd-1Team/
 | 문서 | 설명 |
 | --- | --- |
 | `frontend_migration/README.md` | 현재 active Next.js `/chat`, `/api/chat`, workspace, 목업, env 안내 |
-| `frontend/README.md` | 기존 Next.js 상담 화면. 비교·참고용 |
 | `backend/README.md` | Backend Agent 구조, `/chat/stream` SSE API, MCP 연결 위치 |
 | `rag/README.md` | RAG 서브시스템 전체 구조 |
 | `rag/be/README.md` | RAG Backend API, MCP endpoint, 환경 변수 |
@@ -338,7 +333,7 @@ SKN28-3rd-1Team/
 
 ### 1) Frontend + Backend local dev 실행
 
-현재 active 상담 UI는 `frontend_migration/`의 `/chat`입니다. 통합 Makefile의 `make dev`는 기존 `frontend/`와 backend를 함께 띄우는 경로이고, migration 화면을 볼 때는 `frontend_migration`을 별도로 실행합니다.
+현재 active 상담 UI는 `frontend_migration/`의 `/chat`입니다. 통합 Makefile의 `make dev`는 `frontend_migration/`과 backend를 함께 띄웁니다.
 
 ```bash
 cd deploy/makefile
@@ -348,7 +343,7 @@ make dev
 기본 접속 정보:
 
 ```text
-Frontend:    http://127.0.0.1:3000
+Frontend:    http://127.0.0.1:3005
 Backend API: http://127.0.0.1:8000
 ```
 
@@ -367,11 +362,11 @@ Chat:               http://127.0.0.1:3005/chat
 Mocks:              http://127.0.0.1:3005/mocks
 ```
 
-기존 frontend/backend 개별 실행이 필요하면 아래 target을 사용합니다.
+frontend/backend 개별 실행이 필요하면 아래 target을 사용합니다.
 
 ```bash
 cd deploy/makefile
-make fe   # 기존 frontend local dev
+make fe   # frontend_migration local dev
 make be   # backend local dev
 ```
 
@@ -576,7 +571,6 @@ make check
 | --- | --- | --- |
 | Shared | `.env.schema` | `APP_ENV` |
 | Frontend Migration | `frontend_migration/.env.schema` | BFF backend URL, Naver map public key, demo access, TTS BFF key |
-| Frontend | `frontend/.env.schema` | 기존 frontend Backend API base URL |
 | Backend | `backend/.env.schema` | LLM provider API key, CORS, RAG MCP URL |
 | External MCP | `external_mcp/.env.schema` | Naver/Firecrawl/TMAP API key, External MCP endpoint |
 | Deploy | `deploy/docker/.env.schema` | 통합 Docker Compose host 포트, public build args |

@@ -99,16 +99,18 @@ services:
 
   frontend:
     build:
-      context: ../../frontend
+      context: ../../frontend_migration
       dockerfile: Dockerfile
-    image: skn28-frontend:dev
-    container_name: skn28-frontend
+    image: skn28-frontend-migration:dev
+    container_name: skn28-frontend-migration
     restart: unless-stopped
     environment:
       NODE_ENV: "production"
       NEXT_TELEMETRY_DISABLED: "1"
       HOSTNAME: "0.0.0.0"
       PORT: "3000"
+      BFF_BACKEND_BASE_URL: "http://backend:8000"
+      BFF_BACKEND_CHAT_STREAM_PATH: "/chat/stream"
     ports:
       - "${FRONTEND_PUBLISH_HOST:-127.0.0.1}:${FRONTEND_HOST_PORT:-3000}:3000"
     depends_on:

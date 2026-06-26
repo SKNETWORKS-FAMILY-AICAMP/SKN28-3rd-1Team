@@ -9,7 +9,7 @@ LEGACY_COMPOSE := docker compose --profile legacy --env-file $(COMPOSE_ENV) -f $
 VARLOCK ?= varlock
 VARLOCK_SCHEMA_PATHS := $(DOCKER_DIR) $(ROOT_DIR)/backend $(ROOT_DIR)/rag/be $(ROOT_DIR)/rag/fe
 FRONTEND_HOST ?= 127.0.0.1
-FRONTEND_PORT ?= 3000
+FRONTEND_PORT ?= 3005
 BACKEND_HOST ?= 127.0.0.1
 BACKEND_PORT ?= 8000
 
@@ -20,7 +20,7 @@ BACKEND_PORT ?= 8000
 help:
 	@printf "%s\n" "local dev targets:"
 	@printf "%s\n" "  make dev              Start frontend + backend locally"
-	@printf "%s\n" "  make fe               Start frontend local dev server"
+	@printf "%s\n" "  make fe               Start frontend_migration local dev server"
 	@printf "%s\n" "  make be               Start backend local dev server"
 	@printf "%s\n" ""
 	@printf "%s\n" "compose targets:"
@@ -35,7 +35,7 @@ help:
 	@printf "%s\n" "  make env-check        Validate deploy/service env with Varlock"
 
 fe:
-	$(MAKE) -C $(ROOT_DIR)/frontend dev HOST=$(FRONTEND_HOST) PORT=$(FRONTEND_PORT)
+	$(MAKE) -C $(ROOT_DIR)/frontend_migration dev HOST=$(FRONTEND_HOST) PORT=$(FRONTEND_PORT)
 
 be:
 	$(MAKE) -C $(ROOT_DIR)/backend dev HOST=$(BACKEND_HOST) PORT=$(BACKEND_PORT)

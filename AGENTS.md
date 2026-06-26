@@ -6,8 +6,7 @@ This repository is a monorepo for the bootcamp project. The current active scope
 
 ```txt
 bootcamp-project/
-├── frontend/      # 실제 프론트엔드
-├── frontend_migration/ # Next.js App Router 기반 프론트엔드 마이그레이션
+├── frontend_migration/ # 현재 active Next.js App Router 프론트엔드
 ├── backend/       # 메인 백엔드 서비스
 ├── rag/           # RAG / 문서 파싱 / MCP 관련 작업
 │   └── related/   # 이전 RAG 관련 자료와 보조 프로젝트
