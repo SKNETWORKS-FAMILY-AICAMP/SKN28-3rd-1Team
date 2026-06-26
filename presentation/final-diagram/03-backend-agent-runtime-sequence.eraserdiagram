@@ -1,0 +1,48 @@
+sequence-diagram
+
+User [icon: user, color: blue] > ChatPage [icon: monitor, color: blue]: Submit message
+ChatPage > NextBff [icon: server, color: purple]: POST /api/chat with UIMessage and workspace snapshot
+NextBff > DjangoSse [icon: radio, color: purple]: POST /chat/stream
+activate DjangoSse
+DjangoSse > ChatGraphRunner [icon: workflow, color: purple]: run_stream(message, session_id, metadata)
+ChatGraphRunner > ThreadContext [icon: history, color: gray]: activate session
+ChatGraphRunner > LangGraph [icon: route, color: purple]: astream ChatTurnState
+activate LangGraph
+LangGraph > MainAgent [icon: brain, color: violet]: invoke main_agent
+activate MainAgent
+MainAgent > MainLlm [icon: brain-circuit, color: yellow]: generate answer
+alt [label: facts needed] {
+  MainAgent > ToolRegistry [icon: plug, color: green]: get main_agent tools
+  ToolRegistry > RagOrExternalMcp [icon: plug-zap, color: green]: RAG or external tool call
+  RagOrExternalMcp --> ToolRegistry: tool result
+  ToolRegistry --> MainAgent: evidence or warning
+}
+MainAgent --> LangGraph: AI message stream
+deactivate MainAgent
+LangGraph > MainResult [icon: file-output, color: violet]: extract final_response
+MainResult --> DjangoSse: agent.text.final
+LangGraph > ScreenControlAgent [icon: panel-top, color: violet]: final_response plus frontend state
+activate ScreenControlAgent
+ScreenControlAgent > WorkspaceTools [icon: panel-right, color: teal]: call one workspace surface tool
+WorkspaceTools --> DjangoSse: workspace command custom event
+deactivate ScreenControlAgent
+LangGraph > SpeechTextAgent [icon: message-circle, color: violet]: convert answer for TTS
+activate SpeechTextAgent
+SpeechTextAgent > SanitizeLlm [icon: brain-circuit, color: yellow]: concise Korean speech text
+SanitizeLlm --> SpeechTextAgent: final_response_script
+SpeechTextAgent --> DjangoSse: speech_text.final
+deactivate SpeechTextAgent
+LangGraph > TtsNode [icon: volume-2, color: orange]: stream_speech(script)
+activate TtsNode
+TtsNode > ElevenLabs [icon: audio-lines, color: yellow]: TTS streaming request
+ElevenLabs --> TtsNode: audio chunks
+TtsNode --> DjangoSse: tts.audio.chunk and tts.completed
+deactivate TtsNode
+deactivate LangGraph
+DjangoSse --> NextBff: SSE event stream
+deactivate DjangoSse
+NextBff > AiSdkStream [icon: radio-receiver, color: "#2563eb"]: convert to UIMessage parts
+AiSdkStream --> ChatPage: text, trace, audio, workspace command
+ChatPage > WorkspaceReducer [icon: panel-right, color: "#2563eb"]: validate and apply command
+WorkspaceReducer --> ChatPage: render one active surface
+ChatPage --> User: answer, audio, map or checklist surface
