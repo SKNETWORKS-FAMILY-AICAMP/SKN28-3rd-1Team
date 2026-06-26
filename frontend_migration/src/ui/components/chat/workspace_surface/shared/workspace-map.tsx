@@ -407,7 +407,7 @@ function WorkspaceMockMapCanvas({
 
 function WorkspaceMapLegend({ items }: { items: WorkspaceMapLegendItem[] }) {
   return (
-    <div className="absolute bottom-3 left-3 z-20 flex flex-wrap gap-4 rounded-[10px] bg-white/85 px-3 py-2 text-[15px] font-semibold text-[var(--chat-text-muted)] backdrop-blur">
+    <div className="absolute bottom-3 left-3 z-20 flex flex-wrap gap-4 rounded-[10px] bg-[var(--chat-map-legend)] px-3 py-2 text-[15px] font-semibold text-[var(--chat-text-muted)] backdrop-blur">
       {items.map((item) => (
         <span key={item.id} className="flex items-center gap-1.5">
           <span className="chat-map-pin size-2.5 rounded-full" data-tier={item.tier} />

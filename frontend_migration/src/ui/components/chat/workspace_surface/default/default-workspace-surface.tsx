@@ -15,7 +15,7 @@ export function DefaultWorkspaceSurface({
 }: DefaultWorkspaceSurfaceProps) {
   const mascotLabel = voiceInputActive ? "음성 입력 중지" : "음성 입력 시작";
   const mascotFrameClassName = cn(
-    "chat-workspace-mascot-float flex size-[min(440px,52vw,46vh)] items-center justify-center overflow-hidden rounded-full bg-[#fff8ee] shadow-[var(--chat-mascot-shadow-lg)]",
+    "chat-workspace-mascot-float flex size-[min(440px,52vw,46vh)] items-center justify-center overflow-hidden rounded-full bg-[var(--chat-mascot-bg)] shadow-[var(--chat-mascot-shadow-lg)]",
     onVoiceClick &&
       "cursor-pointer transition hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--chat-primary-ring)]"
   );
