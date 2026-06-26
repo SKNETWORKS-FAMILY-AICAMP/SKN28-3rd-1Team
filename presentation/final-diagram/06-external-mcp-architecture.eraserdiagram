@@ -1,0 +1,67 @@
+cloud-architecture-diagram
+
+direction down
+colorMode pastel
+styleMode plain
+typeface clean
+
+BackendAgent [label: "Backend main_agent tool registry", icon: brain, color: purple]
+
+McpRuntime [label: "External MCP service runtime", color: green] {
+  UvicornApp [label: "uvicorn ASGI app", icon: server, color: green]
+  FastMcpServer [label: "FastMCP Streamable HTTP", icon: plug, color: green]
+  ToolRegistration [label: "registered MCP tools", icon: list-checks, color: green]
+  Settings [label: "pydantic settings and Infisical env", icon: key-round, color: gray]
+  StructuredLogs [label: "masked structured logs", icon: scroll-text, color: gray]
+}
+
+McpTools [label: "MCP tool facade", color: "#0f766e"] {
+  NaverSearchTool [label: "naver.search", icon: search, color: "#0f766e"]
+  WebSearchTool [label: "web.search", icon: globe, color: "#0f766e"]
+  TmapPoiTool [label: "tmap.search_poi", icon: map-pin, color: "#0f766e"]
+  TmapRouteTool [label: "tmap.route_pedestrian", icon: route, color: "#0f766e"]
+}
+
+ProviderAdapters [label: "Provider adapters and normalization", color: "#2563eb"] {
+  NaverAdapter [label: "Naver result normalizer", icon: file-json, color: "#2563eb"]
+  FirecrawlAdapter [label: "Firecrawl result normalizer", icon: file-json, color: "#2563eb"]
+  TmapAdapter [label: "TMAP POI and route normalizer", icon: file-json, color: "#2563eb"]
+  SafetyHelpers [label: "limit bounds, secret read, warning results", icon: shield-check, color: "#2563eb"]
+}
+
+ExternalProviders [label: "External APIs", color: orange] {
+  NaverApi [label: "Naver Search API", icon: search, color: orange]
+  FirecrawlApi [label: "Firecrawl Search API", icon: globe, color: orange]
+  TmapApi [label: "TMAP POI and route APIs", icon: map, color: orange]
+  NaverMapLinks [label: "Naver Map web links", icon: map-pinned, color: orange]
+}
+
+BackendAgent > FastMcpServer: streamable HTTP MCP
+UvicornApp > FastMcpServer: create ASGI app
+FastMcpServer > ToolRegistration: expose tools
+Settings > FastMcpServer: host, port, path
+ToolRegistration > NaverSearchTool: register
+ToolRegistration > WebSearchTool: register
+ToolRegistration > TmapPoiTool: register
+ToolRegistration > TmapRouteTool: register
+NaverSearchTool > NaverAdapter: search_naver
+WebSearchTool > FirecrawlAdapter: search_firecrawl
+TmapPoiTool > TmapAdapter: search_tmap_poi
+TmapRouteTool > TmapAdapter: route_tmap_pedestrian
+NaverAdapter > SafetyHelpers: credentials, limit, failure shape
+FirecrawlAdapter > SafetyHelpers: credentials, filters, failure shape
+TmapAdapter > SafetyHelpers: credentials, limit, failure shape
+NaverAdapter > NaverApi: HTTP GET
+FirecrawlAdapter > FirecrawlApi: HTTP POST
+TmapAdapter > TmapApi: HTTP GET or POST
+TmapAdapter > NaverMapLinks: place and route URLs
+ToolRegistration > StructuredLogs: invocation summary
+
+legend [position: bottom-left] {
+  [color: purple, label: "Backend caller"]
+  [color: green, label: "MCP runtime"]
+  [color: "#0f766e", label: "Tool facade"]
+  [color: "#2563eb", label: "Adapter and normalization"]
+  [color: orange, label: "External provider"]
+  [color: gray, label: "Config and observability"]
+}

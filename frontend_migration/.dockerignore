@@ -1,0 +1,13 @@
+.next
+node_modules
+.env
+.env.*
+!.env.schema
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+bun-debug.log*
+coverage
+dist
+build
+.DS_Store

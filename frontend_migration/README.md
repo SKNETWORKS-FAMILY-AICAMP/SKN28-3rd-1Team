@@ -56,5 +56,8 @@ make lint
 | `BFF_BACKEND_BASE_URL` | server only | `http://127.0.0.1:8000` | BFF가 호출할 backend base URL |
 | `BFF_BACKEND_CHAT_STREAM_PATH` | server only | `/chat/stream` | BFF가 호출할 backend chat stream path |
 | `BFF_ELEVENLABS_API_KEY` | server only, sensitive | 빈 값 | BFF 소유 음성 기능에서 사용할 ElevenLabs API key 주입 지점 |
+| `DEMO_ACCESS_KEY` | server only, sensitive | 빈 값 | 설정되면 `/demo-access` 비밀번호 통과 후 데모 화면과 API를 사용할 수 있음 |
+| `DEMO_ACCESS_MAX_FAILURES` | server only | `5` | 비밀번호 임시 잠금 전 실패 허용 횟수 |
+| `DEMO_ACCESS_LOCKOUT_SECONDS` | server only | `600` | 비밀번호 실패 잠금 시간 |
 
 로컬 값은 `frontend_migration/.env`에 두며 git에 올리지 않습니다.

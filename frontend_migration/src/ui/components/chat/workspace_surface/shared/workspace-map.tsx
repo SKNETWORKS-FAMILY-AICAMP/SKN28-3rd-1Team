@@ -31,11 +31,17 @@ type WorkspaceMapFrameProps = {
     points?: WorkspaceMapPoint[];
     zoom?: number;
   };
+  onPointSelect?: (id: string) => void;
 };
 
 type NaverLatLng = {
   lat: () => number;
   lng: () => number;
+};
+
+type NaverPoint = {
+  x: number;
+  y: number;
 };
 
 type NaverFitBoundsOptions = {
@@ -61,6 +67,11 @@ type NaverOverlay = {
 
 type NaverMapsNamespace = {
   Event: {
+    addListener?: (
+      target: NaverMap | NaverOverlay,
+      eventName: string,
+      listener: () => void
+    ) => NaverEventListener;
     removeListener?: (listener: NaverEventListener) => void;
   };
   LatLng: new (lat: number, lng: number) => NaverLatLng;
@@ -73,10 +84,15 @@ type NaverMapsNamespace = {
     }
   ) => NaverMap;
   Marker: new (options: {
+    icon?: {
+      anchor?: NaverPoint;
+      content: string;
+    };
     map: NaverMap;
     position: NaverLatLng;
     title?: string;
   }) => NaverOverlay;
+  Point: new (x: number, y: number) => NaverPoint;
 };
 
 type NaverEventListener = {
@@ -112,6 +128,7 @@ export function WorkspaceMapFrame({
   landmarks = [],
   legend,
   naverMap,
+  onPointSelect,
 }: WorkspaceMapFrameProps) {
   const [naverUnavailable, setNaverUnavailable] = useState(
     naverMapsRuntimeUnavailable
@@ -132,7 +149,7 @@ export function WorkspaceMapFrame({
   return (
     <div
       className={cn(
-        "relative min-h-[320px] flex-1 overflow-hidden rounded-[18px] bg-[var(--chat-map-bg)] lg:min-h-0",
+        "relative min-h-[320px] flex-1 overflow-hidden rounded-[18px] bg-[var(--chat-map-bg)]",
         className
       )}
     >
@@ -142,6 +159,7 @@ export function WorkspaceMapFrame({
           points={naverPoints}
           zoom={naverMap?.zoom}
           onUnavailable={handleNaverUnavailable}
+          onPointSelect={onPointSelect}
         />
       ) : (
         <WorkspaceMockMapCanvas landmarks={landmarks} />
@@ -178,15 +196,19 @@ function WorkspaceNaverMapCanvas({
   points,
   zoom,
   onUnavailable,
+  onPointSelect,
 }: {
   center?: WorkspaceCoordinate;
   points: WorkspaceMapPoint[];
   zoom?: number;
   onUnavailable: () => void;
+  onPointSelect?: (id: string) => void;
 }) {
   const canvasRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<NaverMap | null>(null);
   const overlaysRef = useRef<NaverOverlay[]>([]);
+  const overlayListenersRef = useRef<NaverEventListener[]>([]);
+  const markerDomListenersRef = useRef<Array<() => void>>([]);
   const mapKey = frontendSettings.naverMapClientId;
   const [scriptReady, setScriptReady] = useState(hasLoadedNaverMaps);
 
@@ -236,9 +258,11 @@ function WorkspaceNaverMapCanvas({
         Boolean(point.coordinate)
     );
     const hasExplicitCenter = Boolean(center);
-    const resolvedCenter = resolveMapCenter(center, mapPoints);
+    const selectedPoint = mapPoints.find((point) => point.selected);
+    const resolvedCenter =
+      selectedPoint?.coordinate ?? resolveMapCenter(center, mapPoints);
     const resolvedZoom = resolveLocalMapZoom(zoom, {
-      focused: hasExplicitCenter || mapPoints.length <= 1,
+      focused: Boolean(selectedPoint) || hasExplicitCenter || mapPoints.length <= 1,
     });
 
     if (!resolvedCenter) {
@@ -261,19 +285,62 @@ function WorkspaceNaverMapCanvas({
         map,
         naver,
         points: mapPoints,
-        shouldFitBounds: !hasExplicitCenter,
+        shouldFitBounds: !hasExplicitCenter && !selectedPoint,
         zoom: resolvedZoom,
       });
 
       overlaysRef.current.forEach((overlay) => overlay.setMap(null));
-      overlaysRef.current = mapPoints.map(
-        (point) =>
-          new naver.Marker({
-            map,
-            position: new naver.LatLng(point.coordinate.lat, point.coordinate.lng),
-            title: point.label,
-          })
-      );
+      overlayListenersRef.current.forEach(removeNaverEventListener);
+      markerDomListenersRef.current.forEach((removeListener) => removeListener());
+      overlayListenersRef.current = [];
+      markerDomListenersRef.current = [];
+      overlaysRef.current = mapPoints.map((point) => {
+        const marker = new naver.Marker({
+          icon: {
+            anchor: new naver.Point(
+              point.selected ? 20 : 16,
+              point.selected ? 40 : 32
+            ),
+            content: createNaverMarkerContent(point),
+          },
+          map,
+          position: new naver.LatLng(point.coordinate.lat, point.coordinate.lng),
+          title: point.label,
+        });
+        const listener = naver.Event.addListener?.(marker, "click", () => {
+          onPointSelect?.(point.id);
+        });
+
+        if (listener) overlayListenersRef.current.push(listener);
+        return marker;
+      });
+
+      const markerDomListenerFrame = window.requestAnimationFrame(() => {
+        if (!canvasRef.current || !onPointSelect) return;
+
+        const markerElements = Array.from(
+          canvasRef.current.querySelectorAll<HTMLElement>(".chat-naver-map-pin")
+        );
+
+        markerElements.forEach((markerElement) => {
+          const point = mapPoints.find(
+            (mapPoint) => mapPoint.id === markerElement.dataset.pointId
+          );
+
+          if (!point) return;
+
+          const handleMarkerClick = (event: MouseEvent) => {
+            event.preventDefault();
+            event.stopPropagation();
+            onPointSelect(point.id);
+          };
+
+          markerElement.addEventListener("click", handleMarkerClick);
+          markerDomListenersRef.current.push(() => {
+            markerElement.removeEventListener("click", handleMarkerClick);
+          });
+        });
+      });
 
       const resizeFrame = window.requestAnimationFrame(() => {
         applyNaverMapViewport({
@@ -281,20 +348,25 @@ function WorkspaceNaverMapCanvas({
           map,
           naver,
           points: mapPoints,
-          shouldFitBounds: !hasExplicitCenter,
+          shouldFitBounds: !hasExplicitCenter && !selectedPoint,
           zoom: resolvedZoom,
         });
       });
 
       return () => {
+        window.cancelAnimationFrame(markerDomListenerFrame);
         window.cancelAnimationFrame(resizeFrame);
+        markerDomListenersRef.current.forEach((removeListener) => removeListener());
+        markerDomListenersRef.current = [];
+        overlayListenersRef.current.forEach(removeNaverEventListener);
+        overlayListenersRef.current = [];
         overlaysRef.current.forEach((overlay) => overlay.setMap(null));
         overlaysRef.current = [];
       };
     } catch {
       onUnavailable();
     }
-  }, [center, onUnavailable, points, scriptReady, zoom]);
+  }, [center, onPointSelect, onUnavailable, points, scriptReady, zoom]);
 
   return (
     <div className="absolute inset-0 z-0 overflow-hidden bg-[var(--chat-map-bg)]">
@@ -378,6 +450,46 @@ function loadNaverMapsScript(mapKey: string) {
   });
 
   return naverMapsScriptPromise;
+}
+
+function createNaverMarkerContent(point: WorkspaceMapPoint) {
+  const selectedAttribute = point.selected ? "true" : "false";
+  const tierAttribute = typeof point.tier === "number" ? String(point.tier) : "0";
+  const label = escapeHtml(point.markerLabel ?? point.label);
+
+  return [
+    `<button class="chat-map-pin chat-naver-map-pin"`,
+    `data-selected="${selectedAttribute}"`,
+    `data-tier="${tierAttribute}"`,
+    `data-point-id="${escapeHtml(point.id)}"`,
+    `type="button"`,
+    `aria-label="${escapeHtml(point.label)}">`,
+    label,
+    "</button>",
+  ].join(" ");
+}
+
+function removeNaverEventListener(listener: NaverEventListener) {
+  listener.remove?.();
+}
+
+function escapeHtml(value: string) {
+  return value.replace(/[&<>"']/g, (character) => {
+    switch (character) {
+      case "&":
+        return "&amp;";
+      case "<":
+        return "&lt;";
+      case ">":
+        return "&gt;";
+      case '"':
+        return "&quot;";
+      case "'":
+        return "&#39;";
+      default:
+        return character;
+    }
+  });
 }
 
 function hasLoadedNaverMaps() {

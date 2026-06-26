@@ -1,0 +1,118 @@
+cloud-architecture-diagram
+
+direction right
+colorMode pastel
+styleMode plain
+typeface clean
+
+EndUser [label: "End user", icon: user, color: blue]
+
+ActiveFrontend [label: "Active frontend: frontend_migration", color: blue] {
+  ChatPage [label: "Next.js /chat", icon: monitor, color: blue]
+  ChatSidebar [label: "Sidebar chat and tool badge", icon: message-square, color: blue]
+  Workspace [label: "Workspace surfaces", icon: layout-dashboard, color: "#2563eb"]
+  BrowserVoice [label: "Browser dictation and ElevenLabs playback", icon: mic, color: "#2563eb"]
+  Mocks [label: "Active workspace mock scenes", icon: panels-top-left, color: "#2563eb"]
+}
+
+FrontendBffLayer [label: "Frontend BFF layer", color: "#2563eb"] {
+  BffRoute [label: "Next.js route /api/chat", icon: server, color: "#2563eb"]
+  BackendStreamAdapter [label: "Backend SSE adapter", icon: radio, color: "#2563eb"]
+  WorkspaceCommandValidator [label: "Workspace command validator", icon: shield-check, color: "#2563eb"]
+  AudioDataParts [label: "AI SDK audio data parts", icon: audio-lines, color: "#2563eb"]
+}
+
+BackendRuntime [label: "Backend agent orchestrator", color: purple] {
+  DjangoSse [label: "Django ASGI /chat/stream SSE", icon: radio, color: purple]
+  ChatGraph [label: "LangGraph chat turn graph", icon: workflow, color: purple]
+  MainAgent [label: "Main Agent", icon: brain, color: violet]
+  ScreenAgent [label: "Screen Control Agent", icon: panel-top, color: violet]
+  SpeechAgent [label: "Speech Text Agent", icon: message-circle, color: violet]
+  TtsNode [label: "Speech synthesis node", icon: volume-2, color: orange]
+  ThreadMemory [label: "Thread context and checkpointer", icon: history, color: gray]
+}
+
+ToolRegistryLayer [label: "Backend tool registry and profiles", color: green] {
+  ToolRegistry [label: "Tool registry get_tools", icon: plug, color: green]
+  MainToolProfile [label: "main_agent tool profile", icon: file-json, color: green]
+  ScreenToolProfile [label: "screen_control_agent tool profile", icon: file-json, color: green]
+}
+
+ToolLayer [label: "MCP and local tool layer", color: green] {
+  RagMcpTools [label: "RAG MCP read-only tools", icon: plug-zap, color: green]
+  ExternalMcpTools [label: "External MCP tools", icon: globe, color: green]
+  WorkspaceTools [label: "Local workspace command tools", icon: panel-right, color: teal]
+}
+
+RagSubsystem [label: "GraphRAG subsystem", color: teal] {
+  RagBackend [label: "RAG Backend API and MCP endpoint", icon: server-cog, color: teal]
+  RagFrontend [label: "RAG operations UI", icon: layout-dashboard, color: teal]
+  IngestRuntime [label: "Document ingest and graph build runtime", icon: workflow, color: teal]
+}
+
+GraphDataLayer [label: "Graph data layer", color: orange] {
+  Memgraph [label: "Memgraph knowledge graph", icon: database, color: orange]
+  Redis [label: "Redis task/runtime state", icon: database, color: orange]
+  MemgraphLab [label: "Memgraph Lab", icon: chart-network, color: orange]
+}
+
+ExternalProviders [label: "External providers", color: yellow] {
+  LlmProviders [label: "OpenRouter or Cerebras LLM", icon: brain-circuit, color: yellow]
+  ElevenLabs [label: "ElevenLabs TTS", icon: audio-lines, color: yellow]
+  NaverFirecrawlTmap [label: "Naver, Firecrawl, TMAP APIs", icon: map, color: yellow]
+}
+
+EndUser > ChatPage: browser
+ChatPage > ChatSidebar: render messages
+ChatPage > Workspace: render current surface
+ChatPage > BrowserVoice: dictation and playback UI
+ChatPage > Mocks: verify same surface state
+ChatPage > BffRoute: UIMessage and state snapshot
+BffRoute > BackendStreamAdapter: open backend stream
+BackendStreamAdapter > DjangoSse: POST /chat/stream SSE
+DjangoSse > ChatGraph: run_stream
+ChatGraph > ThreadMemory: activate session
+ChatGraph > MainAgent: first agent node
+MainAgent > ToolRegistry: get_tools main_agent
+ToolRegistry > MainToolProfile: read profile
+MainToolProfile > RagMcpTools: enable RAG MCP
+MainToolProfile > ExternalMcpTools: enable external MCP
+MainAgent > LlmProviders: chat completion
+RagMcpTools > RagBackend: MCP HTTP
+RagBackend > Memgraph: graph read
+ExternalMcpTools > NaverFirecrawlTmap: external API lookup
+ChatGraph > ScreenAgent: after final response
+ScreenAgent > ToolRegistry: get_tools screen_control_agent
+ToolRegistry > ScreenToolProfile: read profile
+ScreenToolProfile > WorkspaceTools: enable workspace tools
+ScreenAgent > WorkspaceTools: emit one workspace command
+WorkspaceTools > DjangoSse: custom stream event
+ChatGraph > SpeechAgent: TTS script branch
+SpeechAgent > LlmProviders: concise speech text
+SpeechAgent > TtsNode: final_response_script
+TtsNode > ElevenLabs: TTS request
+ElevenLabs > TtsNode: audio stream
+TtsNode > DjangoSse: tts.audio.chunk
+DjangoSse > BackendStreamAdapter: backend SSE events
+BackendStreamAdapter > ChatSidebar: assistant text and trace data
+BackendStreamAdapter > WorkspaceCommandValidator: workspace command data part
+WorkspaceCommandValidator > Workspace: apply typed command
+BackendStreamAdapter > AudioDataParts: map tts audio chunks
+AudioDataParts > BrowserVoice: provider backed playback
+RagFrontend > RagBackend: admin API
+RagBackend > IngestRuntime: ingest job
+RagBackend > Redis: task runtime state
+IngestRuntime > Redis: job state
+IngestRuntime > Memgraph: graph writes
+MemgraphLab > Memgraph: direct graph inspection
+
+legend [position: bottom-left] {
+  [color: blue, label: "User-facing UI"]
+  [color: "#2563eb", label: "Active frontend BFF and surfaces"]
+  [color: purple, label: "Backend runtime"]
+  [color: green, label: "Tool boundary"]
+  [color: teal, label: "RAG subsystem"]
+  [color: orange, label: "Graph data or TTS node"]
+  [color: yellow, label: "External provider"]
+  [color: gray, label: "Runtime state"]
+}

@@ -73,6 +73,9 @@ export function useBrowserSpeechDictation({
   const [transcript, setTranscript] = useState<DictationTranscript>();
   const [errorMessage, setErrorMessage] = useState<string>();
   const recognitionRef = useRef<BrowserSpeechRecognition | null>(null);
+  const ignoredRecognitionsRef = useRef(
+    new WeakSet<BrowserSpeechRecognition>()
+  );
   const statusRef = useRef<DictationStatus>("idle");
   const startedAtRef = useRef<number | null>(null);
   const transcriptTextRef = useRef("");
@@ -87,16 +90,29 @@ export function useBrowserSpeechDictation({
   }, [onTranscriptChange]);
 
   useEffect(() => {
+    const ignoredRecognitions = ignoredRecognitionsRef.current;
+
     return () => {
-      recognitionRef.current?.abort();
+      const recognition = recognitionRef.current;
+
+      if (recognition) {
+        ignoredRecognitions.add(recognition);
+        recognition.abort();
+      }
+
       recognitionRef.current = null;
     };
   }, []);
 
   const reset = useCallback(() => {
     const nextStatus = statusRef.current === "unsupported" ? "unsupported" : "idle";
+    const recognition = recognitionRef.current;
 
-    recognitionRef.current?.abort();
+    if (recognition) {
+      ignoredRecognitionsRef.current.add(recognition);
+      recognition.abort();
+    }
+
     recognitionRef.current = null;
     startedAtRef.current = null;
     transcriptTextRef.current = "";
@@ -118,7 +134,13 @@ export function useBrowserSpeechDictation({
       return;
     }
 
-    recognitionRef.current?.abort();
+    const currentRecognition = recognitionRef.current;
+
+    if (currentRecognition) {
+      ignoredRecognitionsRef.current.add(currentRecognition);
+      currentRecognition.abort();
+    }
+
     transcriptTextRef.current = "";
     setTranscript(undefined);
     setErrorMessage(undefined);
@@ -155,6 +177,13 @@ export function useBrowserSpeechDictation({
       onTranscriptChangeRef.current?.(dictationTranscript);
     };
     recognition.onerror = (event) => {
+      if (
+        ignoredRecognitionsRef.current.has(recognition) ||
+        recognitionRef.current !== recognition
+      ) {
+        return;
+      }
+
       const message = getSpeechErrorMessage(event.error);
 
       recognitionRef.current = null;

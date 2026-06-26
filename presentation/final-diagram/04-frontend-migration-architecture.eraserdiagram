@@ -1,0 +1,71 @@
+cloud-architecture-diagram
+
+direction down
+colorMode pastel
+styleMode plain
+typeface clean
+
+User [label: "End user", icon: user, color: blue]
+
+Routes [label: "Next.js App Router boundary", color: "#2563eb"] {
+  HomeRoute [label: "/ landing route", icon: home, color: "#2563eb"]
+  ChatRoute [label: "/chat canonical workspace", icon: monitor, color: "#2563eb"]
+  MockRoute [label: "/mocks full-size scene viewer", icon: panels-top-left, color: "#2563eb"]
+  DemoAccessRoute [label: "/demo-access gate", icon: lock-keyhole, color: gray]
+}
+
+ChatPageRuntime [label: "Chat page runtime", color: "#2563eb"] {
+  PageController [label: "useChatPageController", icon: workflow, color: "#2563eb"]
+  ChatSession [label: "AI SDK useChat session", icon: message-square, color: "#2563eb"]
+  WorkspaceController [label: "workspace reducer controller", icon: layout-dashboard, color: "#2563eb"]
+  VoiceRuntime [label: "dictation and TTS playback hooks", icon: mic, color: "#2563eb"]
+}
+
+FrontendBff [label: "Frontend BFF server boundary", color: purple] {
+  ChatApiRoute [label: "Route handler /api/chat", icon: server, color: purple]
+  BackendStreamAdapter [label: "Backend SSE to UIMessage adapter", icon: radio, color: purple]
+  WorkspaceCommandSchema [label: "workspace command Zod schema", icon: shield-check, color: purple]
+  DemoAccessBff [label: "demo access session route", icon: key-round, color: purple]
+}
+
+UiSystem [label: "Reusable UI and workspace surfaces", color: green] {
+  ChatSidebar [label: "chat sidebar, composer, trace", icon: panel-left, color: green]
+  WorkspaceRoot [label: "ChatWorkspace root renderer", icon: layout-template, color: green]
+  WorkspaceSurfaces [label: "profile, checklist, institution, evidence surfaces", icon: panels-top-left, color: green]
+  MascotUi [label: "mascot animation state", icon: bot, color: green]
+}
+
+ExternalRuntime [label: "Runtime dependencies", color: orange] {
+  BackendSse [label: "backend /chat/stream SSE", icon: radio, color: purple]
+  NaverMaps [label: "Naver Maps browser SDK", icon: map, color: orange]
+  BrowserApis [label: "Browser SpeechRecognition and Audio", icon: volume-2, color: orange]
+}
+
+User > ChatRoute: browser
+User > HomeRoute: starts 상담
+ChatRoute > PageController: compose page state
+MockRoute > WorkspaceRoot: render fixture state
+PageController > ChatSidebar: messages and controls
+PageController > ChatSession: send message
+PageController > WorkspaceController: apply workspace command
+PageController > VoiceRuntime: voice input and playback
+ChatSession > ChatApiRoute: UIMessage plus workspace snapshot
+ChatApiRoute > BackendStreamAdapter: create merged stream
+BackendStreamAdapter > BackendSse: POST SSE
+BackendStreamAdapter > WorkspaceCommandSchema: validate data-workspaceCommand
+BackendStreamAdapter > ChatSession: UIMessage text, trace, audio parts
+WorkspaceController > WorkspaceRoot: resolved workspace state
+WorkspaceRoot > WorkspaceSurfaces: render typed surface
+WorkspaceSurfaces > NaverMaps: map markers and focus
+VoiceRuntime > BrowserApis: dictation and HTML audio
+VoiceRuntime > MascotUi: listening, thinking, speaking state
+DemoAccessRoute > DemoAccessBff: password gate
+
+legend [position: bottom-left] {
+  [color: blue, label: "User"]
+  [color: "#2563eb", label: "Frontend route and page runtime"]
+  [color: purple, label: "BFF server boundary"]
+  [color: green, label: "Reusable UI"]
+  [color: orange, label: "Browser or provider runtime"]
+  [color: gray, label: "Access control"]
+}

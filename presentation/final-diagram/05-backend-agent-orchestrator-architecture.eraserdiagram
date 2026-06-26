@@ -1,0 +1,81 @@
+cloud-architecture-diagram
+
+direction down
+colorMode pastel
+styleMode plain
+typeface clean
+
+FrontendBff [label: "Frontend BFF /api/chat", icon: server, color: "#2563eb"]
+
+DjangoTransport [label: "Django ASGI transport", color: purple] {
+  AsgiApp [label: "app:application", icon: server, color: purple]
+  UrlRouter [label: "urls.py routes", icon: route, color: purple]
+  ChatStreamEndpoint [label: "POST /chat/stream SSE", icon: radio, color: purple]
+  RequestSchema [label: "ChatStreamRequest", icon: file-json, color: purple]
+  SseEventMapper [label: "SSE event serializer", icon: list, color: purple]
+}
+
+GraphRuntime [label: "LangGraph chat turn runtime", color: "#7c3aed"] {
+  Runner [label: "ChatGraphRunner", icon: workflow, color: "#7c3aed"]
+  Checkpointer [label: "thread context checkpointer", icon: history, color: gray]
+  ChatTurnGraph [label: "ChatTurnState graph", icon: git-branch, color: "#7c3aed"]
+  MainAgent [label: "Main Agent", icon: brain, color: "#7c3aed"]
+  ScreenAgent [label: "Screen Control Agent", icon: panel-top, color: "#7c3aed"]
+  SpeechAgent [label: "Speech Text Agent", icon: message-circle, color: "#7c3aed"]
+  TtsNode [label: "Speech synthesis node", icon: volume-2, color: orange]
+}
+
+AgentFactory [label: "Agent factories and configuration", color: green] {
+  PromptTemplates [label: "Jinja2 system prompts", icon: file-text, color: green]
+  LlmFactory [label: "LLM provider factory", icon: brain-circuit, color: green]
+  ToolRegistry [label: "tool registry and cache", icon: plug, color: green]
+  ToolProfiles [label: "main and screen tool profiles", icon: file-json, color: green]
+}
+
+ToolAndProviderLayer [label: "Tool and provider layer", color: orange] {
+  RagMcp [label: "RAG MCP tools", icon: plug-zap, color: "#0f766e"]
+  ExternalMcp [label: "External MCP tools", icon: globe, color: "#0f766e"]
+  WorkspaceTools [label: "local workspace tools", icon: layout-dashboard, color: "#2563eb"]
+  LlmProviders [label: "OpenRouter or Cerebras", icon: brain, color: orange]
+  ElevenLabs [label: "ElevenLabs streaming TTS", icon: audio-lines, color: orange]
+}
+
+FrontendBff > ChatStreamEndpoint: HTTP POST SSE
+AsgiApp > UrlRouter: Django ASGI app
+UrlRouter > ChatStreamEndpoint: route request
+ChatStreamEndpoint > RequestSchema: validate body
+ChatStreamEndpoint > Runner: run_stream
+Runner > Checkpointer: activate session
+Runner > ChatTurnGraph: astream v2
+ChatTurnGraph > MainAgent: first node
+MainAgent > PromptTemplates: main prompt
+MainAgent > LlmFactory: model
+MainAgent > ToolRegistry: get_tools main_agent
+ToolRegistry > ToolProfiles: read profile JSON
+ToolProfiles > RagMcp: main profile enables
+ToolProfiles > ExternalMcp: main profile enables
+ToolProfiles > WorkspaceTools: screen profile enables
+MainAgent > LlmProviders: chat completion
+RagMcp > MainAgent: evidence tool results
+ExternalMcp > MainAgent: live external results
+ChatTurnGraph > ScreenAgent: after final response
+ScreenAgent > PromptTemplates: screen prompt
+ScreenAgent > LlmFactory: window model
+ScreenAgent > ToolRegistry: get_tools screen_control_agent
+ScreenAgent > WorkspaceTools: emit one workspace command
+ChatTurnGraph > SpeechAgent: speech branch
+SpeechAgent > LlmFactory: sanitize model
+SpeechAgent > TtsNode: final_response_script
+TtsNode > ElevenLabs: audio stream
+ChatTurnGraph > SseEventMapper: text, tool, workspace, tts events
+SseEventMapper > FrontendBff: SSE events
+
+legend [position: bottom-left] {
+  [color: "#2563eb", label: "Frontend boundary"]
+  [color: purple, label: "HTTP/SSE transport"]
+  [color: "#7c3aed", label: "Agent graph runtime"]
+  [color: green, label: "Configuration and registry"]
+  [color: "#0f766e", label: "MCP tool boundary"]
+  [color: orange, label: "External model or TTS provider"]
+  [color: gray, label: "Session state"]
+}

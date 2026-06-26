@@ -1,0 +1,48 @@
+cloud-architecture-diagram
+
+direction down
+colorMode pastel
+styleMode plain
+typeface clean
+
+EndUser [label: "End user", icon: user, color: blue]
+
+ActiveFrontend [label: "Active frontend", color: blue] {
+  ChatWorkspace [label: "Next.js chat workspace", icon: monitor, color: blue]
+  FrontendBff [label: "Next.js BFF /api/chat", icon: server, color: "#2563eb"]
+}
+
+AgentBackend [label: "Agent backend", color: purple] {
+  BackendStream [label: "Django SSE stream", icon: radio, color: purple]
+  AgentGraph [label: "LangGraph agent loop", icon: workflow, color: purple]
+  ToolRegistry [label: "Tool registry profiles", icon: plug, color: green]
+}
+
+Capabilities [label: "Runtime capabilities", color: green] {
+  WorkspaceCommands [label: "Workspace surface commands", icon: layout-dashboard, color: "#2563eb"]
+  GraphRag [label: "GraphRAG and Memgraph", icon: database, color: teal]
+  ExternalTools [label: "Naver, Firecrawl, TMAP", icon: map, color: yellow]
+  VoiceProviders [label: "LLM and ElevenLabs", icon: audio-lines, color: yellow]
+}
+
+EndUser > ChatWorkspace: asks question
+ChatWorkspace > FrontendBff: message and UI state
+FrontendBff > BackendStream: SSE bridge
+BackendStream > AgentGraph: run turn
+AgentGraph > ToolRegistry: select agent profile
+ToolRegistry > GraphRag: verified knowledge
+ToolRegistry > ExternalTools: live lookup
+ToolRegistry > WorkspaceCommands: one screen command
+AgentGraph > VoiceProviders: reasoning and TTS
+WorkspaceCommands > ChatWorkspace: update current screen
+VoiceProviders > FrontendBff: text and audio chunks
+FrontendBff > ChatWorkspace: answer, trace, audio
+
+legend [position: bottom-left] {
+  [color: blue, label: "User-facing UI"]
+  [color: "#2563eb", label: "Frontend BFF and surfaces"]
+  [color: purple, label: "Backend agent runtime"]
+  [color: green, label: "Tool routing"]
+  [color: teal, label: "Graph data"]
+  [color: yellow, label: "External provider"]
+}

@@ -58,6 +58,21 @@ const mascotAnimationClips = {
     description: "사용자가 메시지를 작성하고 있어 로디가 집중하는 상태",
     frameDurationMs: 240,
     frames: [
+      frame(0, 4),
+      frame(1, 4),
+      frame(2, 4),
+      frame(3, 4),
+      frame(4, 4),
+      frame(5, 4),
+      frame(6, 4),
+      frame(7, 4),
+    ],
+  },
+  listening: {
+    label: "듣는 중",
+    description: "음성 입력을 기다리거나 받아쓰는 상태",
+    frameDurationMs: 220,
+    frames: [
       frame(0, 6),
       frame(1, 6),
       frame(2, 6),
@@ -68,10 +83,10 @@ const mascotAnimationClips = {
       frame(7, 6),
     ],
   },
-  listening: {
-    label: "듣는 중",
-    description: "음성 입력을 기다리거나 받아쓰는 상태",
-    frameDurationMs: 220,
+  thinking: {
+    label: "생각 중",
+    description: "요청을 보낸 뒤 답변을 기다리는 상태",
+    frameDurationMs: 200,
     frames: [
       frame(0, 7),
       frame(1, 7),
@@ -81,21 +96,6 @@ const mascotAnimationClips = {
       frame(5, 7),
       frame(6, 7),
       frame(7, 7),
-    ],
-  },
-  thinking: {
-    label: "생각 중",
-    description: "요청을 보낸 뒤 답변을 기다리는 상태",
-    frameDurationMs: 200,
-    frames: [
-      frame(0, 4),
-      frame(1, 4),
-      frame(2, 4),
-      frame(3, 4),
-      frame(4, 4),
-      frame(5, 4),
-      frame(6, 4),
-      frame(7, 4),
     ],
   },
   speaking: {

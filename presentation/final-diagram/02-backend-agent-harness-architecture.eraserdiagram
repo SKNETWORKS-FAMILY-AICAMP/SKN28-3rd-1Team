@@ -1,0 +1,105 @@
+cloud-architecture-diagram
+
+direction right
+colorMode pastel
+styleMode plain
+typeface clean
+
+HttpBoundary [label: "HTTP and SSE boundary", color: blue] {
+  ChatStreamView [label: "chat_stream view", icon: radio, color: blue]
+  ChatStreamRequest [label: "ChatStreamRequest", icon: file-json, color: blue]
+  SseEncoder [label: "SSE event encoder", icon: send, color: blue]
+}
+
+HarnessCore [label: "Agent harness core", color: purple] {
+  ChatGraphRunner [label: "ChatGraphRunner.run_stream", icon: workflow, color: purple]
+  ThreadContext [label: "ChatThreadContextStore", icon: history, color: gray]
+  Checkpointer [label: "LangGraph InMemorySaver", icon: database, color: gray]
+  ChatTurnGraph [label: "StateGraph ChatTurnState", icon: route, color: purple]
+  EventMapper [label: "Backend event mapper", icon: radio-receiver, color: purple]
+}
+
+GraphNodes [label: "LangGraph nodes", color: violet] {
+  MainAgentNode [label: "main_agent", icon: brain, color: violet]
+  MainResultNode [label: "main_agent_result", icon: file-output, color: violet]
+  SpeechTextNode [label: "speech_text_agent", icon: message-circle, color: violet]
+  SpeechTextResult [label: "speech_text_result", icon: file-output, color: violet]
+  ScreenControlNode [label: "screen_control_agent", icon: panel-top, color: violet]
+  SpeechSynthesisNode [label: "speech_synthesis_node", icon: volume-2, color: orange]
+}
+
+AgentFactories [label: "Agent factories and prompts", color: indigo] {
+  MainAgentFactory [label: "create_main_agent", icon: factory, color: indigo]
+  ScreenAgentFactory [label: "create_screen_control_agent", icon: factory, color: indigo]
+  SpeechAgentFactory [label: "create_speech_text_agent", icon: factory, color: indigo]
+  PromptTemplates [label: "agent-local system prompts", icon: scroll-text, color: indigo]
+}
+
+ToolBoundary [label: "Tool registry", color: green] {
+  ToolProfiles [label: "main_agent and screen_control profiles", icon: list-checks, color: green]
+  ToolRegistry [label: "get_tools cache and instrumentation", icon: plug, color: green]
+  RagMcpLoader [label: "load RAG MCP tools", icon: plug-zap, color: green]
+  ExternalMcpLoader [label: "load External MCP tools", icon: globe, color: green]
+  LocalWorkspaceTools [label: "screen_control_workspace tools", icon: panel-right, color: teal]
+}
+
+ProviderLayer [label: "Provider layer", color: yellow] {
+  MainLlm [label: "get_main model", icon: brain-circuit, color: yellow]
+  WindowLlm [label: "get_window model", icon: panel-top, color: yellow]
+  SanitizeLlm [label: "get_sanitize model", icon: message-circle, color: yellow]
+  ElevenLabs [label: "ElevenLabs SDK stream", icon: audio-lines, color: yellow]
+}
+
+StreamContracts [label: "Frontend stream contracts", color: "#2563eb"] {
+  TextEvents [label: "agent.text.delta and final", icon: text, color: "#2563eb"]
+  ToolEvents [label: "agent.tool_call.delta", icon: activity, color: "#2563eb"]
+  WorkspaceCommand [label: "workspace command payload", icon: panel-right, color: "#2563eb"]
+  SpeechEvents [label: "speech_text and tts events", icon: volume-2, color: "#2563eb"]
+  NodeEvents [label: "node.updated and task events", icon: git-branch, color: "#2563eb"]
+}
+
+ChatStreamView > ChatStreamRequest: validate JSON
+ChatStreamView > ChatGraphRunner: run_stream
+ChatGraphRunner > ThreadContext: activate session_id
+ThreadContext > Checkpointer: thread memory boundary
+ChatGraphRunner > ChatTurnGraph: astream version v2
+ChatTurnGraph > MainAgentNode: START
+MainAgentNode > MainResultNode: final answer
+MainResultNode > SpeechTextNode: speech branch
+MainResultNode > ScreenControlNode: screen branch
+SpeechTextNode > SpeechTextResult: final_response_script
+SpeechTextResult > SpeechSynthesisNode: TTS request
+SpeechSynthesisNode > ElevenLabs: stream audio
+ScreenControlNode > LocalWorkspaceTools: choose one surface
+MainAgentFactory > MainLlm: model
+ScreenAgentFactory > WindowLlm: model
+SpeechAgentFactory > SanitizeLlm: model
+MainAgentFactory > PromptTemplates: main prompt
+ScreenAgentFactory > PromptTemplates: screen control prompt
+SpeechAgentFactory > PromptTemplates: speech prompt
+MainAgentFactory > ToolRegistry: main_agent tools
+ScreenAgentFactory > ToolRegistry: screen_control tools
+ToolRegistry > ToolProfiles: read profile JSON
+ToolProfiles > RagMcpLoader: main_agent only
+ToolProfiles > ExternalMcpLoader: main_agent only
+ToolProfiles > LocalWorkspaceTools: screen_control only
+ChatGraphRunner > EventMapper: normalize stream modes
+EventMapper > TextEvents: message stream
+EventMapper > ToolEvents: tool stream
+EventMapper > WorkspaceCommand: custom stream
+EventMapper > SpeechEvents: speech and audio
+EventMapper > NodeEvents: updates and tasks
+SseEncoder > TextEvents: event stream
+SseEncoder > ToolEvents: event stream
+SseEncoder > WorkspaceCommand: event stream
+SseEncoder > SpeechEvents: event stream
+SseEncoder > NodeEvents: event stream
+
+legend [position: bottom-left] {
+  [color: blue, label: "HTTP boundary"]
+  [color: purple, label: "Harness orchestration"]
+  [color: violet, label: "LangGraph node"]
+  [color: green, label: "Tool registry"]
+  [color: yellow, label: "Provider adapter"]
+  [color: "#2563eb", label: "Stream contract"]
+}
