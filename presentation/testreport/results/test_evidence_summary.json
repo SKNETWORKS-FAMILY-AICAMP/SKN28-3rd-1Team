@@ -1,0 +1,248 @@
+{
+  "generated_at": "2026-06-26T03:35:37.714409+00:00",
+  "repo": {
+    "branch": "main",
+    "head": "2c85bde57dd0598cd241ca549e97948b52ea5f5e"
+  },
+  "backend": {
+    "unit_test_methods": {
+      "total": 40,
+      "files": {
+        "/home/vosnuevo/workspace/SKN28-3rd-1Team/backend/tests/test_agent_factories.py": 3,
+        "/home/vosnuevo/workspace/SKN28-3rd-1Team/backend/tests/test_agent_wrapper_nodes.py": 5,
+        "/home/vosnuevo/workspace/SKN28-3rd-1Team/backend/tests/test_chat_graph_agent_wrappers.py": 1,
+        "/home/vosnuevo/workspace/SKN28-3rd-1Team/backend/tests/test_graph_runner_streaming.py": 8,
+        "/home/vosnuevo/workspace/SKN28-3rd-1Team/backend/tests/test_llm_cerebras.py": 2,
+        "/home/vosnuevo/workspace/SKN28-3rd-1Team/backend/tests/test_llm_factory.py": 4,
+        "/home/vosnuevo/workspace/SKN28-3rd-1Team/backend/tests/test_llm_settings.py": 2,
+        "/home/vosnuevo/workspace/SKN28-3rd-1Team/backend/tests/test_logger.py": 5,
+        "/home/vosnuevo/workspace/SKN28-3rd-1Team/backend/tests/test_screen_control_workspace_tools.py": 3,
+        "/home/vosnuevo/workspace/SKN28-3rd-1Team/backend/tests/test_thread_context.py": 4,
+        "/home/vosnuevo/workspace/SKN28-3rd-1Team/backend/tests/test_tool_registry_logging.py": 3
+      }
+    },
+    "api_error_path_checks": {
+      "chat_stream_endpoint_registered": {
+        "path": "/home/vosnuevo/workspace/SKN28-3rd-1Team/backend/src/django_backend/urls.py",
+        "exists": true,
+        "checks": {
+          "path(\"chat/stream\", chat_stream)": true
+        },
+        "passed": true
+      },
+      "chat_stream_handles_json_and_validation_errors": {
+        "path": "/home/vosnuevo/workspace/SKN28-3rd-1Team/backend/src/django_backend/urls.py",
+        "exists": true,
+        "checks": {
+          "except json.JSONDecodeError": true,
+          "except ValidationError": true
+        },
+        "passed": true
+      },
+      "chat_stream_emits_agent_failed_event": {
+        "path": "/home/vosnuevo/workspace/SKN28-3rd-1Team/backend/src/django_backend/urls.py",
+        "exists": true,
+        "checks": {
+          "agent_failed": true,
+          "_chat_stream_events": true
+        },
+        "passed": true
+      }
+    },
+    "prompt_coordinate_visibility_checks": {
+      "main_agent_no_fabricated_coordinates": {
+        "path": "/home/vosnuevo/workspace/SKN28-3rd-1Team/backend/src/agents/main_agent/system_prompt.j2",
+        "exists": true,
+        "checks": {
+          "좌표": true,
+          "만들지 않는다": true
+        },
+        "passed": true
+      },
+      "screen_control_coordinates_are_internal": {
+        "path": "/home/vosnuevo/workspace/SKN28-3rd-1Team/backend/src/agents/screen_control_agent/system_prompt.j2",
+        "exists": true,
+        "checks": {
+          "위도, 경도, coordinate.lat/lng": true,
+          "지도 표시와 화면 제어 tool 입력에만 사용하는 내부 데이터": true,
+          "직접 노출하지 않는다": true
+        },
+        "passed": true
+      },
+      "speech_text_does_not_read_coordinates": {
+        "path": "/home/vosnuevo/workspace/SKN28-3rd-1Team/backend/src/agents/speech_text_agent/speech_text_prompt.j2",
+        "exists": true,
+        "checks": {
+          "Coordinates are internal map data.": true,
+          "Do not read latitude, longitude, lat, lon": true,
+          "mapx, or mapy values aloud": true
+        },
+        "passed": true
+      }
+    }
+  },
+  "external_mcp": {
+    "unit_test_methods": {
+      "total": 23,
+      "files": {
+        "/home/vosnuevo/workspace/SKN28-3rd-1Team/external_mcp/tests/checks/test_external_mcp_http_connection.py": 1,
+        "/home/vosnuevo/workspace/SKN28-3rd-1Team/external_mcp/tests/checks/test_firecrawl.py": 2,
+        "/home/vosnuevo/workspace/SKN28-3rd-1Team/external_mcp/tests/checks/test_naver.py": 2,
+        "/home/vosnuevo/workspace/SKN28-3rd-1Team/external_mcp/tests/checks/test_server_tools.py": 2,
+        "/home/vosnuevo/workspace/SKN28-3rd-1Team/external_mcp/tests/checks/test_tmap.py": 6,
+        "/home/vosnuevo/workspace/SKN28-3rd-1Team/external_mcp/tests/test_firecrawl.py": 2,
+        "/home/vosnuevo/workspace/SKN28-3rd-1Team/external_mcp/tests/test_naver.py": 2,
+        "/home/vosnuevo/workspace/SKN28-3rd-1Team/external_mcp/tests/test_server_tools.py": 3,
+        "/home/vosnuevo/workspace/SKN28-3rd-1Team/external_mcp/tests/test_tmap.py": 3
+      }
+    },
+    "tool_registration_checks": {
+      "external_mcp_tools_registered": {
+        "path": "/home/vosnuevo/workspace/SKN28-3rd-1Team/external_mcp/src/server.py",
+        "exists": true,
+        "checks": {
+          "naver.search": true,
+          "web.search": true,
+          "tmap.search_poi": true,
+          "tmap.route_pedestrian": true
+        },
+        "passed": true
+      },
+      "backend_loads_external_mcp_tools": {
+        "path": "/home/vosnuevo/workspace/SKN28-3rd-1Team/backend/src/tools/from_mcp.py",
+        "exists": true,
+        "checks": {
+          "MultiServerMCPClient": true,
+          "load_external_mcp_tools": true,
+          "settings.external_mcp.url": true
+        },
+        "passed": true
+      },
+      "main_agent_profile_enables_external_mcp": {
+        "path": "/home/vosnuevo/workspace/SKN28-3rd-1Team/backend/src/tools/profiles/main_agent.json",
+        "exists": true,
+        "checks": {
+          "\"external_mcp\": true": true
+        },
+        "passed": true
+      }
+    },
+    "blackbox": {
+      "fake_summary": {
+        "total": 16,
+        "passed": 16,
+        "failed": 0,
+        "expected_tools": [
+          "naver.search",
+          "tmap.route_pedestrian",
+          "tmap.search_poi",
+          "web.search"
+        ]
+      },
+      "live_summary": {
+        "total": 12,
+        "passed": 12,
+        "failed": 0,
+        "expected_tools": [
+          "naver.search",
+          "tmap.route_pedestrian",
+          "tmap.search_poi",
+          "web.search"
+        ],
+        "secret_source": "infisical",
+        "secrets_recorded": false
+      },
+      "fake_csv": {
+        "exists": true,
+        "total": 16,
+        "passed": 16,
+        "failed": 0
+      },
+      "live_csv": {
+        "exists": true,
+        "total": 12,
+        "passed": 12,
+        "failed": 0
+      }
+    }
+  },
+  "frontend_migration": {
+    "package_scripts": {
+      "dev": "next dev -H 127.0.0.1 -p 3005",
+      "build": "next build",
+      "start": "next start -H 127.0.0.1 -p 3005",
+      "lint": "eslint"
+    },
+    "test_files": [],
+    "automated_ui_test_file_count": 0,
+    "guard_checks": {
+      "chat_session_ignores_empty_or_busy_submit": {
+        "path": "/home/vosnuevo/workspace/SKN28-3rd-1Team/frontend_migration/src/page/chat/hooks/use-chat-session.ts",
+        "exists": true,
+        "checks": {
+          "const text = raw.trim();": true,
+          "if (!text || isBusy) return;": true
+        },
+        "passed": true
+      },
+      "composer_blocks_empty_submit": {
+        "path": "/home/vosnuevo/workspace/SKN28-3rd-1Team/frontend_migration/src/ui/components/chat/chat-composer.tsx",
+        "exists": true,
+        "checks": {
+          "disabled={isBusy || !input.trim()}": true,
+          "event.key !== \"Enter\"": true
+        },
+        "passed": true
+      },
+      "bff_returns_empty_message_error": {
+        "path": "/home/vosnuevo/workspace/SKN28-3rd-1Team/frontend_migration/src/bff/chat/route.ts",
+        "exists": true,
+        "checks": {
+          "질문 내용을 찾지 못했어요. 다시 입력해 주세요.": true
+        },
+        "passed": true
+      },
+      "bff_handles_backend_failure": {
+        "path": "/home/vosnuevo/workspace/SKN28-3rd-1Team/frontend_migration/src/bff/chat/backend-chat-stream-adapter.ts",
+        "exists": true,
+        "checks": {
+          "if (!response.ok || !response.body)": true,
+          "질문 내용을 찾지 못했어요. 다시 입력해 주세요.": true
+        },
+        "passed": true
+      },
+      "bff_records_invalid_workspace_command": {
+        "path": "/home/vosnuevo/workspace/SKN28-3rd-1Team/frontend_migration/src/bff/chat/backend-chat-stream-adapter.ts",
+        "exists": true,
+        "checks": {
+          "screen_control.command.invalid": true
+        },
+        "passed": true
+      }
+    }
+  },
+  "observability": {
+    "langsmith_schema_present": true,
+    "langsmith_trace_export_used_by_this_report": true,
+    "langsmith_trace_export": {
+      "trace_dir": "/home/vosnuevo/workspace/SKN28-3rd-1Team/presentation/testreport/langsmith/traces",
+      "trace_file_count": 18,
+      "root_success_count": 18,
+      "run_types": {
+        "chain": 360,
+        "llm": 117,
+        "tool": 126
+      },
+      "statuses": {
+        "success": 603
+      },
+      "input_output_records": 0,
+      "metadata_only": true
+    },
+    "note": "This report uses local test artifacts, source checks, and metadata-only LangSmith trace exports."
+  },
+  "coverage": {
+    "coverage_files_found": [],
+    "coverage_metric_available": false
+  }
+}
